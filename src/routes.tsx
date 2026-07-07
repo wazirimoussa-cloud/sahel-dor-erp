@@ -9,6 +9,7 @@ import { OrdersPage } from "@/features/orders/OrdersPage";
 import { OrderDetailPage } from "@/features/orders/OrderDetailPage";
 import { LogsPage } from "@/features/logs/LogsPage";
 import { UsersPage } from "@/features/users/UsersPage";
+import { AccountPage } from "@/features/account/AccountPage";
 
 export function AppRoutes() {
   return (
@@ -80,6 +81,16 @@ export function AppRoutes() {
           <ProtectedRoute allowedRoles={["admin"]}>
             <AppShell>
               <UsersPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <ProtectedRoute>
+            <AppShell>
+              <AccountPage />
             </AppShell>
           </ProtectedRoute>
         }

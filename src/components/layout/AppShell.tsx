@@ -18,6 +18,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/orders", label: "Commandes", roles: ["admin", "manager", "seller"] },
   { to: "/logs", label: "Journal d'audit", roles: ["admin", "auditor"] },
   { to: "/users", label: "Utilisateurs", roles: ["admin"] },
+  { to: "/account", label: "Mon compte" },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
