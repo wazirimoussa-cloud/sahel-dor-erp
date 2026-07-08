@@ -34,6 +34,7 @@ export function StockPage() {
               <tr className="border-b border-gray-200 text-gray-500">
                 <th className="py-2">Date</th>
                 <th className="py-2">Produit</th>
+                <th className="py-2">Magasin</th>
                 <th className="py-2">Type</th>
                 <th className="py-2">Quantité</th>
               </tr>
@@ -42,10 +43,13 @@ export function StockPage() {
               {transactions.map((tx) => {
                 const product = tx.products as { name: string } | { name: string }[] | null;
                 const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+                const warehouse = tx.warehouses as { name: string } | { name: string }[] | null;
+                const warehouseName = Array.isArray(warehouse) ? warehouse[0]?.name : warehouse?.name;
                 return (
                   <tr key={tx.id} className="border-b border-gray-100">
                     <td className="py-2">{new Date(tx.created_at).toLocaleString("fr-FR")}</td>
                     <td className="py-2">{productName ?? "—"}</td>
+                    <td className="py-2">{warehouseName ?? "—"}</td>
                     <td className="py-2">{TYPE_LABELS[tx.type] ?? tx.type}</td>
                     <td className="py-2">{tx.quantity}</td>
                   </tr>
@@ -53,7 +57,7 @@ export function StockPage() {
               })}
               {transactions.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-400">
+                  <td colSpan={5} className="py-4 text-center text-gray-400">
                     Aucun mouvement enregistré.
                   </td>
                 </tr>

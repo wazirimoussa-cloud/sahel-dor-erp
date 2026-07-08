@@ -15,6 +15,9 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Tableau de bord" },
   { to: "/products", label: "Produits" },
+  { to: "/warehouses", label: "Magasins", roles: ["admin", "manager"] },
+  { to: "/suppliers", label: "Fournisseurs", roles: ["admin", "manager"] },
+  { to: "/purchases", label: "Achats", roles: ["admin", "manager"] },
   { to: "/stock", label: "Mouvements de stock" },
   { to: "/orders", label: "Commandes", roles: ["admin", "manager", "seller"] },
   { to: "/logs", label: "Journal d'audit", roles: ["admin", "auditor"] },

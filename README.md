@@ -101,8 +101,8 @@ Le cahier des charges ne détaillait pas les rôles ; voici ceux retenus par dé
 | Rôle | Accès |
 |---|---|
 | `admin` | Tout, toutes sociétés, gestion des utilisateurs |
-| `manager` | Produits, stocks, validation/annulation des commandes (société assignée) |
-| `seller` | Création de mouvements de stock et de commandes (société assignée) |
+| `manager` | Produits, magasins, fournisseurs, achats, stocks, validation/annulation des commandes (société assignée) |
+| `seller` | Création de mouvements de stock et de commandes (société assignée), lecture des magasins/fournisseurs/achats |
 | `auditor` | Lecture seule du journal d'audit |
 
 ## Écarts et améliorations par rapport au cahier des charges
@@ -158,6 +158,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
    (`fn_block_mutation`) interdit `UPDATE`/`DELETE` sur `transactions` et `logs` pour
    quiconque — défense en profondeur, une correction se fait par une nouvelle
    transaction `ADJUSTMENT`, jamais en réécrivant l'historique.
+
+10. **Stock multi-magasins + Achats** (`0004_warehouses.sql`, `0005_purchases.sql`) :
+    l'activité réelle de Sahel d'Or dépasse le squelette initial (mono-magasin, pas
+    d'approvisionnement fournisseur) — l'ERP couvre en réalité toute la chaîne
+    Achat → Production → Transformation → Stock multi-magasins → Vente → Comptabilité.
+    Première brique ajoutée : `warehouses` (magasins) + `product_stocks` (stock par
+    `(produit, magasin)`, source de vérité — `products.stock` reste un total dénormalisé
+    pour le dashboard existant) et `suppliers` + `purchases`/`purchase_items` (bons de
+    commande d'achat). Différence délibérée avec `create_order` : une commande de vente
+    décrémente le stock **dès sa création** (simplification déjà documentée au point
+    suivant), alors qu'un achat ne crédite le stock qu'à la **réception réelle** de la
+    marchandise (`receive_purchase`, RPC dédiée) — `create_purchase` ne touche pas au
+    stock. `purchases`/`purchase_items` n'ont aucune policy RLS d'écriture : toute
+    mutation passe par `create_purchase`/`receive_purchase`/`cancel_purchase`
+    (`SECURITY DEFINER`), qui appliquent elles-mêmes rôle/société et garantissent
+    l'atomicité stock+statut.
 
 ## Limites connues / pistes pour la suite
 

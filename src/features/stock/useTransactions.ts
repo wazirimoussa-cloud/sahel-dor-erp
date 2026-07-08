@@ -4,6 +4,7 @@ import type { TransactionType } from "@/lib/database.types";
 
 export interface NewTransaction {
   productId: string;
+  warehouseId: string;
   type: TransactionType;
   quantity: number;
   userId: string;
@@ -15,7 +16,7 @@ export function useTransactions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, type, quantity, created_at, products(name)")
+        .select("id, type, quantity, created_at, products(name), warehouses(name)")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -30,6 +31,7 @@ export function useCreateTransaction() {
     mutationFn: async (transaction: NewTransaction) => {
       const { error } = await supabase.from("transactions").insert({
         product_id: transaction.productId,
+        warehouse_id: transaction.warehouseId,
         type: transaction.type,
         quantity: transaction.quantity,
         user_id: transaction.userId,
