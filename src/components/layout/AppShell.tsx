@@ -21,56 +21,67 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/account", label: "Mon compte" },
 ];
 
+// Bannière optionnelle (ex. "ENVIRONNEMENT FORMATION") pour distinguer visuellement un
+// déploiement de formation/démo de la production — voir VITE_APP_LABEL dans .env.example.
+const ENV_LABEL = import.meta.env.VITE_APP_LABEL as string | undefined;
+
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.roles || (profile && item.roles.includes(profile.role)));
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-56 shrink-0 border-r border-gray-200 bg-white">
-        <div className="border-b border-gray-200 px-4 py-4">
-          <span className="text-lg font-semibold text-brand-700">Sahel d'Or</span>
+    <div className="flex min-h-screen flex-col">
+      {ENV_LABEL && (
+        <div className="bg-amber-500 px-4 py-1 text-center text-xs font-semibold uppercase tracking-wide text-white">
+          {ENV_LABEL}
         </div>
-        <nav className="flex flex-col gap-1 p-2">
-          {visibleItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/"}
-              className={({ isActive }) =>
-                clsx(
-                  "rounded-md px-3 py-2 text-sm font-medium",
-                  isActive ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:bg-gray-50",
-                )
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
-          <div className="text-sm text-gray-500">
-            {profile ? (
-              <>
-                <span className="font-medium text-gray-800">{profile.email}</span>
-                <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs uppercase text-gray-500">
-                  {profile.role}
-                </span>
-              </>
-            ) : (
-              "Profil en cours de chargement…"
-            )}
+      )}
+      <div className="flex flex-1">
+        <aside className="w-56 shrink-0 border-r border-gray-200 bg-white">
+          <div className="border-b border-gray-200 px-4 py-4">
+            <span className="text-lg font-semibold text-brand-700">Sahel d'Or</span>
           </div>
-          <Button variant="secondary" onClick={() => void signOut()}>
-            Déconnexion
-          </Button>
-        </header>
+          <nav className="flex flex-col gap-1 p-2">
+            {visibleItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/"}
+                className={({ isActive }) =>
+                  clsx(
+                    "rounded-md px-3 py-2 text-sm font-medium",
+                    isActive ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:bg-gray-50",
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+        </aside>
 
-        <main className="flex-1 bg-gray-50 p-6">{children}</main>
+        <div className="flex flex-1 flex-col">
+          <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+            <div className="text-sm text-gray-500">
+              {profile ? (
+                <>
+                  <span className="font-medium text-gray-800">{profile.email}</span>
+                  <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs uppercase text-gray-500">
+                    {profile.role}
+                  </span>
+                </>
+              ) : (
+                "Profil en cours de chargement…"
+              )}
+            </div>
+            <Button variant="secondary" onClick={() => void signOut()}>
+              Déconnexion
+            </Button>
+          </header>
+
+          <main className="flex-1 bg-gray-50 p-6">{children}</main>
+        </div>
       </div>
     </div>
   );
