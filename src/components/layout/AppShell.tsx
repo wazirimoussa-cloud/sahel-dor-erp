@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom";
 import clsx from "clsx";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/Button";
+import { EnvBanner } from "@/components/layout/EnvBanner";
 import type { RoleName } from "@/lib/database.types";
 
 interface NavItem {
@@ -21,10 +22,6 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/account", label: "Mon compte" },
 ];
 
-// Bannière optionnelle (ex. "ENVIRONNEMENT FORMATION") pour distinguer visuellement un
-// déploiement de formation/démo de la production — voir VITE_APP_LABEL dans .env.example.
-const ENV_LABEL = import.meta.env.VITE_APP_LABEL as string | undefined;
-
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
 
@@ -32,11 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {ENV_LABEL && (
-        <div className="bg-amber-500 px-4 py-1 text-center text-xs font-semibold uppercase tracking-wide text-white">
-          {ENV_LABEL}
-        </div>
-      )}
+      <EnvBanner />
       <div className="flex flex-1">
         <aside className="w-56 shrink-0 border-r border-gray-200 bg-white">
           <div className="border-b border-gray-200 px-4 py-4">
