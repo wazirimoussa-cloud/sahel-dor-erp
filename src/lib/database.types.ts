@@ -226,6 +226,94 @@ export type Database = {
           },
         ];
       };
+      production_items: {
+        Row: {
+          created_at: string;
+          id: string;
+          product_id: string;
+          production_id: string;
+          quantity: number;
+          unit_cost: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          product_id: string;
+          production_id: string;
+          quantity: number;
+          unit_cost: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          product_id?: string;
+          production_id?: string;
+          quantity?: number;
+          unit_cost?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "production_items_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "production_items_production_id_fkey";
+            columns: ["production_id"];
+            isOneToOne: false;
+            referencedRelation: "productions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      productions: {
+        Row: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        Insert: {
+          company_id: string;
+          created_at?: string;
+          id?: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        Update: {
+          company_id?: string;
+          created_at?: string;
+          id?: string;
+          user_id?: string;
+          warehouse_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "productions_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "productions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "productions_warehouse_id_fkey";
+            columns: ["warehouse_id"];
+            isOneToOne: false;
+            referencedRelation: "warehouses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       products: {
         Row: {
           company_id: string;
@@ -424,8 +512,10 @@ export type Database = {
           id: string;
           order_id: string | null;
           product_id: string;
+          production_id: string | null;
           purchase_id: string | null;
           quantity: number;
+          transformation_id: string | null;
           type: Database["public"]["Enums"]["transaction_type"];
           user_id: string;
           warehouse_id: string;
@@ -435,8 +525,10 @@ export type Database = {
           id?: string;
           order_id?: string | null;
           product_id: string;
+          production_id?: string | null;
           purchase_id?: string | null;
           quantity: number;
+          transformation_id?: string | null;
           type: Database["public"]["Enums"]["transaction_type"];
           user_id: string;
           warehouse_id: string;
@@ -446,8 +538,10 @@ export type Database = {
           id?: string;
           order_id?: string | null;
           product_id?: string;
+          production_id?: string | null;
           purchase_id?: string | null;
           quantity?: number;
+          transformation_id?: string | null;
           type?: Database["public"]["Enums"]["transaction_type"];
           user_id?: string;
           warehouse_id?: string;
@@ -468,10 +562,24 @@ export type Database = {
             referencedColumns: ["id"];
           },
           {
+            foreignKeyName: "transactions_production_id_fkey";
+            columns: ["production_id"];
+            isOneToOne: false;
+            referencedRelation: "productions";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "transactions_purchase_id_fkey";
             columns: ["purchase_id"];
             isOneToOne: false;
             referencedRelation: "purchases";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transactions_transformation_id_fkey";
+            columns: ["transformation_id"];
+            isOneToOne: false;
+            referencedRelation: "transformations";
             referencedColumns: ["id"];
           },
           {
@@ -483,6 +591,133 @@ export type Database = {
           },
           {
             foreignKeyName: "transactions_warehouse_id_fkey";
+            columns: ["warehouse_id"];
+            isOneToOne: false;
+            referencedRelation: "warehouses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      transformation_inputs: {
+        Row: {
+          created_at: string;
+          id: string;
+          product_id: string;
+          quantity: number;
+          transformation_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          product_id: string;
+          quantity: number;
+          transformation_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          product_id?: string;
+          quantity?: number;
+          transformation_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transformation_inputs_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transformation_inputs_transformation_id_fkey";
+            columns: ["transformation_id"];
+            isOneToOne: false;
+            referencedRelation: "transformations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      transformation_outputs: {
+        Row: {
+          created_at: string;
+          id: string;
+          product_id: string;
+          quantity: number;
+          transformation_id: string;
+          unit_cost: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          product_id: string;
+          quantity: number;
+          transformation_id: string;
+          unit_cost: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          product_id?: string;
+          quantity?: number;
+          transformation_id?: string;
+          unit_cost?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transformation_outputs_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transformation_outputs_transformation_id_fkey";
+            columns: ["transformation_id"];
+            isOneToOne: false;
+            referencedRelation: "transformations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      transformations: {
+        Row: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        Insert: {
+          company_id: string;
+          created_at?: string;
+          id?: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        Update: {
+          company_id?: string;
+          created_at?: string;
+          id?: string;
+          user_id?: string;
+          warehouse_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transformations_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transformations_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "transformations_warehouse_id_fkey";
             columns: ["warehouse_id"];
             isOneToOne: false;
             referencedRelation: "warehouses";
@@ -568,21 +803,107 @@ export type Database = {
     Functions: {
       cancel_purchase: {
         Args: { purchase_id: string };
-        Returns: Database["public"]["Tables"]["purchases"]["Row"];
+        Returns: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          status: Database["public"]["Enums"]["purchase_status"];
+          supplier_id: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "purchases";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       create_order: {
         Args: { payload: Json };
-        Returns: Database["public"]["Tables"]["orders"]["Row"];
+        Returns: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          status: Database["public"]["Enums"]["order_status"];
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "orders";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      create_production: {
+        Args: { payload: Json };
+        Returns: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "productions";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       create_purchase: {
         Args: { payload: Json };
-        Returns: Database["public"]["Tables"]["purchases"]["Row"];
+        Returns: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          status: Database["public"]["Enums"]["purchase_status"];
+          supplier_id: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "purchases";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
-      current_company_id: { Args: Record<string, never>; Returns: string };
-      current_role_name: { Args: Record<string, never>; Returns: string };
+      create_transformation: {
+        Args: { payload: Json };
+        Returns: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "transformations";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      current_company_id: { Args: never; Returns: string };
+      current_role_name: { Args: never; Returns: string };
       receive_purchase: {
         Args: { purchase_id: string };
-        Returns: Database["public"]["Tables"]["purchases"]["Row"];
+        Returns: {
+          company_id: string;
+          created_at: string;
+          id: string;
+          status: Database["public"]["Enums"]["purchase_status"];
+          supplier_id: string;
+          user_id: string;
+          warehouse_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "purchases";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
     };
     Enums: {
@@ -595,6 +916,130 @@ export type Database = {
     };
   };
 };
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R;
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
+      }
+      ? R
+      : never
+    : never;
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I;
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I;
+      }
+      ? I
+      : never
+    : never;
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never) = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U;
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U;
+      }
+      ? U
+      : never
+    : never;
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never) = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never;
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals;
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never;
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      order_status: ["pending", "validated", "cancelled"],
+      purchase_status: ["pending", "received", "cancelled"],
+      transaction_type: ["IN", "OUT", "ADJUSTMENT"],
+    },
+  },
+} as const;
 
 // Alias pratiques utilisés dans le reste de l'app (auth, formulaires, RBAC).
 export type TransactionType = Database["public"]["Enums"]["transaction_type"];

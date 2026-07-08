@@ -14,6 +14,10 @@ import { WarehousesPage } from "@/features/warehouses/WarehousesPage";
 import { SuppliersPage } from "@/features/suppliers/SuppliersPage";
 import { PurchasesPage } from "@/features/purchases/PurchasesPage";
 import { PurchaseDetailPage } from "@/features/purchases/PurchaseDetailPage";
+import { ProductionsPage } from "@/features/productions/ProductionsPage";
+import { ProductionDetailPage } from "@/features/productions/ProductionDetailPage";
+import { TransformationsPage } from "@/features/transformations/TransformationsPage";
+import { TransformationDetailPage } from "@/features/transformations/TransformationDetailPage";
 
 export function AppRoutes() {
   return (
@@ -135,6 +139,46 @@ export function AppRoutes() {
           <ProtectedRoute allowedRoles={["admin", "manager"]}>
             <AppShell>
               <PurchaseDetailPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/productions"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+            <AppShell>
+              <ProductionsPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/productions/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+            <AppShell>
+              <ProductionDetailPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transformations"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+            <AppShell>
+              <TransformationsPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/transformations/:id"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+            <AppShell>
+              <TransformationDetailPage />
             </AppShell>
           </ProtectedRoute>
         }

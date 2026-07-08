@@ -65,6 +65,13 @@ join public.warehouses w on w.company_id = p.company_id and w.name = 'Magasin pr
 -- plus que ce qu'un magasin donné contient réellement, même si le total global suffirait
 -- — un mouvement qui violerait ça fait échouer (et annule) toute la transaction, comme
 -- pour products.stock auparavant.
+--
+-- Upsert écrit en UPDATE puis INSERT-si-absent (jamais INSERT ... ON CONFLICT DO UPDATE) :
+-- Postgres évalue un CHECK constraint sur la ligne "candidate" d'un INSERT AVANT de
+-- résoudre le conflit, donc pour un delta négatif (OUT), la ligne candidate isolée
+-- (ex. stock = -2) échoue le CHECK même si le stock existant + delta reste positif
+-- (5 - 2 = 3) — le conflit n'est jamais atteint. Le pattern UPDATE-d'abord évite ce piège
+-- en évaluant le CHECK sur la valeur réellement fusionnée (stock existant + delta).
 create or replace function public.fn_apply_transaction_stock()
 returns trigger
 language plpgsql
@@ -84,12 +91,79 @@ begin
   set stock = stock + v_delta
   where id = new.product_id;
 
-  insert into public.product_stocks (product_id, warehouse_id, stock)
-  values (new.product_id, new.warehouse_id, v_delta)
-  on conflict (product_id, warehouse_id)
-  do update set stock = public.product_stocks.stock + excluded.stock;
+  update public.product_stocks
+  set stock = stock + v_delta
+  where product_id = new.product_id and warehouse_id = new.warehouse_id;
+
+  if not found then
+    insert into public.product_stocks (product_id, warehouse_id, stock)
+    values (new.product_id, new.warehouse_id, v_delta);
+  end if;
 
   return new;
+end;
+$$;
+
+-- Réécriture de create_order (définie en 0002, avant l'existence des magasins) : les
+-- transactions OUT qu'elle génère doivent désormais renseigner warehouse_id, devenu
+-- NOT NULL sur transactions dans cette même migration. payload étendu avec
+-- "warehouse_id" (obligatoire, validé comme appartenant à la société de l'appelant,
+-- même garde-fou que pour create_purchase/create_production).
+create or replace function public.create_order(payload jsonb)
+returns public.orders
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_role text := public.current_role_name();
+  v_caller_company uuid := public.current_company_id();
+  v_company_id uuid;
+  v_warehouse_id uuid := (payload ->> 'warehouse_id')::uuid;
+  v_order public.orders;
+  v_item jsonb;
+  v_product public.products;
+begin
+  if v_role is null or v_role not in ('admin', 'manager', 'seller') then
+    raise exception 'Rôle % non autorisé à créer une commande', coalesce(v_role, '(aucun)');
+  end if;
+
+  v_company_id := coalesce((payload ->> 'company_id')::uuid, v_caller_company);
+
+  if v_role <> 'admin' and v_company_id is distinct from v_caller_company then
+    raise exception 'Impossible de créer une commande pour une autre société';
+  end if;
+
+  if v_company_id is null then
+    raise exception 'Aucune société associée à cet utilisateur';
+  end if;
+
+  if not exists (
+    select 1 from public.warehouses w where w.id = v_warehouse_id and w.company_id = v_company_id
+  ) then
+    raise exception 'Magasin introuvable pour cette société';
+  end if;
+
+  insert into public.orders (company_id, user_id, status)
+  values (v_company_id, auth.uid(), 'pending')
+  returning * into v_order;
+
+  for v_item in select * from jsonb_array_elements(payload -> 'items')
+  loop
+    select * into v_product from public.products where id = (v_item ->> 'product_id')::uuid;
+
+    if v_product is null or v_product.company_id <> v_company_id then
+      raise exception 'Produit % introuvable pour cette société', v_item ->> 'product_id';
+    end if;
+
+    insert into public.order_items (order_id, product_id, quantity, unit_price)
+    values (v_order.id, v_product.id, (v_item ->> 'quantity')::integer, v_product.price);
+
+    insert into public.transactions (product_id, type, quantity, user_id, warehouse_id, order_id)
+    values (v_product.id, 'OUT', (v_item ->> 'quantity')::integer, auth.uid(), v_warehouse_id, v_order.id);
+  end loop;
+
+  return v_order;
 end;
 $$;
 

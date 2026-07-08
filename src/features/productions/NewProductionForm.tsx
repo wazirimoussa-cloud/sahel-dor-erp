@@ -4,11 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useProducts } from "@/features/products/useProducts";
 import { useWarehouses } from "@/features/warehouses/useWarehouses";
-import { useCreateOrder } from "@/features/orders/useOrders";
+import { useCreateProduction } from "@/features/productions/useProductions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-const orderSchema = z.object({
+const productionSchema = z.object({
   warehouseId: z.string().uuid("Choisissez un magasin"),
   items: z
     .array(
@@ -20,12 +20,12 @@ const orderSchema = z.object({
     .min(1, "Ajoutez au moins une ligne"),
 });
 
-type OrderFormValues = z.infer<typeof orderSchema>;
+type ProductionFormValues = z.infer<typeof productionSchema>;
 
-export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
+export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
   const { data: products } = useProducts();
   const { data: warehouses } = useWarehouses();
-  const createOrder = useCreateOrder();
+  const createProduction = useCreateProduction();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -34,21 +34,24 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<OrderFormValues>({
-    resolver: zodResolver(orderSchema),
+  } = useForm<ProductionFormValues>({
+    resolver: zodResolver(productionSchema),
     defaultValues: { items: [{ productId: "", quantity: 1 }] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
-  async function onSubmit(values: OrderFormValues) {
+  async function onSubmit(values: ProductionFormValues) {
     setServerError(null);
     try {
-      await createOrder.mutateAsync({ warehouseId: values.warehouseId, items: values.items });
+      await createProduction.mutateAsync({
+        warehouseId: values.warehouseId,
+        items: values.items,
+      });
       reset({ warehouseId: values.warehouseId, items: [{ productId: "", quantity: 1 }] });
       onCreated?.();
     } catch {
-      setServerError("Commande refusée (stock insuffisant, produit/magasin invalide, ou rôle non autorisé).");
+      setServerError("Production refusée (magasin/produit invalide, ou rôle non autorisé).");
     }
   }
 
@@ -83,7 +86,7 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
               <option value="">— Choisir —</option>
               {products?.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {product.name} (stock : {product.stock})
+                  {product.name}
                 </option>
               ))}
             </select>
@@ -110,7 +113,7 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
           + Ajouter une ligne
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          Créer la commande
+          Créer la production
         </Button>
       </div>
 

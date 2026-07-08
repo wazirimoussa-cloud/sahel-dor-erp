@@ -24,10 +24,11 @@ export function useOrders() {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (items: OrderItemInput[]) => {
+    mutationFn: async (params: { warehouseId: string; items: OrderItemInput[] }) => {
       const { error } = await supabase.rpc("create_order", {
         payload: {
-          items: items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
+          warehouse_id: params.warehouseId,
+          items: params.items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
         },
       });
       if (error) throw error;

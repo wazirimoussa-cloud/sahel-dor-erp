@@ -175,6 +175,23 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     (`SECURITY DEFINER`), qui appliquent elles-mêmes rôle/société et garantissent
     l'atomicité stock+statut.
 
+11. **Production + Transformation** (`0006_production.sql`, `0007_transformations.sql`) :
+    deuxième et troisième maillons de la chaîne. Trois mécanismes de crédit/débit de stock
+    coexistent désormais, chacun avec sa RPC dédiée et sa colonne de traçabilité propre sur
+    `transactions` (`purchase_id`, `production_id`, `transformation_id`) : un **achat**
+    crédite le stock à la réception (fournisseur externe) ; une **production** crédite le
+    stock sans rien consommer (l'entreprise crée elle-même, ex. récolte) ; une
+    **transformation** débite un ou plusieurs produits (intrants) et crédite un ou
+    plusieurs produits différents (extrants) dans le même magasin, ex. grain brut →
+    farine. Comme les achats, `productions`/`production_items` et
+    `transformations`/`transformation_inputs`/`transformation_outputs` n'ont aucune policy
+    RLS d'écriture — tout passe par `create_production`/`create_transformation`
+    (`SECURITY DEFINER`). Contrairement aux achats, ce sont des faits atomiques immédiats
+    (pas de statut `pending`/`received` : la RPC crée l'en-tête, les lignes et les
+    transactions en une seule fois). Aucune "recette" n'est prédéfinie en base — chaque
+    événement déclare ses propres lignes à la saisie, conformément au choix de laisser
+    l'utilisateur configurer produits/quantités selon ses besoins réels.
+
 ## Limites connues / pistes pour la suite
 
 - **Annulation de commande** : passer une commande à `cancelled` ne restaure pas
