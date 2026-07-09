@@ -28,7 +28,8 @@ export function PurchaseDetailPage() {
   const cancelPurchase = useCancelPurchase();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const canManage = profile?.role === "admin" || profile?.role === "logistics";
+  const canReceive = profile?.role === "warehouse_manager";
+  const canCancel = profile?.role === "purchasing";
 
   if (isLoading) return <p className="text-sm text-gray-500">Chargement…</p>;
   if (error || !purchase) {
@@ -200,18 +201,22 @@ export function PurchaseDetailPage() {
 
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
-      {canManage && purchase.status === "pending" && (
+      {purchase.status === "pending" && (canReceive || canCancel) && (
         <div className="flex gap-3">
-          <Button disabled={receivePurchase.isPending} onClick={() => void handleReceive()}>
-            Recevoir l'achat
-          </Button>
-          <Button
-            variant="danger"
-            disabled={cancelPurchase.isPending}
-            onClick={() => void handleCancel()}
-          >
-            Annuler l'achat
-          </Button>
+          {canReceive && (
+            <Button disabled={receivePurchase.isPending} onClick={() => void handleReceive()}>
+              Recevoir l'achat
+            </Button>
+          )}
+          {canCancel && (
+            <Button
+              variant="danger"
+              disabled={cancelPurchase.isPending}
+              onClick={() => void handleCancel()}
+            >
+              Annuler l'achat
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => navigate("/purchases")}>
             Retour
           </Button>

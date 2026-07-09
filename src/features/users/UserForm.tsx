@@ -9,7 +9,17 @@ import { ROLE_LABELS } from "@/lib/roles";
 
 const userSchema = z.object({
   email: z.string().email("Adresse email invalide"),
-  role: z.enum(["admin", "logistics", "sales", "accounting", "controller", "production_manager"]),
+  role: z.enum([
+    "admin",
+    "warehouse_manager",
+    "supervisor",
+    "sales_operator",
+    "purchasing",
+    "accounting",
+    "production_manager",
+    "controller",
+    "logistics_transport",
+  ]),
   companyId: z.string().uuid("Choisissez une société"),
 });
 
@@ -27,14 +37,14 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: { role: "sales" },
+    defaultValues: { role: "sales_operator" },
   });
 
   async function onSubmit(values: UserFormValues) {
     setServerError(null);
     try {
       await createUser.mutateAsync(values);
-      reset({ role: "sales", email: "", companyId: values.companyId });
+      reset({ role: "sales_operator", email: "", companyId: values.companyId });
       onCreated?.();
     } catch {
       setServerError("Création refusée (email déjà utilisé, ou droits insuffisants).");

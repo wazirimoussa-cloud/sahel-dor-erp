@@ -95,25 +95,40 @@ Hébergement statique au choix (Vercel, Netlify, serveur local...). Configurez
 
 ## Rôles applicatifs
 
-6 profils calqués sur l'organisation d'une société d'agribusiness (introduits en
-`supabase/migrations/0014_roles_agribusiness.sql`, ajustables via la table `roles` et
-les policies RLS) :
+9 profils calqués sur le cahier des charges "Gestion des profils utilisateurs"
+(introduits en `supabase/migrations/0016_agribusiness_governance.sql`, ajustables via
+la table `roles` et les policies RLS) :
 
 | Rôle (slug interne) | Accès |
 |---|---|
-| Administrateur (`admin`) | Tout, toutes sociétés, gestion des utilisateurs |
-| Logistique (`logistics`) | Produits, magasins, fournisseurs, cycle achats complet (créer/réceptionner/annuler), mouvements de stock manuels (société assignée) |
-| Commercial (`sales`) | Clients, cycle commandes complet (créer/valider/annuler/encaisser) (société assignée) |
-| Comptable (`accounting`) | Plan comptable (écriture), lecture du journal comptable (société assignée) |
-| Contrôleur (`controller`) | Lecture seule du journal d'audit et du journal comptable (société assignée) |
-| Gestionnaire de production (`production_manager`) | Produits, cycle production/transformation, mouvements de stock manuels (société assignée) |
+| Administrateur (`admin`) | **Lecture seule** sur toutes les sociétés, écriture réservée à la gestion des comptes utilisateurs (et des sociétés, exception pragmatique — voir plus bas) |
+| Gestionnaire de magasin (`warehouse_manager`) | Produits, entrepôts, réception des achats (stock IN), mouvements de stock manuels (société assignée) |
+| Superviseur (`supervisor`) | Lecture large ; seul rôle habilité à **valider** une commande (déclenche la sortie de stock + l'écriture comptable) |
+| Opérateur de vente (`sales_operator`) | Clients, création/annulation de commande (aucun impact stock à la création) (société assignée) |
+| Responsable des achats (`purchasing`) | Fournisseurs, création/annulation de bon de commande (aucun impact stock) (société assignée) |
+| Comptable (`accounting`) | Plan comptable (écriture), encaissement des paiements clients, lecture du journal comptable (société assignée) |
+| Responsable de production (`production_manager`) | Produits, cycle production/transformation (société assignée) |
+| Contrôleur (`controller`) | Lecture seule (large, y compris journal d'audit et journal comptable) de sa société — pas d'écriture |
+| Logistique / Transport (`logistics_transport`) | Lecture large, mouvements de stock manuels (livraisons) (société assignée) |
 
 Chaque rôle non-admin lit largement les autres tables opérationnelles de sa société
 (produits, magasins, achats, commandes, etc.) mais n'écrit que dans son périmètre —
 la navigation reflète cette spécialité, plus stricte que les policies `select`
-sous-jacentes. Les libellés français sont centralisés dans `src/lib/roles.ts`
-(`ROLE_LABELS`). Le slug `admin` est resté inchangé (au lieu de `administrateur`) pour
-ne pas modifier les 3 Edge Functions qui vérifient déjà `callerRole === "admin"`.
+sous-jacentes (`admin` et `controller` voient tous les écrans métier en lecture,
+`admin` seul voit en plus "Utilisateurs"). Les libellés français sont centralisés dans
+`src/lib/roles.ts` (`ROLE_LABELS`). Le slug `admin` est resté inchangé (au lieu de
+`administrateur`) pour ne pas modifier les 3 Edge Functions qui vérifient déjà
+`callerRole === "admin"`. Exception assumée : la gestion des sociétés (`companies`)
+reste réservée à `admin` — action d'infrastructure (nouveau tenant), pas une
+"opération sensible" au sens métier du cahier, et aucun des 9 rôles n'en a la charge.
+
+**Séparation des tâches** : aucun rôle ne peut créer, valider et exécuter seul une même
+opération. Cycle de vente : Opérateur de vente crée la commande (aucun impact stock) →
+Superviseur valide (c'est cette étape, et seulement elle, qui fait sortir le stock et
+génère l'écriture comptable VENTES) → Comptable encaisse. Cycle d'achat : Responsable
+des achats crée le bon de commande (aucun impact stock) → Gestionnaire de magasin
+réceptionne physiquement (c'est cette étape qui fait entrer le stock et génère
+l'écriture comptable ACHATS).
 
 ## Écarts et améliorations par rapport au cahier des charges
 
@@ -310,6 +325,24 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     aucune société — un contrôleur (ex-auditeur) non-admin voyait les logs de *toutes*
     les sociétés ; désormais scopé à sa propre société comme partout ailleurs. Les
     libellés français sont centralisés dans `src/lib/roles.ts`.
+
+18. **Harmonisation avec le cahier des charges officiel** (`0016_agribusiness_governance.sql`) :
+    les 6 rôles de la phase précédente sont éclatés/complétés en 9 profils conformes au
+    cahier (voir section "Rôles applicatifs") — Logistique éclaté en Gestionnaire de
+    magasin / Responsable des achats / Logistique-Transport, ajout d'un Superviseur
+    distinct du Contrôleur. `admin` passe de "accès total" à **strictement lecture
+    seule** (sauf gestion des comptes), conformément au cahier. Séparation des tâches
+    imposée pour de bon : le cycle de vente est éclaté create (`sales_operator`) →
+    validate (`supervisor`, déclenche désormais la sortie de stock + l'écriture
+    comptable, déplacées depuis `create_order`) → paiement (`accounting`) ; le cycle
+    d'achat sépare création (`purchasing`) et réception physique (`warehouse_manager`,
+    déjà le cas côté stock, formalisé côté rôle). `orders` gagne une colonne
+    `warehouse_id` (jusqu'ici seulement transmise au payload, jamais persistée —
+    nécessaire puisque la sortie de stock n'a plus lieu à la création). Nouvelle
+    traçabilité de consultation : RPC `log_page_visit`, appelée à chaque changement de
+    page (`src/lib/useLogPageVisit.ts`), journalise dans la même table `logs` que les
+    écritures (`action = 'VIEW'`) — volontairement léger (navigation, pas chaque
+    requête `SELECT` individuelle).
 
 ## Limites connues / pistes pour la suite
 

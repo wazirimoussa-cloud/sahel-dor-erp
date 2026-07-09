@@ -1,18 +1,23 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/useAuth";
 import { useTransformations } from "@/features/transformations/useTransformations";
 import { NewTransformationForm } from "@/features/transformations/NewTransformationForm";
 import { Card } from "@/components/ui/Card";
 
 export function TransformationsPage() {
+  const { profile } = useAuth();
   const { data: transformations, isLoading, error } = useTransformations();
+  const canCreate = profile?.role === "production_manager";
 
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-gray-800">Transformation</h1>
 
-      <Card>
-        <NewTransformationForm />
-      </Card>
+      {canCreate && (
+        <Card>
+          <NewTransformationForm />
+        </Card>
+      )}
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}

@@ -7,6 +7,7 @@ import { EnvBanner } from "@/components/layout/EnvBanner";
 import { AlertsBell } from "@/components/layout/AlertsBell";
 import type { RoleName } from "@/lib/database.types";
 import { ROLE_LABELS } from "@/lib/roles";
+import { useLogPageVisit } from "@/lib/useLogPageVisit";
 
 interface NavItem {
   to: string;
@@ -17,23 +18,39 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Tableau de bord" },
   { to: "/products", label: "Produits" },
-  { to: "/warehouses", label: "Magasins", roles: ["admin", "logistics"] },
-  { to: "/suppliers", label: "Fournisseurs", roles: ["admin", "logistics"] },
-  { to: "/purchases", label: "Achats", roles: ["admin", "logistics"] },
-  { to: "/productions", label: "Production", roles: ["admin", "production_manager"] },
-  { to: "/transformations", label: "Transformation", roles: ["admin", "production_manager"] },
+  { to: "/warehouses", label: "Magasins", roles: ["admin", "controller", "warehouse_manager"] },
+  { to: "/suppliers", label: "Fournisseurs", roles: ["admin", "controller", "purchasing"] },
+  {
+    to: "/purchases",
+    label: "Achats",
+    roles: ["admin", "controller", "purchasing", "warehouse_manager"],
+  },
+  {
+    to: "/productions",
+    label: "Production",
+    roles: ["admin", "controller", "production_manager"],
+  },
+  {
+    to: "/transformations",
+    label: "Transformation",
+    roles: ["admin", "controller", "production_manager"],
+  },
   { to: "/stock", label: "Mouvements de stock" },
-  { to: "/clients", label: "Clients", roles: ["admin", "sales"] },
-  { to: "/orders", label: "Commandes", roles: ["admin", "sales"] },
+  { to: "/clients", label: "Clients", roles: ["admin", "controller", "sales_operator"] },
+  {
+    to: "/orders",
+    label: "Commandes",
+    roles: ["admin", "controller", "sales_operator", "supervisor", "accounting"],
+  },
   {
     to: "/chart-of-accounts",
     label: "Plan comptable",
-    roles: ["admin", "accounting", "controller"],
+    roles: ["admin", "controller", "accounting"],
   },
   {
     to: "/journal-comptable",
     label: "Journal comptable",
-    roles: ["admin", "accounting", "controller"],
+    roles: ["admin", "controller", "accounting"],
   },
   { to: "/logs", label: "Journal d'audit", roles: ["admin", "controller"] },
   { to: "/users", label: "Utilisateurs", roles: ["admin"] },
@@ -42,6 +59,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
+  useLogPageVisit();
 
   const visibleItems = NAV_ITEMS.filter((item) => !item.roles || (profile && item.roles.includes(profile.role)));
 

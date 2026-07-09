@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/useAuth";
 import { useOrders } from "@/features/orders/useOrders";
 import { NewOrderForm } from "@/features/orders/NewOrderForm";
 import { Card } from "@/components/ui/Card";
@@ -28,15 +29,19 @@ const PAYMENT_CLASSES: Record<string, string> = {
 };
 
 export function OrdersPage() {
+  const { profile } = useAuth();
   const { data: orders, isLoading, error } = useOrders();
+  const canCreate = profile?.role === "sales_operator";
 
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-gray-800">Commandes</h1>
 
-      <Card>
-        <NewOrderForm />
-      </Card>
+      {canCreate && (
+        <Card>
+          <NewOrderForm />
+        </Card>
+      )}
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}

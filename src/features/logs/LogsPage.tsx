@@ -8,9 +8,10 @@ export function LogsPage() {
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-gray-800">Journal d'audit</h1>
       <p className="text-sm text-gray-500">
-        Alimenté automatiquement par des triggers côté base de données (voir
-        supabase/migrations/0002_functions_triggers.sql) — aucune entrée ne peut être écrite ou
-        modifiée depuis l'application.
+        Écritures (création/modification/suppression) journalisées automatiquement par
+        des triggers côté base de données ; consultations (action "VIEW") journalisées à
+        chaque changement de page. Aucune entrée ne peut être modifiée ou supprimée
+        depuis l'application.
       </p>
 
       <Card>

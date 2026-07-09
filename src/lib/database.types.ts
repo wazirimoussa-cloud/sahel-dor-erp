@@ -329,6 +329,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"];
           status: Database["public"]["Enums"]["order_status"];
           user_id: string;
+          warehouse_id: string;
         };
         Insert: {
           amount_paid?: number;
@@ -339,6 +340,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"];
           status?: Database["public"]["Enums"]["order_status"];
           user_id: string;
+          warehouse_id: string;
         };
         Update: {
           amount_paid?: number;
@@ -349,6 +351,7 @@ export type Database = {
           payment_status?: Database["public"]["Enums"]["payment_status"];
           status?: Database["public"]["Enums"]["order_status"];
           user_id?: string;
+          warehouse_id?: string;
         };
         Relationships: [
           {
@@ -370,6 +373,13 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "orders_warehouse_id_fkey";
+            columns: ["warehouse_id"];
+            isOneToOne: false;
+            referencedRelation: "warehouses";
             referencedColumns: ["id"];
           },
         ];
@@ -999,6 +1009,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"];
           status: Database["public"]["Enums"]["order_status"];
           user_id: string;
+          warehouse_id: string;
         };
         SetofOptions: {
           from: "*";
@@ -1036,6 +1047,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"];
           status: Database["public"]["Enums"]["order_status"];
           user_id: string;
+          warehouse_id: string;
         };
         SetofOptions: {
           from: "*";
@@ -1096,6 +1108,7 @@ export type Database = {
       };
       current_company_id: { Args: never; Returns: string };
       current_role_name: { Args: never; Returns: string };
+      log_page_visit: { Args: { module: string }; Returns: undefined };
       receive_purchase: {
         Args: { purchase_id: string };
         Returns: {
@@ -1129,6 +1142,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"];
           status: Database["public"]["Enums"]["order_status"];
           user_id: string;
+          warehouse_id: string;
         };
         SetofOptions: {
           from: "*";
@@ -1148,6 +1162,7 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"];
           status: Database["public"]["Enums"]["order_status"];
           user_id: string;
+          warehouse_id: string;
         };
         SetofOptions: {
           from: "*";
@@ -1301,8 +1316,11 @@ export type PurchaseStatus = Database["public"]["Enums"]["purchase_status"];
 export type PaymentStatus = Database["public"]["Enums"]["payment_status"];
 export type RoleName =
   | "admin"
-  | "logistics"
-  | "sales"
+  | "warehouse_manager"
+  | "supervisor"
+  | "sales_operator"
+  | "purchasing"
   | "accounting"
+  | "production_manager"
   | "controller"
-  | "production_manager";
+  | "logistics_transport";

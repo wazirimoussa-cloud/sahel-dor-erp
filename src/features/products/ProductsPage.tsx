@@ -7,9 +7,7 @@ export function ProductsPage() {
   const { profile } = useAuth();
   const { data: products, isLoading, error } = useProducts();
   const canManage =
-    profile?.role === "admin" ||
-    profile?.role === "logistics" ||
-    profile?.role === "production_manager";
+    profile?.role === "warehouse_manager" || profile?.role === "production_manager";
 
   return (
     <div className="space-y-6">

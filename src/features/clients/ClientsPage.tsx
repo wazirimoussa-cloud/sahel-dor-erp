@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 export function ClientsPage() {
   const { profile } = useAuth();
   const { data: clients, isLoading, error } = useClients();
-  const canManage = profile?.role === "admin" || profile?.role === "sales";
+  const canManage = profile?.role === "sales_operator";
 
   return (
     <div className="space-y-6">

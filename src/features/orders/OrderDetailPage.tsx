@@ -58,7 +58,9 @@ export function OrderDetailPage() {
   const recordPayment = useRecordPayment();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const canManage = profile?.role === "admin" || profile?.role === "sales";
+  const canValidate = profile?.role === "supervisor";
+  const canCancel = profile?.role === "sales_operator";
+  const canRecordPayment = profile?.role === "accounting";
 
   const {
     register: registerPayment,
@@ -129,7 +131,12 @@ export function OrderDetailPage() {
   }
 
   async function handleValidate() {
-    if (!window.confirm("Valider cette commande ? Cette action ne pourra plus être modifiée ensuite.")) return;
+    if (
+      !window.confirm(
+        "Valider cette commande ? Le stock sortira à ce moment et l'écriture comptable sera générée — action irréversible.",
+      )
+    )
+      return;
     setActionError(null);
     try {
       await validateOrder.mutateAsync(orderId);
@@ -139,7 +146,7 @@ export function OrderDetailPage() {
   }
 
   async function handleCancel() {
-    if (!window.confirm("Annuler cette commande ? Le stock sera restauré.")) return;
+    if (!window.confirm("Annuler cette commande ?")) return;
     setActionError(null);
     try {
       await cancelOrder.mutateAsync(orderId);
@@ -256,21 +263,25 @@ export function OrderDetailPage() {
 
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
-      {canManage && order.status === "pending" && (
+      {order.status === "pending" && (canValidate || canCancel) && (
         <div className="flex gap-3">
-          <Button disabled={validateOrder.isPending} onClick={() => void handleValidate()}>
-            Valider la commande
-          </Button>
-          <Button variant="danger" disabled={cancelOrder.isPending} onClick={() => void handleCancel()}>
-            Annuler la commande
-          </Button>
+          {canValidate && (
+            <Button disabled={validateOrder.isPending} onClick={() => void handleValidate()}>
+              Valider la commande
+            </Button>
+          )}
+          {canCancel && (
+            <Button variant="danger" disabled={cancelOrder.isPending} onClick={() => void handleCancel()}>
+              Annuler la commande
+            </Button>
+          )}
           <Button variant="secondary" onClick={() => navigate("/orders")}>
             Retour
           </Button>
         </div>
       )}
 
-      {canManage && (
+      {canRecordPayment && (
         <Card>
           <h2 className="mb-3 text-sm font-medium text-gray-700">Enregistrer un paiement</h2>
           <form

@@ -2,9 +2,12 @@ import type { RoleName } from "@/lib/database.types";
 
 export const ROLE_LABELS: Record<RoleName, string> = {
   admin: "Administrateur",
-  logistics: "Logistique",
-  sales: "Commercial",
+  warehouse_manager: "Gestionnaire de magasin",
+  supervisor: "Superviseur",
+  sales_operator: "Opérateur de vente",
+  purchasing: "Responsable des achats",
   accounting: "Comptable",
+  production_manager: "Responsable de production",
   controller: "Contrôleur",
-  production_manager: "Gestionnaire de production",
+  logistics_transport: "Logistique / Transport",
 };

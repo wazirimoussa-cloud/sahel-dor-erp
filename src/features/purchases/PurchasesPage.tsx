@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useAuth } from "@/auth/useAuth";
 import { usePurchases } from "@/features/purchases/usePurchases";
 import { NewPurchaseForm } from "@/features/purchases/NewPurchaseForm";
 import { Card } from "@/components/ui/Card";
@@ -16,15 +17,19 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 export function PurchasesPage() {
+  const { profile } = useAuth();
   const { data: purchases, isLoading, error } = usePurchases();
+  const canCreate = profile?.role === "purchasing";
 
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-semibold text-gray-800">Achats</h1>
 
-      <Card>
-        <NewPurchaseForm />
-      </Card>
+      {canCreate && (
+        <Card>
+          <NewPurchaseForm />
+        </Card>
+      )}
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
