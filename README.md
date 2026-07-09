@@ -101,8 +101,8 @@ Le cahier des charges ne détaillait pas les rôles ; voici ceux retenus par dé
 | Rôle | Accès |
 |---|---|
 | `admin` | Tout, toutes sociétés, gestion des utilisateurs |
-| `manager` | Produits, magasins, fournisseurs, achats, stocks, validation/annulation des commandes (société assignée) |
-| `seller` | Création de mouvements de stock et de commandes (société assignée), lecture des magasins/fournisseurs/achats |
+| `manager` | Produits, magasins, fournisseurs, achats, clients, stocks, validation/annulation/paiement des commandes (société assignée) |
+| `seller` | Création de mouvements de stock et de commandes (société assignée), lecture des magasins/fournisseurs/achats/clients |
 | `auditor` | Lecture seule du journal d'audit |
 
 ## Écarts et améliorations par rapport au cahier des charges
@@ -192,11 +192,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     événement déclare ses propres lignes à la saisie, conformément au choix de laisser
     l'utilisateur configurer produits/quantités selon ses besoins réels.
 
+12. **Vente : clients, paiement, annulation sûre** (`0008_clients.sql`,
+    `0009_order_enhancements.sql`) : dernier maillon avant la Comptabilité. `clients` est
+    la table jumelle exacte de `suppliers`, et `orders.client_id` devient obligatoire
+    (bootstrap "Client comptant" par société pour les commandes déjà en base, même
+    mécanique que "Magasin principal" en 0004). `orders` gagne aussi `payment_status`
+    (`unpaid`/`partial`/`paid`) et `amount_paid`, mis à jour par la RPC `record_payment` —
+    aucun impact sur le grand livre, mais on garde le principe "aucune écriture directe"
+    en évitant une policy `UPDATE` générique sur `orders`. La policy RLS
+    `orders_update_status` (seul endroit du projet où une transition de statut passait par
+    un `UPDATE` client direct plutôt qu'une RPC) est supprimée, remplacée par
+    `validate_order`/`cancel_order` : **`cancel_order` restaure désormais le stock** via
+    une transaction `ADJUSTMENT` par ligne de commande — l'ancienne limite connue
+    "l'annulation ne restaure pas le stock" est corrigée.
+
 ## Limites connues / pistes pour la suite
 
-- **Annulation de commande** : passer une commande à `cancelled` ne restaure pas
-  automatiquement le stock (pas de transaction `ADJUSTMENT` inverse générée). À ajouter
-  si le workflow métier l'exige.
 - **Bundle frontend** : ~530 kB non compressé (avertissement Vite au build). Un
   code-splitting par route (`React.lazy`) serait pertinent si l'app grossit.
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

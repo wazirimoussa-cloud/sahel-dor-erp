@@ -18,6 +18,7 @@ import { ProductionsPage } from "@/features/productions/ProductionsPage";
 import { ProductionDetailPage } from "@/features/productions/ProductionDetailPage";
 import { TransformationsPage } from "@/features/transformations/TransformationsPage";
 import { TransformationDetailPage } from "@/features/transformations/TransformationDetailPage";
+import { ClientsPage } from "@/features/clients/ClientsPage";
 
 export function AppRoutes() {
   return (
@@ -179,6 +180,16 @@ export function AppRoutes() {
           <ProtectedRoute allowedRoles={["admin", "manager"]}>
             <AppShell>
               <TransformationDetailPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/clients"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+            <AppShell>
+              <ClientsPage />
             </AppShell>
           </ProtectedRoute>
         }

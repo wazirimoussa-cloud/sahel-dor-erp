@@ -38,6 +38,47 @@ export type Database = {
   };
   public: {
     Tables: {
+      clients: {
+        Row: {
+          address: string | null;
+          company_id: string;
+          contact_name: string | null;
+          created_at: string;
+          email: string | null;
+          id: string;
+          name: string;
+          phone: string | null;
+        };
+        Insert: {
+          address?: string | null;
+          company_id: string;
+          contact_name?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          name: string;
+          phone?: string | null;
+        };
+        Update: {
+          address?: string | null;
+          company_id?: string;
+          contact_name?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          name?: string;
+          phone?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "clients_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       companies: {
         Row: {
           created_at: string;
@@ -153,27 +194,43 @@ export type Database = {
       };
       orders: {
         Row: {
+          amount_paid: number;
+          client_id: string;
           company_id: string;
           created_at: string;
           id: string;
+          payment_status: Database["public"]["Enums"]["payment_status"];
           status: Database["public"]["Enums"]["order_status"];
           user_id: string;
         };
         Insert: {
+          amount_paid?: number;
+          client_id: string;
           company_id: string;
           created_at?: string;
           id?: string;
+          payment_status?: Database["public"]["Enums"]["payment_status"];
           status?: Database["public"]["Enums"]["order_status"];
           user_id: string;
         };
         Update: {
+          amount_paid?: number;
+          client_id?: string;
           company_id?: string;
           created_at?: string;
           id?: string;
+          payment_status?: Database["public"]["Enums"]["payment_status"];
           status?: Database["public"]["Enums"]["order_status"];
           user_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "orders_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "orders_company_id_fkey";
             columns: ["company_id"];
@@ -801,6 +858,25 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      cancel_order: {
+        Args: { order_id: string };
+        Returns: {
+          amount_paid: number;
+          client_id: string;
+          company_id: string;
+          created_at: string;
+          id: string;
+          payment_status: Database["public"]["Enums"]["payment_status"];
+          status: Database["public"]["Enums"]["order_status"];
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "orders";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       cancel_purchase: {
         Args: { purchase_id: string };
         Returns: {
@@ -822,9 +898,12 @@ export type Database = {
       create_order: {
         Args: { payload: Json };
         Returns: {
+          amount_paid: number;
+          client_id: string;
           company_id: string;
           created_at: string;
           id: string;
+          payment_status: Database["public"]["Enums"]["payment_status"];
           status: Database["public"]["Enums"]["order_status"];
           user_id: string;
         };
@@ -905,9 +984,52 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      record_payment: {
+        Args: {
+          amount_paid: number;
+          order_id: string;
+          payment_status: Database["public"]["Enums"]["payment_status"];
+        };
+        Returns: {
+          amount_paid: number;
+          client_id: string;
+          company_id: string;
+          created_at: string;
+          id: string;
+          payment_status: Database["public"]["Enums"]["payment_status"];
+          status: Database["public"]["Enums"]["order_status"];
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "orders";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      validate_order: {
+        Args: { order_id: string };
+        Returns: {
+          amount_paid: number;
+          client_id: string;
+          company_id: string;
+          created_at: string;
+          id: string;
+          payment_status: Database["public"]["Enums"]["payment_status"];
+          status: Database["public"]["Enums"]["order_status"];
+          user_id: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "orders";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
     };
     Enums: {
       order_status: "pending" | "validated" | "cancelled";
+      payment_status: "unpaid" | "partial" | "paid";
       purchase_status: "pending" | "received" | "cancelled";
       transaction_type: "IN" | "OUT" | "ADJUSTMENT";
     };
@@ -1035,6 +1157,7 @@ export const Constants = {
   public: {
     Enums: {
       order_status: ["pending", "validated", "cancelled"],
+      payment_status: ["unpaid", "partial", "paid"],
       purchase_status: ["pending", "received", "cancelled"],
       transaction_type: ["IN", "OUT", "ADJUSTMENT"],
     },
@@ -1045,4 +1168,5 @@ export const Constants = {
 export type TransactionType = Database["public"]["Enums"]["transaction_type"];
 export type OrderStatus = Database["public"]["Enums"]["order_status"];
 export type PurchaseStatus = Database["public"]["Enums"]["purchase_status"];
+export type PaymentStatus = Database["public"]["Enums"]["payment_status"];
 export type RoleName = "admin" | "manager" | "seller" | "auditor";

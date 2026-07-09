@@ -15,6 +15,18 @@ const STATUS_CLASSES: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
+const PAYMENT_LABELS: Record<string, string> = {
+  unpaid: "Impayé",
+  partial: "Partiel",
+  paid: "Payé",
+};
+
+const PAYMENT_CLASSES: Record<string, string> = {
+  unpaid: "bg-red-100 text-red-700",
+  partial: "bg-amber-100 text-amber-700",
+  paid: "bg-green-100 text-green-700",
+};
+
 export function OrdersPage() {
   const { data: orders, isLoading, error } = useOrders();
 
@@ -33,9 +45,11 @@ export function OrdersPage() {
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
               <th className="py-2">Date</th>
+              <th className="py-2">Client</th>
               <th className="py-2">Lignes</th>
               <th className="py-2">Total</th>
               <th className="py-2">Statut</th>
+              <th className="py-2">Paiement</th>
               <th className="py-2" />
             </tr>
           </thead>
@@ -43,9 +57,12 @@ export function OrdersPage() {
             {orders?.map((order) => {
               const items = order.order_items as { quantity: number; unit_price: number }[];
               const total = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+              const clientRelation = order.clients as { name: string } | { name: string }[] | null;
+              const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
               return (
                 <tr key={order.id} className="border-b border-gray-100">
                   <td className="py-2">{new Date(order.created_at).toLocaleString("fr-FR")}</td>
+                  <td className="py-2">{clientName ?? "—"}</td>
                   <td className="py-2">{items.length}</td>
                   <td className="py-2">{total.toLocaleString("fr-FR")} FCFA</td>
                   <td className="py-2">
@@ -53,6 +70,13 @@ export function OrdersPage() {
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}
                     >
                       {STATUS_LABELS[order.status] ?? order.status}
+                    </span>
+                  </td>
+                  <td className="py-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${PAYMENT_CLASSES[order.payment_status] ?? ""}`}
+                    >
+                      {PAYMENT_LABELS[order.payment_status] ?? order.payment_status}
                     </span>
                   </td>
                   <td className="py-2 text-right">
@@ -65,7 +89,7 @@ export function OrdersPage() {
             })}
             {orders?.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-gray-400">
+                <td colSpan={7} className="py-4 text-center text-gray-400">
                   Aucune commande pour le moment.
                 </td>
               </tr>

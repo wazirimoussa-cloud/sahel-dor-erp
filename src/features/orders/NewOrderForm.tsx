@@ -4,12 +4,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useProducts } from "@/features/products/useProducts";
 import { useWarehouses } from "@/features/warehouses/useWarehouses";
+import { useClients } from "@/features/clients/useClients";
 import { useCreateOrder } from "@/features/orders/useOrders";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 const orderSchema = z.object({
   warehouseId: z.string().uuid("Choisissez un magasin"),
+  clientId: z.string().uuid("Choisissez un client"),
   items: z
     .array(
       z.object({
@@ -25,6 +27,7 @@ type OrderFormValues = z.infer<typeof orderSchema>;
 export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
   const { data: products } = useProducts();
   const { data: warehouses } = useWarehouses();
+  const { data: clients } = useClients();
   const createOrder = useCreateOrder();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -44,32 +47,54 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
   async function onSubmit(values: OrderFormValues) {
     setServerError(null);
     try {
-      await createOrder.mutateAsync({ warehouseId: values.warehouseId, items: values.items });
-      reset({ warehouseId: values.warehouseId, items: [{ productId: "", quantity: 1 }] });
+      await createOrder.mutateAsync({
+        warehouseId: values.warehouseId,
+        clientId: values.clientId,
+        items: values.items,
+      });
+      reset({ warehouseId: values.warehouseId, clientId: values.clientId, items: [{ productId: "", quantity: 1 }] });
       onCreated?.();
     } catch {
-      setServerError("Commande refusée (stock insuffisant, produit/magasin invalide, ou rôle non autorisé).");
+      setServerError("Commande refusée (stock insuffisant, produit/magasin/client invalide, ou rôle non autorisé).");
     }
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
-      <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
-        <select
-          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          {...register("warehouseId")}
-        >
-          <option value="">— Choisir —</option>
-          {warehouses?.map((warehouse) => (
-            <option key={warehouse.id} value={warehouse.id}>
-              {warehouse.name}
-            </option>
-          ))}
-        </select>
-        {errors.warehouseId && (
-          <p className="mt-1 text-xs text-red-600">{errors.warehouseId.message}</p>
-        )}
+      <div className="flex flex-wrap gap-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">Client</label>
+          <select
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            {...register("clientId")}
+          >
+            <option value="">— Choisir —</option>
+            {clients?.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+          {errors.clientId && <p className="mt-1 text-xs text-red-600">{errors.clientId.message}</p>}
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+          <select
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            {...register("warehouseId")}
+          >
+            <option value="">— Choisir —</option>
+            {warehouses?.map((warehouse) => (
+              <option key={warehouse.id} value={warehouse.id}>
+                {warehouse.name}
+              </option>
+            ))}
+          </select>
+          {errors.warehouseId && (
+            <p className="mt-1 text-xs text-red-600">{errors.warehouseId.message}</p>
+          )}
+        </div>
       </div>
 
       {fields.map((field, index) => (

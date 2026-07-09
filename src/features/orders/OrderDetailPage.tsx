@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
-import { useOrder, useUpdateOrderStatus } from "@/features/orders/useOrders";
+import {
+  useOrder,
+  useValidateOrder,
+  useCancelOrder,
+  useRecordPayment,
+} from "@/features/orders/useOrders";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import type { PaymentStatus } from "@/lib/database.types";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -17,15 +27,43 @@ const STATUS_CLASSES: Record<string, string> = {
   cancelled: "bg-red-100 text-red-700",
 };
 
+const PAYMENT_LABELS: Record<string, string> = {
+  unpaid: "Impayé",
+  partial: "Partiel",
+  paid: "Payé",
+};
+
+const PAYMENT_CLASSES: Record<string, string> = {
+  unpaid: "bg-red-100 text-red-700",
+  partial: "bg-amber-100 text-amber-700",
+  paid: "bg-green-100 text-green-700",
+};
+
+const paymentSchema = z.object({
+  paymentStatus: z.enum(["unpaid", "partial", "paid"]),
+  amountPaid: z.coerce.number().min(0, "Montant invalide"),
+});
+
+type PaymentFormValues = z.infer<typeof paymentSchema>;
+
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { data: order, isLoading, error } = useOrder(id);
-  const updateStatus = useUpdateOrderStatus();
+  const validateOrder = useValidateOrder();
+  const cancelOrder = useCancelOrder();
+  const recordPayment = useRecordPayment();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const canValidate = profile?.role === "admin" || profile?.role === "manager";
+  const canManage = profile?.role === "admin" || profile?.role === "manager";
+
+  const {
+    register: registerPayment,
+    handleSubmit: handlePaymentSubmit,
+    reset: resetPayment,
+    formState: { isSubmitting: isSubmittingPayment },
+  } = useForm<PaymentFormValues>({ resolver: zodResolver(paymentSchema) });
 
   if (isLoading) return <p className="text-sm text-gray-500">Chargement…</p>;
   if (error || !order) {
@@ -48,20 +86,41 @@ export function OrderDetailPage() {
   const total = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const creatorRelation = order.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation) ? creatorRelation[0]?.email : creatorRelation?.email;
+  const clientRelation = order.clients as { name: string } | { name: string }[] | null;
+  const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
   const orderId = order.id;
 
-  async function handleStatusChange(status: "validated" | "cancelled") {
-    const confirmMessage =
-      status === "cancelled"
-        ? "Annuler cette commande ? Le stock déjà décrémenté n'est pas restauré automatiquement (voir README)."
-        : "Valider cette commande ? Cette action ne pourra plus être modifiée ensuite.";
-    if (!window.confirm(confirmMessage)) return;
-
+  async function handleValidate() {
+    if (!window.confirm("Valider cette commande ? Cette action ne pourra plus être modifiée ensuite.")) return;
     setActionError(null);
     try {
-      await updateStatus.mutateAsync({ orderId, status });
+      await validateOrder.mutateAsync(orderId);
     } catch {
       setActionError("Action refusée (droits insuffisants ou commande déjà traitée).");
+    }
+  }
+
+  async function handleCancel() {
+    if (!window.confirm("Annuler cette commande ? Le stock sera restauré.")) return;
+    setActionError(null);
+    try {
+      await cancelOrder.mutateAsync(orderId);
+    } catch {
+      setActionError("Action refusée (droits insuffisants ou commande déjà traitée).");
+    }
+  }
+
+  async function onPaymentSubmit(values: PaymentFormValues) {
+    setActionError(null);
+    try {
+      await recordPayment.mutateAsync({
+        orderId,
+        paymentStatus: values.paymentStatus as PaymentStatus,
+        amountPaid: values.amountPaid,
+      });
+      resetPayment();
+    } catch {
+      setActionError("Enregistrement du paiement refusé (droits insuffisants).");
     }
   }
 
@@ -80,12 +139,19 @@ export function OrderDetailPage() {
           </h1>
           <p className="text-sm text-gray-500">
             Créée le {new Date(order.created_at).toLocaleString("fr-FR")} par{" "}
-            {creatorEmail ?? "utilisateur inconnu"}
+            {creatorEmail ?? "utilisateur inconnu"} — Client : {clientName ?? "—"}
           </p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}>
-          {STATUS_LABELS[order.status] ?? order.status}
-        </span>
+        <div className="flex gap-2">
+          <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}>
+            {STATUS_LABELS[order.status] ?? order.status}
+          </span>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium ${PAYMENT_CLASSES[order.payment_status] ?? ""}`}
+          >
+            {PAYMENT_LABELS[order.payment_status] ?? order.payment_status}
+          </span>
+        </div>
       </div>
 
       <Card>
@@ -129,22 +195,53 @@ export function OrderDetailPage() {
 
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
-      {canValidate && order.status === "pending" && (
+      {canManage && order.status === "pending" && (
         <div className="flex gap-3">
-          <Button disabled={updateStatus.isPending} onClick={() => void handleStatusChange("validated")}>
+          <Button disabled={validateOrder.isPending} onClick={() => void handleValidate()}>
             Valider la commande
           </Button>
-          <Button
-            variant="danger"
-            disabled={updateStatus.isPending}
-            onClick={() => void handleStatusChange("cancelled")}
-          >
+          <Button variant="danger" disabled={cancelOrder.isPending} onClick={() => void handleCancel()}>
             Annuler la commande
           </Button>
           <Button variant="secondary" onClick={() => navigate("/orders")}>
             Retour
           </Button>
         </div>
+      )}
+
+      {canManage && (
+        <Card>
+          <h2 className="mb-3 text-sm font-medium text-gray-700">Enregistrer un paiement</h2>
+          <form
+            onSubmit={handlePaymentSubmit(onPaymentSubmit)}
+            className="flex flex-wrap items-end gap-3"
+            noValidate
+          >
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Statut</label>
+              <select
+                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+                defaultValue={order.payment_status}
+                {...registerPayment("paymentStatus")}
+              >
+                <option value="unpaid">Impayé</option>
+                <option value="partial">Partiel</option>
+                <option value="paid">Payé</option>
+              </select>
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">Montant payé (FCFA)</label>
+              <Input
+                type="number"
+                defaultValue={order.amount_paid}
+                {...registerPayment("amountPaid")}
+              />
+            </div>
+            <Button type="submit" disabled={isSubmittingPayment}>
+              Enregistrer le paiement
+            </Button>
+          </form>
+        </Card>
       )}
     </div>
   );
