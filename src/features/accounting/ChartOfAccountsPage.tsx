@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 export function ChartOfAccountsPage() {
   const { profile } = useAuth();
   const { data: accounts, isLoading, error } = useChartOfAccounts();
-  const canManage = profile?.role === "admin" || profile?.role === "manager";
+  const canManage = profile?.role === "admin" || profile?.role === "accounting";
 
   return (
     <div className="space-y-6">

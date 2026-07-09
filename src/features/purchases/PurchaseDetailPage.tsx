@@ -28,7 +28,7 @@ export function PurchaseDetailPage() {
   const cancelPurchase = useCancelPurchase();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const canManage = profile?.role === "admin" || profile?.role === "manager";
+  const canManage = profile?.role === "admin" || profile?.role === "logistics";
 
   if (isLoading) return <p className="text-sm text-gray-500">Chargement…</p>;
   if (error || !purchase) {

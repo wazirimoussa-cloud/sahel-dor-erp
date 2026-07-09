@@ -58,7 +58,7 @@ export function OrderDetailPage() {
   const recordPayment = useRecordPayment();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const canManage = profile?.role === "admin" || profile?.role === "manager";
+  const canManage = profile?.role === "admin" || profile?.role === "sales";
 
   const {
     register: registerPayment,

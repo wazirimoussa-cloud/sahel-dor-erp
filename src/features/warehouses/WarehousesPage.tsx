@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 export function WarehousesPage() {
   const { profile } = useAuth();
   const { data: warehouses, isLoading, error } = useWarehouses();
-  const canManage = profile?.role === "admin" || profile?.role === "manager";
+  const canManage = profile?.role === "admin" || profile?.role === "logistics";
 
   return (
     <div className="space-y-6">

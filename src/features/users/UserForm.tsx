@@ -5,10 +5,11 @@ import { z } from "zod";
 import { useCompanies, useCreateUser } from "@/features/users/useUsers";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { ROLE_LABELS } from "@/lib/roles";
 
 const userSchema = z.object({
   email: z.string().email("Adresse email invalide"),
-  role: z.enum(["admin", "manager", "seller", "auditor"]),
+  role: z.enum(["admin", "logistics", "sales", "accounting", "controller", "production_manager"]),
   companyId: z.string().uuid("Choisissez une société"),
 });
 
@@ -26,14 +27,14 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
-    defaultValues: { role: "seller" },
+    defaultValues: { role: "sales" },
   });
 
   async function onSubmit(values: UserFormValues) {
     setServerError(null);
     try {
       await createUser.mutateAsync(values);
-      reset({ role: "seller", email: "", companyId: values.companyId });
+      reset({ role: "sales", email: "", companyId: values.companyId });
       onCreated?.();
     } catch {
       setServerError("Création refusée (email déjà utilisé, ou droits insuffisants).");
@@ -56,10 +57,11 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
         <div>
           <label className="mb-1 block text-xs font-medium text-gray-600">Rôle</label>
           <select className="rounded-md border border-gray-300 px-3 py-2 text-sm" {...register("role")}>
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="seller">Vendeur</option>
-            <option value="auditor">Auditeur</option>
+            {Object.entries(ROLE_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
           </select>
         </div>
 

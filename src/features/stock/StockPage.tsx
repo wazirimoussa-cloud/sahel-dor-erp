@@ -13,7 +13,9 @@ export function StockPage() {
   const { profile } = useAuth();
   const { data: transactions, isLoading, error } = useTransactions();
   const canRecord =
-    profile?.role === "admin" || profile?.role === "manager" || profile?.role === "seller";
+    profile?.role === "admin" ||
+    profile?.role === "logistics" ||
+    profile?.role === "production_manager";
 
   return (
     <div className="space-y-6">

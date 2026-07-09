@@ -95,15 +95,25 @@ Hébergement statique au choix (Vercel, Netlify, serveur local...). Configurez
 
 ## Rôles applicatifs
 
-Le cahier des charges ne détaillait pas les rôles ; voici ceux retenus par défaut
-(ajustables via la table `roles` et les policies RLS dans `supabase/migrations/0003_rls_policies.sql`) :
+6 profils calqués sur l'organisation d'une société d'agribusiness (introduits en
+`supabase/migrations/0014_roles_agribusiness.sql`, ajustables via la table `roles` et
+les policies RLS) :
 
-| Rôle | Accès |
+| Rôle (slug interne) | Accès |
 |---|---|
-| `admin` | Tout, toutes sociétés, gestion des utilisateurs |
-| `manager` | Produits, magasins, fournisseurs, achats, clients, stocks, validation/annulation/paiement des commandes, plan comptable (société assignée) |
-| `seller` | Création de mouvements de stock et de commandes (société assignée), lecture des magasins/fournisseurs/achats/clients |
-| `auditor` | Lecture seule du journal d'audit et du journal comptable |
+| Administrateur (`admin`) | Tout, toutes sociétés, gestion des utilisateurs |
+| Logistique (`logistics`) | Produits, magasins, fournisseurs, cycle achats complet (créer/réceptionner/annuler), mouvements de stock manuels (société assignée) |
+| Commercial (`sales`) | Clients, cycle commandes complet (créer/valider/annuler/encaisser) (société assignée) |
+| Comptable (`accounting`) | Plan comptable (écriture), lecture du journal comptable (société assignée) |
+| Contrôleur (`controller`) | Lecture seule du journal d'audit et du journal comptable (société assignée) |
+| Gestionnaire de production (`production_manager`) | Produits, cycle production/transformation, mouvements de stock manuels (société assignée) |
+
+Chaque rôle non-admin lit largement les autres tables opérationnelles de sa société
+(produits, magasins, achats, commandes, etc.) mais n'écrit que dans son périmètre —
+la navigation reflète cette spécialité, plus stricte que les policies `select`
+sous-jacentes. Les libellés français sont centralisés dans `src/lib/roles.ts`
+(`ROLE_LABELS`). Le slug `admin` est resté inchangé (au lieu de `administrateur`) pour
+ne pas modifier les 3 Edge Functions qui vérifient déjà `callerRole === "admin"`.
 
 ## Écarts et améliorations par rapport au cahier des charges
 
@@ -130,8 +140,8 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
 4. **RLS réellement scopée par rôle**, via `current_role_name()` / `current_company_id()`
    (fonctions `SECURITY DEFINER`, utilisées dans toutes les policies). L'exemple du
    cahier (`auth.uid() = id`) ne fait que restreindre `users` à sa propre ligne — ce
-   n'est pas du RBAC. Ici chaque table distingue admin / manager / seller / auditor et
-   scope par `company_id` (multi-société).
+   n'est pas du RBAC. Ici chaque table distingue les 6 rôles applicatifs (voir section
+   "Rôles applicatifs") et scope par `company_id` (multi-société).
 
 5. **`logs` en append-only côté serveur** : le cahier montrait un `INSERT INTO logs` fait
    « à la main » par le code applicatif — un client authentifié aurait pu falsifier ou
@@ -286,6 +296,20 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     appliqué côté client (redirection React), pas via RLS. Une donnée reste protégée par
     RLS indépendamment de ce flag ; ce garde protège seulement l'UX/le parcours normal,
     pas un accès direct à l'API par quelqu'un possédant déjà des identifiants valides.
+
+17. **Rôles agribusiness** (`0014_roles_agribusiness.sql`) : le rôle générique `manager`
+    (achats + entrepôts + production + transformation + clients + commandes +
+    comptabilité en écriture, tout confondu) est éclaté en 4 spécialités — Logistique,
+    Commercial, Comptable, Gestionnaire de production — chacune avec un périmètre
+    d'écriture précis (voir section "Rôles applicatifs"). `admin` inchangé ; `auditor`
+    renommé `controller` (Contrôleur). Renommage **en place** de 3 lignes `roles`
+    existantes (`role_id` étant une FK référencée par `users.role_id`, les comptes
+    existants héritent automatiquement du bon nouveau rôle, sans script de
+    réassignation) + 2 lignes réellement nouvelles (`accounting`,
+    `production_manager`). **Bug corrigé au passage** : `logs` n'était filtré par
+    aucune société — un contrôleur (ex-auditeur) non-admin voyait les logs de *toutes*
+    les sociétés ; désormais scopé à sa propre société comme partout ailleurs. Les
+    libellés français sont centralisés dans `src/lib/roles.ts`.
 
 ## Limites connues / pistes pour la suite
 

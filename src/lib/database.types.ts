@@ -1299,4 +1299,10 @@ export type TransactionType = Database["public"]["Enums"]["transaction_type"];
 export type OrderStatus = Database["public"]["Enums"]["order_status"];
 export type PurchaseStatus = Database["public"]["Enums"]["purchase_status"];
 export type PaymentStatus = Database["public"]["Enums"]["payment_status"];
-export type RoleName = "admin" | "manager" | "seller" | "auditor";
+export type RoleName =
+  | "admin"
+  | "logistics"
+  | "sales"
+  | "accounting"
+  | "controller"
+  | "production_manager";

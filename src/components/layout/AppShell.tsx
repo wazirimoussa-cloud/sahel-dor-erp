@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { EnvBanner } from "@/components/layout/EnvBanner";
 import { AlertsBell } from "@/components/layout/AlertsBell";
 import type { RoleName } from "@/lib/database.types";
+import { ROLE_LABELS } from "@/lib/roles";
 
 interface NavItem {
   to: string;
@@ -16,17 +17,25 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Tableau de bord" },
   { to: "/products", label: "Produits" },
-  { to: "/warehouses", label: "Magasins", roles: ["admin", "manager"] },
-  { to: "/suppliers", label: "Fournisseurs", roles: ["admin", "manager"] },
-  { to: "/purchases", label: "Achats", roles: ["admin", "manager"] },
-  { to: "/productions", label: "Production", roles: ["admin", "manager"] },
-  { to: "/transformations", label: "Transformation", roles: ["admin", "manager"] },
+  { to: "/warehouses", label: "Magasins", roles: ["admin", "logistics"] },
+  { to: "/suppliers", label: "Fournisseurs", roles: ["admin", "logistics"] },
+  { to: "/purchases", label: "Achats", roles: ["admin", "logistics"] },
+  { to: "/productions", label: "Production", roles: ["admin", "production_manager"] },
+  { to: "/transformations", label: "Transformation", roles: ["admin", "production_manager"] },
   { to: "/stock", label: "Mouvements de stock" },
-  { to: "/clients", label: "Clients", roles: ["admin", "manager"] },
-  { to: "/orders", label: "Commandes", roles: ["admin", "manager", "seller"] },
-  { to: "/chart-of-accounts", label: "Plan comptable", roles: ["admin", "manager", "auditor"] },
-  { to: "/journal-comptable", label: "Journal comptable", roles: ["admin", "manager", "auditor"] },
-  { to: "/logs", label: "Journal d'audit", roles: ["admin", "auditor"] },
+  { to: "/clients", label: "Clients", roles: ["admin", "sales"] },
+  { to: "/orders", label: "Commandes", roles: ["admin", "sales"] },
+  {
+    to: "/chart-of-accounts",
+    label: "Plan comptable",
+    roles: ["admin", "accounting", "controller"],
+  },
+  {
+    to: "/journal-comptable",
+    label: "Journal comptable",
+    roles: ["admin", "accounting", "controller"],
+  },
+  { to: "/logs", label: "Journal d'audit", roles: ["admin", "controller"] },
   { to: "/users", label: "Utilisateurs", roles: ["admin"] },
   { to: "/account", label: "Mon compte" },
 ];
@@ -70,7 +79,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <>
                   <span className="font-medium text-gray-800">{profile.email}</span>
                   <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs uppercase text-gray-500">
-                    {profile.role}
+                    {ROLE_LABELS[profile.role]}
                   </span>
                 </>
               ) : (

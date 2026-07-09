@@ -63,7 +63,7 @@ export function AppRoutes() {
       <Route
         path="/orders"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager", "seller"]}>
+          <ProtectedRoute allowedRoles={["admin", "sales"]}>
             <AppShell>
               <OrdersPage />
             </AppShell>
@@ -73,7 +73,7 @@ export function AppRoutes() {
       <Route
         path="/orders/:id"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager", "seller"]}>
+          <ProtectedRoute allowedRoles={["admin", "sales"]}>
             <AppShell>
               <OrderDetailPage />
             </AppShell>
@@ -83,7 +83,7 @@ export function AppRoutes() {
       <Route
         path="/logs"
         element={
-          <ProtectedRoute allowedRoles={["admin", "auditor"]}>
+          <ProtectedRoute allowedRoles={["admin", "controller"]}>
             <AppShell>
               <LogsPage />
             </AppShell>
@@ -113,7 +113,7 @@ export function AppRoutes() {
       <Route
         path="/warehouses"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "logistics"]}>
             <AppShell>
               <WarehousesPage />
             </AppShell>
@@ -123,7 +123,7 @@ export function AppRoutes() {
       <Route
         path="/suppliers"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "logistics"]}>
             <AppShell>
               <SuppliersPage />
             </AppShell>
@@ -133,7 +133,7 @@ export function AppRoutes() {
       <Route
         path="/purchases"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "logistics"]}>
             <AppShell>
               <PurchasesPage />
             </AppShell>
@@ -143,7 +143,7 @@ export function AppRoutes() {
       <Route
         path="/purchases/:id"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "logistics"]}>
             <AppShell>
               <PurchaseDetailPage />
             </AppShell>
@@ -153,7 +153,7 @@ export function AppRoutes() {
       <Route
         path="/productions"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "production_manager"]}>
             <AppShell>
               <ProductionsPage />
             </AppShell>
@@ -163,7 +163,7 @@ export function AppRoutes() {
       <Route
         path="/productions/:id"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "production_manager"]}>
             <AppShell>
               <ProductionDetailPage />
             </AppShell>
@@ -173,7 +173,7 @@ export function AppRoutes() {
       <Route
         path="/transformations"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "production_manager"]}>
             <AppShell>
               <TransformationsPage />
             </AppShell>
@@ -183,7 +183,7 @@ export function AppRoutes() {
       <Route
         path="/transformations/:id"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "production_manager"]}>
             <AppShell>
               <TransformationDetailPage />
             </AppShell>
@@ -193,7 +193,7 @@ export function AppRoutes() {
       <Route
         path="/clients"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <ProtectedRoute allowedRoles={["admin", "sales"]}>
             <AppShell>
               <ClientsPage />
             </AppShell>
@@ -203,7 +203,7 @@ export function AppRoutes() {
       <Route
         path="/chart-of-accounts"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager", "auditor"]}>
+          <ProtectedRoute allowedRoles={["admin", "accounting", "controller"]}>
             <AppShell>
               <ChartOfAccountsPage />
             </AppShell>
@@ -213,7 +213,7 @@ export function AppRoutes() {
       <Route
         path="/journal-comptable"
         element={
-          <ProtectedRoute allowedRoles={["admin", "manager", "auditor"]}>
+          <ProtectedRoute allowedRoles={["admin", "accounting", "controller"]}>
             <AppShell>
               <JournalPage />
             </AppShell>

@@ -3,6 +3,8 @@ import { useUsers, useResetPassword } from "@/features/users/useUsers";
 import { UserForm } from "@/features/users/UserForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ROLE_LABELS } from "@/lib/roles";
+import type { RoleName } from "@/lib/database.types";
 
 export function UsersPage() {
   const { data: users, isLoading, error } = useUsers();
@@ -61,7 +63,9 @@ export function UsersPage() {
                 return (
                   <tr key={user.id} className="border-b border-gray-100">
                     <td className="py-2">{user.email}</td>
-                    <td className="py-2 uppercase">{roleName ?? "—"}</td>
+                    <td className="py-2">
+                      {roleName ? (ROLE_LABELS[roleName as RoleName] ?? roleName) : "—"}
+                    </td>
                     <td className="py-2">{companyName ?? "—"}</td>
                     <td className="py-2">{new Date(user.created_at).toLocaleDateString("fr-FR")}</td>
                     <td className="py-2">
