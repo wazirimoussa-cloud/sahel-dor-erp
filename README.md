@@ -101,9 +101,9 @@ Le cahier des charges ne détaillait pas les rôles ; voici ceux retenus par dé
 | Rôle | Accès |
 |---|---|
 | `admin` | Tout, toutes sociétés, gestion des utilisateurs |
-| `manager` | Produits, magasins, fournisseurs, achats, clients, stocks, validation/annulation/paiement des commandes (société assignée) |
+| `manager` | Produits, magasins, fournisseurs, achats, clients, stocks, validation/annulation/paiement des commandes, plan comptable (société assignée) |
 | `seller` | Création de mouvements de stock et de commandes (société assignée), lecture des magasins/fournisseurs/achats/clients |
-| `auditor` | Lecture seule du journal d'audit |
+| `auditor` | Lecture seule du journal d'audit et du journal comptable |
 
 ## Écarts et améliorations par rapport au cahier des charges
 
@@ -206,9 +206,35 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     une transaction `ADJUSTMENT` par ligne de commande — l'ancienne limite connue
     "l'annulation ne restaure pas le stock" est corrigée.
 
+13. **Comptabilité : écritures automatiques** (`0010_chart_of_accounts.sql`,
+    `0011_accounting_entries.sql`) : dernier maillon de la chaîne. **Automatisation
+    simplifiée, pas une comptabilité SYSCOHADA certifiée complète — à faire valider par un
+    comptable avant tout usage officiel/fiscal.** `chart_of_accounts` (plan comptable,
+    scopé société, bootstrap de 5 comptes : 401 Fournisseurs, 411 Clients, 521 Banques,
+    601 Achats de marchandises, 701 Ventes de marchandises) + `journal_entries`/
+    `journal_entry_lines` (grand livre, **append-only** comme `transactions`/`logs` —
+    correction par contre-passation, jamais par réécriture). L'équilibre débit = crédit
+    par écriture est garanti par un trigger de contrainte différée
+    (`trg_check_journal_entry_balance`), pas seulement par la RPC appelante. Écritures
+    générées automatiquement, dans la même transaction que l'effet métier, par
+    `receive_purchase` (601/401), `create_order` (411/701), `cancel_order`
+    (contre-passation 701/411) et `record_payment` (521/411, sur le delta de
+    `amount_paid`) — **aucune saisie manuelle d'écriture dans cette passe**
+    (`journal_entries`/`journal_entry_lines` n'ont aucune policy RLS d'écriture).
+    **Production et Transformation sont délibérément exclues** : `production_items
+    .unit_cost` / `transformation_outputs.unit_cost` ne sont que des valeurs par défaut
+    reprenant `products.price` (le prix de *vente*, pas un coût de revient calculé) — les
+    utiliser produirait des écritures sans sens comptable réel. À traiter une fois une
+    méthode de valorisation (CUMP, coût standard...) définie avec l'utilisateur. La
+    TVA/fiscalité (Ordonnance N°2025-44, Loi de Finances Niger 2026) et les états
+    financiers (bilan, compte de résultat) restent hors périmètre.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~530 kB non compressé (avertissement Vite au build). Un
   code-splitting par route (`React.lazy`) serait pertinent si l'app grossit.
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
+- **Comptabilité** : périmètre volontairement réduit (voir point 13) — Production/
+  Transformation, TVA et états financiers restent à construire. Ne pas utiliser en l'état
+  pour des déclarations fiscales ou un bilan officiel sans revue par un comptable.

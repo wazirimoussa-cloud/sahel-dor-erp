@@ -23,6 +23,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/stock", label: "Mouvements de stock" },
   { to: "/clients", label: "Clients", roles: ["admin", "manager"] },
   { to: "/orders", label: "Commandes", roles: ["admin", "manager", "seller"] },
+  { to: "/chart-of-accounts", label: "Plan comptable", roles: ["admin", "manager", "auditor"] },
+  { to: "/journal-comptable", label: "Journal comptable", roles: ["admin", "manager", "auditor"] },
   { to: "/logs", label: "Journal d'audit", roles: ["admin", "auditor"] },
   { to: "/users", label: "Utilisateurs", roles: ["admin"] },
   { to: "/account", label: "Mon compte" },

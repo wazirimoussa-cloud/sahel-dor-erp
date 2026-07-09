@@ -38,6 +38,38 @@ export type Database = {
   };
   public: {
     Tables: {
+      chart_of_accounts: {
+        Row: {
+          code: string;
+          company_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+        };
+        Insert: {
+          code: string;
+          company_id: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+        };
+        Update: {
+          code?: string;
+          company_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "chart_of_accounts_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       clients: {
         Row: {
           address: string | null;
@@ -114,6 +146,103 @@ export type Database = {
           value?: string;
         };
         Relationships: [];
+      };
+      journal_entries: {
+        Row: {
+          company_id: string;
+          created_at: string;
+          description: string;
+          entry_date: string;
+          id: string;
+          journal_code: string;
+          order_id: string | null;
+          purchase_id: string | null;
+        };
+        Insert: {
+          company_id: string;
+          created_at?: string;
+          description: string;
+          entry_date?: string;
+          id?: string;
+          journal_code: string;
+          order_id?: string | null;
+          purchase_id?: string | null;
+        };
+        Update: {
+          company_id?: string;
+          created_at?: string;
+          description?: string;
+          entry_date?: string;
+          id?: string;
+          journal_code?: string;
+          order_id?: string | null;
+          purchase_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "journal_entries_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "journal_entries_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "journal_entries_purchase_id_fkey";
+            columns: ["purchase_id"];
+            isOneToOne: false;
+            referencedRelation: "purchases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      journal_entry_lines: {
+        Row: {
+          account_id: string;
+          created_at: string;
+          credit: number;
+          debit: number;
+          entry_id: string;
+          id: string;
+        };
+        Insert: {
+          account_id: string;
+          created_at?: string;
+          credit?: number;
+          debit?: number;
+          entry_id: string;
+          id?: string;
+        };
+        Update: {
+          account_id?: string;
+          created_at?: string;
+          credit?: number;
+          debit?: number;
+          entry_id?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_lines_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "chart_of_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "journal_entry_lines_entry_id_fkey";
+            columns: ["entry_id"];
+            isOneToOne: false;
+            referencedRelation: "journal_entries";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       logs: {
         Row: {

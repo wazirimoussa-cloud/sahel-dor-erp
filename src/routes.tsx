@@ -19,6 +19,8 @@ import { ProductionDetailPage } from "@/features/productions/ProductionDetailPag
 import { TransformationsPage } from "@/features/transformations/TransformationsPage";
 import { TransformationDetailPage } from "@/features/transformations/TransformationDetailPage";
 import { ClientsPage } from "@/features/clients/ClientsPage";
+import { ChartOfAccountsPage } from "@/features/accounting/ChartOfAccountsPage";
+import { JournalPage } from "@/features/accounting/JournalPage";
 
 export function AppRoutes() {
   return (
@@ -190,6 +192,26 @@ export function AppRoutes() {
           <ProtectedRoute allowedRoles={["admin", "manager"]}>
             <AppShell>
               <ClientsPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/chart-of-accounts"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager", "auditor"]}>
+            <AppShell>
+              <ChartOfAccountsPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/journal-comptable"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "manager", "auditor"]}>
+            <AppShell>
+              <JournalPage />
             </AppShell>
           </ProtectedRoute>
         }
