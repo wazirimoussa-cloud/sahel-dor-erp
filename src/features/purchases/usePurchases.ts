@@ -14,7 +14,7 @@ export function usePurchases() {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, suppliers(name), warehouses(name), purchase_items(quantity, unit_cost)",
+          "id, status, created_at, suppliers(name), warehouses(name), companies(vat_rate), purchase_items(quantity, unit_cost)",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -31,7 +31,7 @@ export function usePurchase(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, user_id, users(email), suppliers(name), warehouses(name), purchase_items(id, quantity, unit_cost, products(id, name))",
+          "id, status, created_at, user_id, users(email), suppliers(name), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name))",
         )
         .eq("id", purchaseId as string)
         .single();

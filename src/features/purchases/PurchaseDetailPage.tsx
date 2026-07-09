@@ -46,7 +46,11 @@ export function PurchaseDetailPage() {
     unit_cost: number;
     products: { id: string; name: string } | { id: string; name: string }[] | null;
   }[];
-  const total = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+  const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+  const companyRelation = purchase.companies as { vat_rate: number } | { vat_rate: number }[] | null;
+  const vatRate = Array.isArray(companyRelation) ? companyRelation[0]?.vat_rate : companyRelation?.vat_rate;
+  const vatAmount = vatRate ? Math.round(totalHT * vatRate) / 100 : 0;
+  const totalTTC = totalHT + vatAmount;
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation) ? creatorRelation[0]?.email : creatorRelation?.email;
   const supplierRelation = purchase.suppliers as { name: string } | { name: string }[] | null;
@@ -127,11 +131,23 @@ export function PurchaseDetailPage() {
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={3} className="pt-3 text-right text-sm font-medium text-gray-700">
-                Total
+              <td colSpan={3} className="pt-3 text-right text-sm text-gray-600">
+                Sous-total HT
               </td>
-              <td className="pt-3 text-sm font-semibold text-gray-900">
-                {total.toLocaleString("fr-FR")} FCFA
+              <td className="pt-3 text-sm text-gray-800">{totalHT.toLocaleString("fr-FR")} FCFA</td>
+            </tr>
+            <tr>
+              <td colSpan={3} className="text-right text-sm text-gray-600">
+                TVA ({vatRate ?? 0}%)
+              </td>
+              <td className="text-sm text-gray-800">{vatAmount.toLocaleString("fr-FR")} FCFA</td>
+            </tr>
+            <tr>
+              <td colSpan={3} className="text-right text-sm font-medium text-gray-700">
+                Total TTC
+              </td>
+              <td className="text-sm font-semibold text-gray-900">
+                {totalTTC.toLocaleString("fr-FR")} FCFA
               </td>
             </tr>
           </tfoot>

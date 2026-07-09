@@ -47,7 +47,7 @@ export function OrdersPage() {
               <th className="py-2">Date</th>
               <th className="py-2">Client</th>
               <th className="py-2">Lignes</th>
-              <th className="py-2">Total</th>
+              <th className="py-2">Total TTC</th>
               <th className="py-2">Statut</th>
               <th className="py-2">Paiement</th>
               <th className="py-2" />
@@ -56,7 +56,15 @@ export function OrdersPage() {
           <tbody>
             {orders?.map((order) => {
               const items = order.order_items as { quantity: number; unit_price: number }[];
-              const total = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+              const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+              const companyRelation = order.companies as
+                | { vat_rate: number }
+                | { vat_rate: number }[]
+                | null;
+              const vatRate = Array.isArray(companyRelation)
+                ? companyRelation[0]?.vat_rate
+                : companyRelation?.vat_rate;
+              const totalTTC = totalHT + (vatRate ? Math.round(totalHT * vatRate) / 100 : 0);
               const clientRelation = order.clients as { name: string } | { name: string }[] | null;
               const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
               return (
@@ -64,7 +72,7 @@ export function OrdersPage() {
                   <td className="py-2">{new Date(order.created_at).toLocaleString("fr-FR")}</td>
                   <td className="py-2">{clientName ?? "—"}</td>
                   <td className="py-2">{items.length}</td>
-                  <td className="py-2">{total.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{totalTTC.toLocaleString("fr-FR")} FCFA</td>
                   <td className="py-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}

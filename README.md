@@ -225,9 +225,23 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     .unit_cost` / `transformation_outputs.unit_cost` ne sont que des valeurs par défaut
     reprenant `products.price` (le prix de *vente*, pas un coût de revient calculé) — les
     utiliser produirait des écritures sans sens comptable réel. À traiter une fois une
-    méthode de valorisation (CUMP, coût standard...) définie avec l'utilisateur. La
-    TVA/fiscalité (Ordonnance N°2025-44, Loi de Finances Niger 2026) et les états
-    financiers (bilan, compte de résultat) restent hors périmètre.
+    méthode de valorisation (CUMP, coût standard...) définie avec l'utilisateur. Les
+    états financiers (bilan, compte de résultat) restent hors périmètre.
+
+14. **TVA** (`0012_vat.sql`) : taux stocké par société (`companies.vat_rate`, défaut 19)
+    plutôt que codé en dur dans les RPC — modifiable directement en base sans nouvelle
+    migration, mais sans écran de configuration dans cette passe (limite connue, cf.
+    ci-dessous). Important : le document fourni par l'utilisateur (Ordonnance N°2025-44,
+    Loi de Finances Niger 2026) **ne fixe pas lui-même le taux de TVA** — il ne modifie
+    que les articles d'exonération (Art. 322) et d'exclusion du droit à déduction
+    (Art. 339) du Code Général des Impôts existant ; l'article fixant le taux de base
+    n'est pas parmi les articles modifiés. Le taux de 19% et l'absence d'exonération
+    applicable ont été confirmés directement par l'utilisateur, pas déduits du document.
+    `products.price`/`purchase_items.unit_cost`/`order_items.unit_price` sont traités
+    comme des montants **HT** ; `receive_purchase`, `create_order` et `cancel_order`
+    calculent la TVA dessus et génèrent une 3ᵉ ligne d'écriture (comptes `4431` TVA
+    collectée, `4452` TVA déductible, bootstrap comme les 5 comptes de la Phase 4). Les
+    pages de détail achat/commande affichent désormais Sous-total HT / TVA / Total TTC.
 
 ## Limites connues / pistes pour la suite
 
@@ -235,6 +249,8 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   code-splitting par route (`React.lazy`) serait pertinent si l'app grossit.
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
-- **Comptabilité** : périmètre volontairement réduit (voir point 13) — Production/
-  Transformation, TVA et états financiers restent à construire. Ne pas utiliser en l'état
-  pour des déclarations fiscales ou un bilan officiel sans revue par un comptable.
+- **Comptabilité** : périmètre volontairement réduit (voir points 13-14) — Production/
+  Transformation et états financiers restent à construire. Ne pas utiliser en l'état pour
+  des déclarations fiscales ou un bilan officiel sans revue par un comptable.
+- **Taux de TVA sans écran de configuration** : `companies.vat_rate` se modifie
+  directement en base (pas d'interface dédiée dans cette passe).

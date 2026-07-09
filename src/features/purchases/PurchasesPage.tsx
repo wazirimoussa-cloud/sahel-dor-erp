@@ -36,7 +36,7 @@ export function PurchasesPage() {
               <th className="py-2">Fournisseur</th>
               <th className="py-2">Magasin</th>
               <th className="py-2">Lignes</th>
-              <th className="py-2">Total</th>
+              <th className="py-2">Total TTC</th>
               <th className="py-2">Statut</th>
               <th className="py-2" />
             </tr>
@@ -44,7 +44,15 @@ export function PurchasesPage() {
           <tbody>
             {purchases?.map((purchase) => {
               const items = purchase.purchase_items as { quantity: number; unit_cost: number }[];
-              const total = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+              const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+              const companyRelation = purchase.companies as
+                | { vat_rate: number }
+                | { vat_rate: number }[]
+                | null;
+              const vatRate = Array.isArray(companyRelation)
+                ? companyRelation[0]?.vat_rate
+                : companyRelation?.vat_rate;
+              const totalTTC = totalHT + (vatRate ? Math.round(totalHT * vatRate) / 100 : 0);
               const supplierRelation = purchase.suppliers as
                 | { name: string }
                 | { name: string }[]
@@ -65,7 +73,7 @@ export function PurchasesPage() {
                   <td className="py-2">{supplierName ?? "—"}</td>
                   <td className="py-2">{warehouseName ?? "—"}</td>
                   <td className="py-2">{items.length}</td>
-                  <td className="py-2">{total.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{totalTTC.toLocaleString("fr-FR")} FCFA</td>
                   <td className="py-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[purchase.status] ?? ""}`}
