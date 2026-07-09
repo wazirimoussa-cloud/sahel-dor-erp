@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/Button";
 import { EnvBanner } from "@/components/layout/EnvBanner";
+import { AlertsBell } from "@/components/layout/AlertsBell";
 import type { RoleName } from "@/lib/database.types";
 
 interface NavItem {
@@ -76,9 +77,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 "Profil en cours de chargement…"
               )}
             </div>
-            <Button variant="secondary" onClick={() => void signOut()}>
-              Déconnexion
-            </Button>
+            <div className="flex items-center gap-3">
+              <AlertsBell />
+              <Button variant="secondary" onClick={() => void signOut()}>
+                Déconnexion
+              </Button>
+            </div>
           </header>
 
           <main className="flex-1 bg-gray-50 p-6">{children}</main>

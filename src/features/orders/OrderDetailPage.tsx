@@ -14,6 +14,8 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import type { PaymentStatus } from "@/lib/database.types";
+import { generateOrderPdf } from "@/lib/pdf";
+import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -93,6 +95,38 @@ export function OrderDetailPage() {
   const clientRelation = order.clients as { name: string } | { name: string }[] | null;
   const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
   const orderId = order.id;
+  const orderCreatedAt = order.created_at;
+  const orderPaymentStatusLabel = PAYMENT_LABELS[order.payment_status] ?? order.payment_status;
+
+  async function buildOrderPdf() {
+    const products = items.map((item) => {
+      const product = item.products;
+      const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+      return {
+        productName: productName ?? "Produit supprimé",
+        quantity: item.quantity,
+        unitAmount: item.unit_price,
+      };
+    });
+    return generateOrderPdf({
+      id: orderId,
+      createdAt: orderCreatedAt,
+      clientName: clientName ?? "—",
+      items: products,
+      totals: { totalHT, vatRate: vatRate ?? 0, vatAmount, totalTTC },
+      paymentStatusLabel: orderPaymentStatusLabel,
+    });
+  }
+
+  async function handleDownloadPdf() {
+    const { doc, filename } = await buildOrderPdf();
+    doc.save(filename);
+  }
+
+  async function handleSharePdf() {
+    const { doc, filename } = await buildOrderPdf();
+    await shareOrDownloadPdf(doc, filename, `Facture #${orderId.slice(0, 8)}`);
+  }
 
   async function handleValidate() {
     if (!window.confirm("Valider cette commande ? Cette action ne pourra plus être modifiée ensuite.")) return;
@@ -208,6 +242,17 @@ export function OrderDetailPage() {
           </tfoot>
         </table>
       </Card>
+
+      <div className="flex gap-3">
+        <Button variant="secondary" onClick={() => void handleDownloadPdf()}>
+          Télécharger le PDF
+        </Button>
+        {canSharePdf() && (
+          <Button variant="secondary" onClick={() => void handleSharePdf()}>
+            Partager
+          </Button>
+        )}
+      </div>
 
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 

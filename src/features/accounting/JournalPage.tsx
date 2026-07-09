@@ -1,5 +1,7 @@
 import { useJournalEntries } from "@/features/accounting/useJournalEntries";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { generateJournalPdf } from "@/lib/pdf";
 
 const JOURNAL_LABELS: Record<string, string> = {
   ACHATS: "Achats",
@@ -10,9 +12,43 @@ const JOURNAL_LABELS: Record<string, string> = {
 export function JournalPage() {
   const { data: entries, isLoading, error } = useJournalEntries();
 
+  async function handleExportPdf() {
+    if (!entries) return;
+    const pdfEntries = entries.map((entry) => {
+      const lines = entry.journal_entry_lines as {
+        id: string;
+        debit: number;
+        credit: number;
+        chart_of_accounts: { code: string; name: string } | { code: string; name: string }[] | null;
+      }[];
+      return {
+        id: entry.id,
+        entryDate: entry.entry_date,
+        journalCode: JOURNAL_LABELS[entry.journal_code] ?? entry.journal_code,
+        description: entry.description,
+        lines: lines.map((line) => {
+          const account = line.chart_of_accounts;
+          const accountLabel = Array.isArray(account)
+            ? account[0] && `${account[0].code} — ${account[0].name}`
+            : account && `${account.code} — ${account.name}`;
+          return { accountLabel: accountLabel ?? "—", debit: line.debit, credit: line.credit };
+        }),
+      };
+    });
+    const { doc, filename } = await generateJournalPdf(pdfEntries);
+    doc.save(filename);
+  }
+
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Journal comptable</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-semibold text-gray-800">Journal comptable</h1>
+        {entries && entries.length > 0 && (
+          <Button variant="secondary" onClick={() => void handleExportPdf()}>
+            Exporter en PDF
+          </Button>
+        )}
+      </div>
       <p className="text-sm text-gray-500">
         Alimenté automatiquement par les achats, ventes et paiements — aucune saisie
         manuelle possible dans cette version. Périmètre limité aux flux avec tiers

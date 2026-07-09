@@ -4,6 +4,8 @@ import { useAuth } from "@/auth/useAuth";
 import { usePurchase, useReceivePurchase, useCancelPurchase } from "@/features/purchases/usePurchases";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { generatePurchasePdf } from "@/lib/pdf";
+import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -60,6 +62,37 @@ export function PurchaseDetailPage() {
     ? warehouseRelation[0]?.name
     : warehouseRelation?.name;
   const purchaseId = purchase.id;
+  const purchaseCreatedAt = purchase.created_at;
+
+  async function buildPurchasePdf() {
+    const products = items.map((item) => {
+      const product = item.products;
+      const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+      return {
+        productName: productName ?? "Produit supprimé",
+        quantity: item.quantity,
+        unitAmount: item.unit_cost,
+      };
+    });
+    return generatePurchasePdf({
+      id: purchaseId,
+      createdAt: purchaseCreatedAt,
+      supplierName: supplierName ?? "—",
+      warehouseName: warehouseName ?? "—",
+      items: products,
+      totals: { totalHT, vatRate: vatRate ?? 0, vatAmount, totalTTC },
+    });
+  }
+
+  async function handleDownloadPdf() {
+    const { doc, filename } = await buildPurchasePdf();
+    doc.save(filename);
+  }
+
+  async function handleSharePdf() {
+    const { doc, filename } = await buildPurchasePdf();
+    await shareOrDownloadPdf(doc, filename, `Bon d'achat #${purchaseId.slice(0, 8)}`);
+  }
 
   async function handleReceive() {
     setActionError(null);
@@ -153,6 +186,17 @@ export function PurchaseDetailPage() {
           </tfoot>
         </table>
       </Card>
+
+      <div className="flex gap-3">
+        <Button variant="secondary" onClick={() => void handleDownloadPdf()}>
+          Télécharger le PDF
+        </Button>
+        {canSharePdf() && (
+          <Button variant="secondary" onClick={() => void handleSharePdf()}>
+            Partager
+          </Button>
+        )}
+      </div>
 
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 

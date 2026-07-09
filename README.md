@@ -243,10 +243,31 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     collectée, `4452` TVA déductible, bootstrap comme les 5 comptes de la Phase 4). Les
     pages de détail achat/commande affichent désormais Sous-total HT / TVA / Total TTC.
 
+15. **Export PDF, partage, alertes** (`src/lib/pdf.ts`, `src/lib/share.ts`,
+    `src/features/alerts/`) : aucune migration Supabase — tout est calculé/généré côté
+    client à partir des données déjà chargées par les pages existantes.
+    - **PDF** : `jsPDF` + `jspdf-autotable`, chargées en `import()` dynamique (pas dans le
+      bundle principal, seulement au clic sur un bouton PDF) pour ne pas alourdir le
+      chargement initial. Disponible sur les factures de vente (commandes), les bons
+      d'achat, et l'export complet du journal comptable.
+    - **Partage** : bouton "Partager" (`navigator.share` avec fichier) affiché
+      uniquement si le navigateur le supporte (`canSharePdf()`) — fiable sur mobile
+      (Android Chrome, iOS Safari 15+), support desktop inégal. Le bouton "Télécharger
+      le PDF" reste toujours disponible comme repli universel ; WhatsApp/email
+      apparaissent dans la feuille de partage système si installés, aucune intégration
+      spécifique à ces apps n'est codée.
+    - **Alertes** : cloche dans l'en-tête (`AlertsBell.tsx`), badge = stock bas +
+      commandes en attente + commandes impayées. Purement calculé (mêmes requêtes que
+      `useDashboardStats.ts`), rafraîchi toutes les 60s — aucune notification
+      persistée, aucun envoi externe (email/push).
+
 ## Limites connues / pistes pour la suite
 
-- **Bundle frontend** : ~530 kB non compressé (avertissement Vite au build). Un
-  code-splitting par route (`React.lazy`) serait pertinent si l'app grossit.
+- **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
+  Vite au build) — `jsPDF`/`jspdf-autotable` n'y contribuent pas (chargées en `import()`
+  dynamique, dans des chunks séparés téléchargés seulement au clic sur un bouton PDF),
+  mais le chunk principal lui-même dépasse déjà le seuil. Un code-splitting par route
+  (`React.lazy`) serait pertinent si l'app continue de grossir.
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
 - **Comptabilité** : périmètre volontairement réduit (voir points 13-14) — Production/
@@ -254,3 +275,6 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   des déclarations fiscales ou un bilan officiel sans revue par un comptable.
 - **Taux de TVA sans écran de configuration** : `companies.vat_rate` se modifie
   directement en base (pas d'interface dédiée dans cette passe).
+- **Partage de fichier PDF** : dépend du support navigateur de `navigator.share` avec
+  fichiers — fiable sur mobile, inégal sur desktop (le bouton n'apparaît que si détecté,
+  jamais de bouton cassé, mais pas de partage direct possible partout).
