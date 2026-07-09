@@ -361,3 +361,18 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
 - **Partage de fichier PDF** : dépend du support navigateur de `navigator.share` avec
   fichiers — fiable sur mobile, inégal sur desktop (le bouton n'apparaît que si détecté,
   jamais de bouton cassé, mais pas de partage direct possible partout).
+- **Aucun compte utilisateur n'est réellement supprimable dès qu'il s'est connecté au
+  moins une fois** : `public.logs` est immuable (`trg_logs_immutable`, aucun `UPDATE`/
+  `DELETE` possible), et chaque connexion journalise déjà des entrées `VIEW` qui
+  référencent l'utilisateur (`logs.user_id`) — sans compter les écritures qu'il aurait pu
+  déclencher (commande, transaction de stock...), elles aussi immuables. `DELETE FROM
+  auth.users` échoue alors avec une violation de contrainte de clé étrangère
+  (`logs_user_id_fkey` ou équivalent sur `orders`/`transactions`/`purchases`). Aucune
+  fonctionnalité de suppression de compte n'existe donc dans l'app, y compris côté admin
+  — un compte qu'on ne veut plus voir utilisé doit être neutralisé autrement (ex. le
+  réassigner à un rôle sans droit d'écriture) plutôt que supprimé. Contournable
+  uniquement en désactivant temporairement `trg_logs_immutable` (et les triggers
+  équivalents sur les tables métier concernées) pour purger les entrées liées avant de
+  supprimer l'utilisateur — casse alors le principe de traçabilité permanente pour ces
+  entrées précises, à réserver à un besoin RGPD explicite plutôt qu'à un simple ménage de
+  comptes de test.
