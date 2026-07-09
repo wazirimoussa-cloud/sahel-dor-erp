@@ -7,7 +7,7 @@ import { AuthContext, type Profile } from "@/auth/AuthContext";
 async function loadProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("users")
-    .select("id, email, company_id, roles(name)")
+    .select("id, email, company_id, must_change_password, roles(name)")
     .eq("id", userId)
     .maybeSingle();
 
@@ -22,6 +22,7 @@ async function loadProfile(userId: string): Promise<Profile | null> {
     email: data.email,
     role: roleName,
     companyId: data.company_id,
+    mustChangePassword: data.must_change_password,
   };
 }
 

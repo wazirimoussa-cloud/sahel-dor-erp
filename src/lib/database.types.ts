@@ -1,8 +1,3 @@
-// Généré depuis le schéma réel : `npm run db:types` (supabase gen types typescript --linked).
-// Ne pas éditer à la main — relancer la commande après toute nouvelle migration.
-// Note : le schéma public contient aussi `erp_data` (clé/valeur), une table préexistante
-// sur ce projet Supabase, sans rapport avec Sahel d'Or — non utilisée par cette app.
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
@@ -920,6 +915,7 @@ export type Database = {
           created_at: string;
           email: string;
           id: string;
+          must_change_password: boolean;
           role_id: number;
         };
         Insert: {
@@ -927,6 +923,7 @@ export type Database = {
           created_at?: string;
           email: string;
           id: string;
+          must_change_password?: boolean;
           role_id: number;
         };
         Update: {
@@ -934,6 +931,7 @@ export type Database = {
           created_at?: string;
           email?: string;
           id?: string;
+          must_change_password?: boolean;
           role_id?: number;
         };
         Relationships: [

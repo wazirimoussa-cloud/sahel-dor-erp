@@ -20,7 +20,7 @@ const changePasswordSchema = z
 
 type ChangePasswordValues = z.infer<typeof changePasswordSchema>;
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void } = {}) {
   const { profile } = useAuth();
   const [serverError, setServerError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -59,6 +59,7 @@ export function ChangePasswordForm() {
 
     setSuccess(true);
     reset();
+    onSuccess?.();
   }
 
   return (

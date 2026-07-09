@@ -7,6 +7,7 @@ export interface Profile {
   email: string;
   role: RoleName;
   companyId: string | null;
+  mustChangePassword: boolean;
 }
 
 export interface AuthContextValue {

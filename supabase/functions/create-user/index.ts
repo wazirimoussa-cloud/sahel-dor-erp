@@ -8,6 +8,7 @@
 //               `npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<clé service_role>`
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { DEFAULT_PASSWORD } from "../_shared/constants.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -27,7 +28,6 @@ function json(body: unknown, status: number) {
 
 interface CreateUserPayload {
   email: string;
-  password: string;
   role: "admin" | "manager" | "seller" | "auditor";
   companyId: string;
 }
@@ -67,16 +67,20 @@ Deno.serve(async (req) => {
   }
 
   const payload = (await req.json()) as CreateUserPayload;
-  if (!payload.email || !payload.password || !payload.role || !payload.companyId) {
+  if (!payload.email || !payload.role || !payload.companyId) {
     return json({ error: "Champs manquants" }, 400);
   }
 
   // Client admin : seule cette fonction détient la clé service_role.
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+  // Mot de passe toujours le défaut partagé (jamais choisi par l'admin ni transmis par
+  // le frontend) — must_change_password vaut true par défaut sur la nouvelle ligne
+  // public.users (0013_password_policy.sql), donc le changement sera forcé à la
+  // première connexion.
   const { data: created, error: createError } = await adminClient.auth.admin.createUser({
     email: payload.email,
-    password: payload.password,
+    password: DEFAULT_PASSWORD,
     email_confirm: true,
   });
 

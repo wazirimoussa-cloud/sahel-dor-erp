@@ -261,6 +261,32 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       `useDashboardStats.ts`), rafraîchi toutes les 60s — aucune notification
       persistée, aucun envoi externe (email/push).
 
+16. **Politique de mots de passe** (`0013_password_policy.sql`,
+    `supabase/functions/reset-password/`, `supabase/functions/request-password-reset/`) :
+    tout compte créé par l'admin (`create-user`) ou réinitialisé par l'admin
+    (`reset-password`) reçoit le mot de passe par défaut partagé
+    (`supabase/functions/_shared/constants.ts`, `saheldor2026`) — jamais transmis ni
+    connu du frontend, jamais choisi par l'admin. `public.users.must_change_password`
+    (défaut `true` sur toute nouvelle ligne, `false` en rétroactif sur les comptes déjà
+    actifs au moment de la migration) force le changement dès la première connexion
+    (`ProtectedRoute.tsx` redirige vers `/force-password-change` tant que le flag est
+    vrai) ; un trigger sur `auth.users` (`trg_clear_must_change_password`, même patron
+    que `handle_new_user`) le repasse à `false` automatiquement dès que le mot de passe
+    change réellement, quel que soit le chemin. **Auto-service "mot de passe oublié" par
+    email réservé aux comptes admin** : `request-password-reset` (Edge Function
+    publique, appelée avant authentification) vérifie le rôle de l'email visé côté
+    serveur avant d'envoyer quoi que ce soit, et répond toujours le même message
+    générique — un non-admin ne reçoit jamais d'email, sans que la réponse ne le
+    révèle. `redirectTo` est validé contre une liste blanche d'origines
+    (`ALLOWED_REDIRECT_ORIGINS`), ce qui corrige au passage le bug rencontré à deux
+    reprises en session : le lien de récupération pointait vers `localhost:3000` faute
+    de `redirectTo` explicite dans l'appel précédent.
+    **Limite de sécurité assumée** : le mot de passe par défaut est une valeur connue et
+    partagée, acceptable uniquement parce que le changement est forcé — mais ce garde est
+    appliqué côté client (redirection React), pas via RLS. Une donnée reste protégée par
+    RLS indépendamment de ce flag ; ce garde protège seulement l'UX/le parcours normal,
+    pas un accès direct à l'API par quelqu'un possédant déjà des identifiants valides.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement

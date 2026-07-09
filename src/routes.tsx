@@ -1,6 +1,8 @@
 import { Routes, Route } from "react-router-dom";
 import { LoginPage } from "@/auth/LoginPage";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
+import { ResetPasswordPage } from "@/auth/ResetPasswordPage";
+import { ForcePasswordChangePage } from "@/auth/ForcePasswordChangePage";
 import { AppShell } from "@/components/layout/AppShell";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { ProductsPage } from "@/features/products/ProductsPage";
@@ -26,6 +28,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
       <Route
         path="/"
         element={

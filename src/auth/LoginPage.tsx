@@ -15,18 +15,34 @@ const loginSchema = z.object({
   password: z.string().min(1, "Mot de passe requis"),
 });
 
+const forgotPasswordSchema = z.object({
+  email: z.string().email("Adresse email invalide"),
+});
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
+type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+
+const FORGOT_PASSWORD_MESSAGE =
+  "Si un compte administrateur existe avec cet email, un lien de réinitialisation vient d'être envoyé.";
 
 export function LoginPage() {
   const { session, loading } = useAuth();
   const location = useLocation();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
+
+  const {
+    register: registerForgotPassword,
+    handleSubmit: handleForgotPasswordSubmit,
+    formState: { errors: forgotPasswordErrors, isSubmitting: isSubmittingForgotPassword },
+  } = useForm<ForgotPasswordValues>({ resolver: zodResolver(forgotPasswordSchema) });
 
   if (!loading && session) {
     const from = (location.state as { from?: string } | null)?.from ?? "/";
@@ -39,6 +55,16 @@ export function LoginPage() {
     if (error) {
       setServerError("Identifiants incorrects ou compte inexistant.");
     }
+  }
+
+  async function onForgotPasswordSubmit(values: ForgotPasswordValues) {
+    setForgotPasswordMessage(null);
+    await supabase.functions.invoke("request-password-reset", {
+      body: { email: values.email, redirectTo: `${window.location.origin}/reset-password` },
+    });
+    // Toujours le même message, que le compte existe/soit admin ou non — voir
+    // supabase/functions/request-password-reset.
+    setForgotPasswordMessage(FORGOT_PASSWORD_MESSAGE);
   }
 
   return (
@@ -79,6 +105,50 @@ export function LoginPage() {
               {isSubmitting ? "Connexion…" : "Se connecter"}
             </Button>
           </form>
+
+          <button
+            type="button"
+            className="mt-3 text-xs text-brand-600 hover:underline"
+            onClick={() => {
+              setShowForgotPassword((value) => !value);
+              setForgotPasswordMessage(null);
+            }}
+          >
+            Mot de passe oublié ?
+          </button>
+
+          {showForgotPassword && (
+            <form
+              onSubmit={handleForgotPasswordSubmit(onForgotPasswordSubmit)}
+              className="mt-3 space-y-3 border-t border-gray-100 pt-3"
+              noValidate
+            >
+              <p className="text-xs text-gray-500">
+                Reçoit un lien de réinitialisation uniquement si ce compte est
+                administrateur.
+              </p>
+              <div>
+                <label htmlFor="forgot-email" className="mb-1 block text-xs font-medium text-gray-600">
+                  Email
+                </label>
+                <Input id="forgot-email" type="email" {...registerForgotPassword("email")} />
+                {forgotPasswordErrors.email && (
+                  <p className="mt-1 text-xs text-red-600">{forgotPasswordErrors.email.message}</p>
+                )}
+              </div>
+              {forgotPasswordMessage && (
+                <p className="text-xs text-green-600">{forgotPasswordMessage}</p>
+              )}
+              <Button
+                type="submit"
+                variant="secondary"
+                disabled={isSubmittingForgotPassword}
+                className="w-full"
+              >
+                {isSubmittingForgotPassword ? "Envoi…" : "Envoyer le lien"}
+              </Button>
+            </form>
+          )}
         </Card>
       </div>
     </div>

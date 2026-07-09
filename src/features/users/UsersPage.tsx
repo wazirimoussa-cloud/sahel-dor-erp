@@ -1,9 +1,26 @@
-import { useUsers } from "@/features/users/useUsers";
+import { useState } from "react";
+import { useUsers, useResetPassword } from "@/features/users/useUsers";
 import { UserForm } from "@/features/users/UserForm";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 export function UsersPage() {
   const { data: users, isLoading, error } = useUsers();
+  const resetPassword = useResetPassword();
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function handleResetPassword(userId: string, email: string) {
+    const confirmed = window.confirm(
+      `Réinitialiser le mot de passe de ${email} à la valeur par défaut ? L'utilisateur devra le changer à sa prochaine connexion.`,
+    );
+    if (!confirmed) return;
+    setActionError(null);
+    try {
+      await resetPassword.mutateAsync(userId);
+    } catch {
+      setActionError("Réinitialisation refusée (droits insuffisants).");
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -12,6 +29,8 @@ export function UsersPage() {
       <Card>
         <UserForm />
       </Card>
+
+      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
@@ -24,6 +43,8 @@ export function UsersPage() {
                 <th className="py-2">Rôle</th>
                 <th className="py-2">Société</th>
                 <th className="py-2">Créé le</th>
+                <th className="py-2">Mot de passe</th>
+                <th className="py-2" />
               </tr>
             </thead>
             <tbody>
@@ -43,12 +64,32 @@ export function UsersPage() {
                     <td className="py-2 uppercase">{roleName ?? "—"}</td>
                     <td className="py-2">{companyName ?? "—"}</td>
                     <td className="py-2">{new Date(user.created_at).toLocaleDateString("fr-FR")}</td>
+                    <td className="py-2">
+                      {user.must_change_password ? (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          À changer
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          OK
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 text-right">
+                      <Button
+                        variant="secondary"
+                        disabled={resetPassword.isPending}
+                        onClick={() => void handleResetPassword(user.id, user.email)}
+                      >
+                        Réinitialiser le mot de passe
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-400">
+                  <td colSpan={6} className="py-4 text-center text-gray-400">
                     Aucun utilisateur pour le moment.
                   </td>
                 </tr>

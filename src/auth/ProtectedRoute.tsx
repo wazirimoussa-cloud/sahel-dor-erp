@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import type { RoleName } from "@/lib/database.types";
 
@@ -12,6 +12,7 @@ interface ProtectedRouteProps {
 // est appliquée par les policies RLS côté Supabase, jamais uniquement ici.
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { session, profile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return <div className="flex h-screen items-center justify-center text-gray-500">Chargement…</div>;
@@ -19,6 +20,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (profile?.mustChangePassword && location.pathname !== "/force-password-change") {
+    return <Navigate to="/force-password-change" replace />;
   }
 
   if (allowedRoles && (!profile || !allowedRoles.includes(profile.role))) {
