@@ -108,18 +108,21 @@ export type Database = {
       };
       companies: {
         Row: {
+          capital_social: number;
           created_at: string;
           id: string;
           name: string;
           vat_rate: number;
         };
         Insert: {
+          capital_social?: number;
           created_at?: string;
           id?: string;
           name: string;
           vat_rate?: number;
         };
         Update: {
+          capital_social?: number;
           created_at?: string;
           id?: string;
           name?: string;

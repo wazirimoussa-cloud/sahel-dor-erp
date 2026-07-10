@@ -106,7 +106,7 @@ la table `roles` et les policies RLS) :
 | Superviseur (`supervisor`) | Lecture large ; seul rôle habilité à **valider** une commande (déclenche la sortie de stock + l'écriture comptable) |
 | Opérateur de vente (`sales_operator`) | Clients, création/annulation de commande (aucun impact stock à la création) (société assignée) |
 | Responsable des achats (`purchasing`) | Fournisseurs, création/annulation de bon de commande (aucun impact stock) (société assignée) |
-| Comptable (`accounting`) | Plan comptable (écriture), encaissement des paiements clients, lecture du journal comptable (société assignée) |
+| Comptable (`accounting`) | Plan comptable (écriture), encaissement des paiements clients, lecture du journal comptable, États financiers (bilan, compte de résultat, capital social) (société assignée) |
 | Responsable de production (`production_manager`) | Produits, cycle production/transformation (société assignée) |
 | Contrôleur (`controller`) | Lecture seule (large, y compris journal d'audit et journal comptable) de sa société — pas d'écriture |
 | Logistique / Transport (`logistics_transport`) | Lecture large, mouvements de stock manuels (livraisons) (société assignée) |
@@ -121,6 +121,9 @@ sous-jacentes (`admin` et `controller` voient tous les écrans métier en lectur
 `callerRole === "admin"`. Exception assumée : la gestion des sociétés (`companies`)
 reste réservée à `admin` — action d'infrastructure (nouveau tenant), pas une
 "opération sensible" au sens métier du cahier, et aucun des 9 rôles n'en a la charge.
+Seule exception : `accounting` peut modifier `companies.capital_social` (sa société
+uniquement) depuis la page États financiers — nécessaire pour distinguer Capital de
+Résultat cumulé au bilan (voir point 19).
 
 **Séparation des tâches** : aucun rôle ne peut créer, valider et exécuter seul une même
 opération. Cycle de vente : Opérateur de vente crée la commande (aucun impact stock) →
@@ -344,6 +347,33 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     écritures (`action = 'VIEW'`) — volontairement léger (navigation, pas chaque
     requête `SELECT` individuelle).
 
+19. **États financiers** (`0017_financial_statements.sql`, page "États financiers",
+    réservée à `admin`/`controller`/`accounting`) : Bilan et Compte de résultat
+    SYSCOHADA simplifiés, calculés à la demande côté client à partir du journal
+    comptable et des mouvements de stock — aucune nouvelle table. Le référentiel
+    comptable est SYSCOHADA (Acte uniforme OHADA relatif au droit comptable) ; la Loi de
+    Finances 2026 (Ordonnance N°2025-44, vérifiée intégralement) est un texte
+    exclusivement fiscal qui ne fixe aucune structure de bilan et n'apporte rien de plus
+    ici. Mécanisme clé : la méthode actuelle (inventaire intermittent — un achat
+    réceptionné passe en charge 601 dès la réception, jamais via un compte de stock)
+    fait que le Résultat brut (701 − 601) ne reflète pas le stock non vendu ; le
+    "Résultat cumulé" du bilan est donc calculé comme `Produits − Charges + Stock
+    valorisé à la date de fin`, ce qui garantit **Total Actif = Total Passif par
+    construction**, sans écriture de clôture. Le stock est valorisé par un CUMP (coût
+    unitaire moyen pondéré) global calculé uniquement à partir des achats réceptionnés
+    (coût réel) ; le stock issu uniquement de Production/Transformation (coût factice =
+    prix de vente, même limite qu'aux points 13-14) est exclu du total chiffré et listé
+    à part ("stock non valorisé"). Le Capital social (`companies.capital_social`, saisi
+    manuellement par le Comptable) est une reclassification à l'intérieur des capitaux
+    propres déjà équilibrés — aucun apport de trésorerie n'est tracé dans le grand
+    livre, donc le "Résultat cumulé" affiché est le résidu qui préserve l'égalité
+    Actif = Passif, pas une valeur calculée indépendamment. Compte de résultat calculé
+    sur une période choisie (sélecteur de dates, défaut = année en cours) ; le bilan est
+    toujours une photo cumulée depuis le début à la date de fin choisie (pas de notion
+    de clôture d'exercice dans l'app). Analyse financière : 5 ratios dérivés (résultat
+    net, marge commerciale, autonomie financière, liquidité générale, délai moyen de
+    règlement clients).
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
@@ -354,8 +384,11 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
 - **Comptabilité** : périmètre volontairement réduit (voir points 13-14) — Production/
-  Transformation et états financiers restent à construire. Ne pas utiliser en l'état pour
-  des déclarations fiscales ou un bilan officiel sans revue par un comptable.
+  Transformation restent hors du grand livre. Ne pas utiliser en l'état pour des
+  déclarations fiscales ou un bilan officiel sans revue par un comptable.
+- **États financiers sans immobilisations** (point 19) : aucune ligne "Actif immobilisé"
+  (véhicules, bâtiments, matériel) — non tracées dans l'app. Le CUMP du stock est un
+  coût moyen global, pas recalculé après chaque entrée successive.
 - **Taux de TVA sans écran de configuration** : `companies.vat_rate` se modifie
   directement en base (pas d'interface dédiée dans cette passe).
 - **Partage de fichier PDF** : dépend du support navigateur de `navigator.share` avec

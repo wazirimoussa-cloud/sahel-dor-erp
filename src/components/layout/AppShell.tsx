@@ -57,6 +57,11 @@ const NAV_ITEMS: NavItem[] = [
     label: "Journal comptable",
     roles: ["admin", "controller", "accounting"],
   },
+  {
+    to: "/etats-financiers",
+    label: "États financiers",
+    roles: ["admin", "controller", "accounting"],
+  },
   { to: "/logs", label: "Journal d'audit", roles: ["admin", "controller"] },
   { to: "/users", label: "Utilisateurs", roles: ["admin"] },
   { to: "/account", label: "Mon compte" },
@@ -66,7 +71,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { profile, signOut } = useAuth();
   useLogPageVisit();
 
-  const visibleItems = NAV_ITEMS.filter((item) => !item.roles || (profile && item.roles.includes(profile.role)));
+  const visibleItems = NAV_ITEMS.filter(
+    (item) => !item.roles || (profile && item.roles.includes(profile.role)),
+  );
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -23,6 +23,7 @@ import { TransformationDetailPage } from "@/features/transformations/Transformat
 import { ClientsPage } from "@/features/clients/ClientsPage";
 import { ChartOfAccountsPage } from "@/features/accounting/ChartOfAccountsPage";
 import { JournalPage } from "@/features/accounting/JournalPage";
+import { FinancialStatementsPage } from "@/features/financials/FinancialStatementsPage";
 
 export function AppRoutes() {
   return (
@@ -137,9 +138,7 @@ export function AppRoutes() {
       <Route
         path="/purchases"
         element={
-          <ProtectedRoute
-            allowedRoles={["admin", "controller", "purchasing", "warehouse_manager"]}
-          >
+          <ProtectedRoute allowedRoles={["admin", "controller", "purchasing", "warehouse_manager"]}>
             <AppShell>
               <PurchasesPage />
             </AppShell>
@@ -149,9 +148,7 @@ export function AppRoutes() {
       <Route
         path="/purchases/:id"
         element={
-          <ProtectedRoute
-            allowedRoles={["admin", "controller", "purchasing", "warehouse_manager"]}
-          >
+          <ProtectedRoute allowedRoles={["admin", "controller", "purchasing", "warehouse_manager"]}>
             <AppShell>
               <PurchaseDetailPage />
             </AppShell>
@@ -224,6 +221,16 @@ export function AppRoutes() {
           <ProtectedRoute allowedRoles={["admin", "controller", "accounting"]}>
             <AppShell>
               <JournalPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/etats-financiers"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "controller", "accounting"]}>
+            <AppShell>
+              <FinancialStatementsPage />
             </AppShell>
           </ProtectedRoute>
         }
