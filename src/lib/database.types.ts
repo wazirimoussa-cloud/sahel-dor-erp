@@ -707,11 +707,13 @@ export type Database = {
         Row: {
           created_at: string;
           id: string;
+          note: string | null;
           order_id: string | null;
           product_id: string;
           production_id: string | null;
           purchase_id: string | null;
           quantity: number;
+          transfer_group_id: string | null;
           transformation_id: string | null;
           type: Database["public"]["Enums"]["transaction_type"];
           user_id: string;
@@ -720,11 +722,13 @@ export type Database = {
         Insert: {
           created_at?: string;
           id?: string;
+          note?: string | null;
           order_id?: string | null;
           product_id: string;
           production_id?: string | null;
           purchase_id?: string | null;
           quantity: number;
+          transfer_group_id?: string | null;
           transformation_id?: string | null;
           type: Database["public"]["Enums"]["transaction_type"];
           user_id: string;
@@ -733,11 +737,13 @@ export type Database = {
         Update: {
           created_at?: string;
           id?: string;
+          note?: string | null;
           order_id?: string | null;
           product_id?: string;
           production_id?: string | null;
           purchase_id?: string | null;
           quantity?: number;
+          transfer_group_id?: string | null;
           transformation_id?: string | null;
           type?: Database["public"]["Enums"]["transaction_type"];
           user_id?: string;
@@ -1153,6 +1159,15 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      transfer_stock: {
+        Args: {
+          p_from_warehouse_id: string;
+          p_product_id: string;
+          p_quantity: number;
+          p_to_warehouse_id: string;
+        };
+        Returns: undefined;
       };
       validate_order: {
         Args: { order_id: string };

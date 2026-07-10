@@ -103,7 +103,9 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
                 ))}
               </select>
               {errors.inputs?.[index]?.productId && (
-                <p className="mt-1 text-xs text-red-600">{errors.inputs[index]?.productId?.message}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.inputs[index]?.productId?.message}
+                </p>
               )}
             </div>
             <div>
@@ -115,7 +117,9 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
             </Button>
           </div>
         ))}
-        {errors.inputs?.root && <p className="text-xs text-red-600">{errors.inputs.root.message}</p>}
+        {errors.inputs?.root && (
+          <p className="text-xs text-red-600">{errors.inputs.root.message}</p>
+        )}
         <Button
           type="button"
           variant="secondary"
@@ -143,7 +147,9 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
                 ))}
               </select>
               {errors.outputs?.[index]?.productId && (
-                <p className="mt-1 text-xs text-red-600">{errors.outputs[index]?.productId?.message}</p>
+                <p className="mt-1 text-xs text-red-600">
+                  {errors.outputs[index]?.productId?.message}
+                </p>
               )}
             </div>
             <div>
@@ -155,7 +161,9 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
             </Button>
           </div>
         ))}
-        {errors.outputs?.root && <p className="text-xs text-red-600">{errors.outputs.root.message}</p>}
+        {errors.outputs?.root && (
+          <p className="text-xs text-red-600">{errors.outputs.root.message}</p>
+        )}
         <Button
           type="button"
           variant="secondary"

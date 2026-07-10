@@ -21,7 +21,9 @@ export function TransformationsPage() {
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
-        {error && <p className="text-sm text-red-600">Impossible de charger les transformations.</p>}
+        {error && (
+          <p className="text-sm text-red-600">Impossible de charger les transformations.</p>
+        )}
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
@@ -29,6 +31,7 @@ export function TransformationsPage() {
               <th className="py-2">Magasin</th>
               <th className="py-2">Intrants</th>
               <th className="py-2">Extrants</th>
+              <th className="py-2">Rendement</th>
               <th className="py-2" />
             </tr>
           </thead>
@@ -36,10 +39,11 @@ export function TransformationsPage() {
             {transformations?.map((transformation) => {
               const inputs = transformation.transformation_inputs as { quantity: number }[];
               const outputs = transformation.transformation_outputs as { quantity: number }[];
+              const totalInputQty = inputs.reduce((sum, item) => sum + item.quantity, 0);
+              const totalOutputQty = outputs.reduce((sum, item) => sum + item.quantity, 0);
+              const rendement = totalInputQty > 0 ? (totalOutputQty / totalInputQty) * 100 : null;
               const warehouseRelation = transformation.warehouses as
-                | { name: string }
-                | { name: string }[]
-                | null;
+                { name: string } | { name: string }[] | null;
               const warehouseName = Array.isArray(warehouseRelation)
                 ? warehouseRelation[0]?.name
                 : warehouseRelation?.name;
@@ -51,6 +55,11 @@ export function TransformationsPage() {
                   <td className="py-2">{warehouseName ?? "—"}</td>
                   <td className="py-2">{inputs.length}</td>
                   <td className="py-2">{outputs.length}</td>
+                  <td className="py-2">
+                    {rendement === null
+                      ? "—"
+                      : `${rendement.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}%`}
+                  </td>
                   <td className="py-2 text-right">
                     <Link
                       to={`/transformations/${transformation.id}`}
@@ -64,7 +73,7 @@ export function TransformationsPage() {
             })}
             {transformations?.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-gray-400">
+                <td colSpan={6} className="py-4 text-center text-gray-400">
                   Aucune transformation pour le moment.
                 </td>
               </tr>

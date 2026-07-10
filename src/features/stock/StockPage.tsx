@@ -3,6 +3,7 @@ import { useAuth } from "@/auth/useAuth";
 import { useTransactions } from "@/features/stock/useTransactions";
 import { useProductStocks } from "@/features/stock/useProductStocks";
 import { StockMovementForm } from "@/features/stock/StockMovementForm";
+import { TransferStockForm } from "@/features/stock/TransferStockForm";
 import { Card } from "@/components/ui/Card";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -94,6 +95,13 @@ export function StockPage() {
       {canRecord && (
         <Card>
           <StockMovementForm />
+        </Card>
+      )}
+
+      {canRecord && (
+        <Card>
+          <h2 className="mb-3 text-base font-semibold text-gray-800">Transfert entre magasins</h2>
+          <TransferStockForm />
         </Card>
       )}
 
@@ -203,6 +211,7 @@ export function StockPage() {
                 <th className="py-2">Magasin</th>
                 <th className="py-2">Type</th>
                 <th className="py-2">Quantité</th>
+                <th className="py-2">Provenance / Destination</th>
               </tr>
             </thead>
             <tbody>
@@ -220,12 +229,13 @@ export function StockPage() {
                     <td className="py-2">{warehouseName ?? "—"}</td>
                     <td className="py-2">{TYPE_LABELS[tx.type] ?? tx.type}</td>
                     <td className="py-2">{tx.quantity}</td>
+                    <td className="py-2 text-gray-500">{tx.note ?? "—"}</td>
                   </tr>
                 );
               })}
               {transactions.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-gray-400">
+                  <td colSpan={6} className="py-4 text-center text-gray-400">
                     Aucun mouvement enregistré.
                   </td>
                 </tr>

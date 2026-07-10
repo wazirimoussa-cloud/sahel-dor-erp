@@ -383,6 +383,34 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     restant" en bas de tableau reflète la somme du stock affiché après filtrage (donc le
     total général si aucun filtre n'est actif).
 
+21. **Traçabilité des mouvements, transferts entre magasins, rendement**
+    (`0018_stock_traceability.sql`) : en réponse à une version affinée du cahier des
+    charges (comparaison faite point par point). Trois ajouts :
+    - **Provenance / destination** : nouveau champ `transactions.note`, libellé
+      dynamique dans le formulaire de mouvement manuel ("Provenance" pour une Entrée,
+      "Destination" pour une Sortie, "Motif" pour un Ajustement) ; affiché en colonne
+      dans le tableau des mouvements.
+    - **Transferts entre magasins** : nouvelle RPC `transfer_stock` (rôles
+      `warehouse_manager`/`logistics_transport`, mêmes que l'insertion manuelle
+      directe), insère un OUT au magasin source et un IN au magasin destination de
+      façon atomique (une seule fonction Postgres), liés par `transfer_group_id` pour
+      la traçabilité de la paire ; notes générées automatiquement ("Transfert
+      vers/depuis {magasin}"). Le contrôle de stock insuffisant est délégué à la
+      contrainte existante `product_stocks.stock >= 0`.
+    - **Rendement de transformation** : affiché sur `TransformationsPage`/
+      `TransformationDetailPage`, calculé comme `Σ(quantité extrants) /
+      Σ(quantité intrants) × 100`. Concerne uniquement les **Transformations** (les
+      **Productions** n'ont aucun intrant tracé dans le schéma actuel — c'est un
+      enregistrement de récolte/stock initial, pas une transformation, donc la notion
+      de rendement ne s'y applique pas). Limite assumée : c'est un ratio de quantités,
+      pas un rendement massique réel, faute d'unité de mesure standardisée par produit.
+
+    **Écart assumé et documenté** : le cahier fourni attribue la "validation des
+    entrées en stock" au Responsable des achats ; l'app garde ce choix au Gestionnaire
+    de magasin (rôle déjà en place depuis la Phase 9), qui est seul en mesure de
+    constater physiquement une livraison reçue — décision opérationnelle confirmée
+    avec l'utilisateur, aucun changement de code.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
@@ -417,4 +445,10 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   équivalents sur les tables métier concernées) pour purger les entrées liées avant de
   supprimer l'utilisateur — casse alors le principe de traçabilité permanente pour ces
   entrées précises, à réserver à un besoin RGPD explicite plutôt qu'à un simple ménage de
-  comptes de test.
+  comptes de test. **Même limite pour les magasins** dès qu'un mouvement de stock (ou un
+  transfert, point 21) les référence — `product_stocks_warehouse_id_fkey`/
+  `transactions_warehouse_id_fkey` bloquent la suppression.
+- **Module Ressources Humaines** : mentionné dans une version affinée du cahier des
+  charges fournie par l'utilisateur ("gestion des stocks, achats/ventes, production,
+  finances et ressources humaines") mais explicitement hors périmètre pour l'instant —
+  aucune fiche employé, aucun suivi RH ou paie dans l'app.

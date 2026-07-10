@@ -32,14 +32,22 @@ export function TransformationDetailPage() {
     products: { id: string; name: string } | { id: string; name: string }[] | null;
   }[];
   const total = outputs.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+  const totalInputQty = inputs.reduce((sum, item) => sum + item.quantity, 0);
+  const totalOutputQty = outputs.reduce((sum, item) => sum + item.quantity, 0);
+  const rendement = totalInputQty > 0 ? (totalOutputQty / totalInputQty) * 100 : null;
   const creatorRelation = transformation.users as { email: string } | { email: string }[] | null;
-  const creatorEmail = Array.isArray(creatorRelation) ? creatorRelation[0]?.email : creatorRelation?.email;
-  const warehouseRelation = transformation.warehouses as { name: string } | { name: string }[] | null;
+  const creatorEmail = Array.isArray(creatorRelation)
+    ? creatorRelation[0]?.email
+    : creatorRelation?.email;
+  const warehouseRelation = transformation.warehouses as
+    { name: string } | { name: string }[] | null;
   const warehouseName = Array.isArray(warehouseRelation)
     ? warehouseRelation[0]?.name
     : warehouseRelation?.name;
 
-  function productName(product: { id: string; name: string } | { id: string; name: string }[] | null) {
+  function productName(
+    product: { id: string; name: string } | { id: string; name: string }[] | null,
+  ) {
     return Array.isArray(product) ? product[0]?.name : product?.name;
   }
 
@@ -60,6 +68,23 @@ export function TransformationDetailPage() {
           {creatorEmail ?? "utilisateur inconnu"} — Magasin : {warehouseName ?? "—"}
         </p>
       </div>
+
+      <Card>
+        <h2 className="mb-2 text-sm font-medium text-gray-700">Rendement</h2>
+        <p className="text-sm text-gray-800">
+          {totalOutputQty} extrant{totalOutputQty > 1 ? "s" : ""} pour {totalInputQty} intrant
+          {totalInputQty > 1 ? "s" : ""}
+          {rendement !== null && (
+            <span className="ml-1 font-semibold">
+              ({rendement.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}%)
+            </span>
+          )}
+        </p>
+        <p className="mt-1 text-xs text-gray-400">
+          Ratio en nombre d'unités (les produits n'ont pas d'unité de mesure standardisée dans cette
+          version) — pas un rendement massique réel.
+        </p>
+      </Card>
 
       <Card>
         <h2 className="mb-2 text-sm font-medium text-gray-700">Intrants consommés</h2>
@@ -98,7 +123,9 @@ export function TransformationDetailPage() {
                 <td className="py-2">{productName(item.products) ?? "Produit supprimé"}</td>
                 <td className="py-2">{item.quantity}</td>
                 <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
-                <td className="py-2">{(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA</td>
+                <td className="py-2">
+                  {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
+                </td>
               </tr>
             ))}
           </tbody>
