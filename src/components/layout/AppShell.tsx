@@ -23,7 +23,12 @@ const NAV_ITEMS: NavItem[] = [
   {
     to: "/purchases",
     label: "Achats",
-    roles: ["admin", "controller", "purchasing", "warehouse_manager"],
+    roles: ["admin", "controller", "purchasing"],
+  },
+  {
+    to: "/purchases",
+    label: "Réceptions",
+    roles: ["warehouse_manager"],
   },
   {
     to: "/productions",
