@@ -445,9 +445,19 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   équivalents sur les tables métier concernées) pour purger les entrées liées avant de
   supprimer l'utilisateur — casse alors le principe de traçabilité permanente pour ces
   entrées précises, à réserver à un besoin RGPD explicite plutôt qu'à un simple ménage de
-  comptes de test. **Même limite pour les magasins** dès qu'un mouvement de stock (ou un
-  transfert, point 21) les référence — `product_stocks_warehouse_id_fkey`/
-  `transactions_warehouse_id_fkey` bloquent la suppression.
+  comptes de test.
+- **Un magasin (`warehouses`) n'est pas non plus supprimable dès qu'un mouvement de stock
+  l'a référencé** — même mécanisme que pour les comptes utilisateurs. Dès qu'une ligne
+  `product_stocks` existe pour ce magasin (créée automatiquement à la première
+  transaction, et jamais supprimée même si le stock retombe à 0), `DELETE FROM
+  warehouses` échoue avec `product_stocks_warehouse_id_fkey` (et
+  `transactions_warehouse_id_fkey` si des mouvements existent directement). Constaté en
+  pratique : un magasin de test créé pour vérifier les transferts entre magasins (point
+  21) reste bloqué en base pour cette raison, malgré une tentative de suppression.
+  Contournable uniquement en désactivant temporairement `trg_transactions_immutable`
+  pour purger les mouvements liés avant de supprimer le magasin — même compromis que pour
+  les comptes (casse la traçabilité de ces entrées), à réserver à un cas réellement
+  justifié plutôt qu'à un simple ménage de données de test.
 - **Module Ressources Humaines** : mentionné dans une version affinée du cahier des
   charges fournie par l'utilisateur ("gestion des stocks, achats/ventes, production,
   finances et ressources humaines") mais explicitement hors périmètre pour l'instant —
