@@ -7,7 +7,7 @@ export function useProductStocks() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("product_stocks")
-        .select("id, stock, products(id, name), warehouses(name)")
+        .select("id, stock, products(id, name), warehouses(id, name)")
         .order("stock", { ascending: false });
       if (error) throw error;
       return data;

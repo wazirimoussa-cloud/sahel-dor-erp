@@ -1,4 +1,4 @@
-import { Fragment } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useAuth } from "@/auth/useAuth";
 import { useTransactions } from "@/features/stock/useTransactions";
 import { useProductStocks } from "@/features/stock/useProductStocks";
@@ -31,27 +31,61 @@ export function StockPage() {
   const canRecord =
     profile?.role === "warehouse_manager" || profile?.role === "logistics_transport";
 
+  const [productFilter, setProductFilter] = useState("all");
+  const [warehouseFilter, setWarehouseFilter] = useState("all");
+
+  const normalizedRows = useMemo(
+    () =>
+      (productStocks ?? []).flatMap((row) => {
+        const product = row.products as
+          { id: string; name: string } | { id: string; name: string }[] | null;
+        const productInfo = Array.isArray(product) ? product[0] : product;
+        const warehouse = row.warehouses as
+          { id: string; name: string } | { id: string; name: string }[] | null;
+        const warehouseInfo = Array.isArray(warehouse) ? warehouse[0] : warehouse;
+        if (!productInfo || !warehouseInfo) return [];
+        return [{ product: productInfo, warehouse: warehouseInfo, stock: row.stock }];
+      }),
+    [productStocks],
+  );
+
+  const productOptions = useMemo(
+    () =>
+      [...new Map(normalizedRows.map((r) => [r.product.id, r.product])).values()].sort((a, b) =>
+        a.name.localeCompare(b.name, "fr"),
+      ),
+    [normalizedRows],
+  );
+  const warehouseOptions = useMemo(
+    () =>
+      [...new Map(normalizedRows.map((r) => [r.warehouse.id, r.warehouse])).values()].sort((a, b) =>
+        a.name.localeCompare(b.name, "fr"),
+      ),
+    [normalizedRows],
+  );
+
+  const filteredRows = normalizedRows.filter(
+    (r) =>
+      (productFilter === "all" || r.product.id === productFilter) &&
+      (warehouseFilter === "all" || r.warehouse.id === warehouseFilter),
+  );
+
   const stockGroups = new Map<string, ProductStockGroup>();
-  for (const row of productStocks ?? []) {
-    const product = row.products as
-      { id: string; name: string } | { id: string; name: string }[] | null;
-    const productInfo = Array.isArray(product) ? product[0] : product;
-    const warehouse = row.warehouses as { name: string } | { name: string }[] | null;
-    const warehouseName = (Array.isArray(warehouse) ? warehouse[0]?.name : warehouse?.name) ?? "—";
-    if (!productInfo) continue;
-    const group = stockGroups.get(productInfo.id) ?? {
-      productId: productInfo.id,
-      productName: productInfo.name,
+  for (const row of filteredRows) {
+    const group = stockGroups.get(row.product.id) ?? {
+      productId: row.product.id,
+      productName: row.product.name,
       total: 0,
       byWarehouse: [],
     };
     group.total += row.stock;
-    group.byWarehouse.push({ warehouseName, stock: row.stock });
-    stockGroups.set(productInfo.id, group);
+    group.byWarehouse.push({ warehouseName: row.warehouse.name, stock: row.stock });
+    stockGroups.set(row.product.id, group);
   }
   const sortedStockGroups = [...stockGroups.values()].sort((a, b) =>
     a.productName.localeCompare(b.productName, "fr"),
   );
+  const grandTotal = filteredRows.reduce((sum, r) => sum + r.stock, 0);
 
   return (
     <div className="space-y-6">
@@ -65,6 +99,38 @@ export function StockPage() {
 
       <Card>
         <h2 className="mb-3 text-base font-semibold text-gray-800">Synthèse du stock disponible</h2>
+        <div className="mb-3 flex flex-wrap items-end gap-3">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+            <select
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              value={productFilter}
+              onChange={(e) => setProductFilter(e.target.value)}
+            >
+              <option value="all">Tous les produits</option>
+              {productOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+            <select
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              value={warehouseFilter}
+              onChange={(e) => setWarehouseFilter(e.target.value)}
+            >
+              <option value="all">Tous les magasins</option>
+              {warehouseOptions.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         {isLoadingStocks && <p className="text-sm text-gray-500">Chargement…</p>}
         {stocksError && (
           <p className="text-sm text-red-600">Impossible de charger la synthèse du stock.</p>
@@ -106,11 +172,21 @@ export function StockPage() {
               {sortedStockGroups.length === 0 && (
                 <tr>
                   <td colSpan={3} className="py-4 text-center text-gray-400">
-                    Aucun stock enregistré.
+                    Aucun stock pour cette sélection.
                   </td>
                 </tr>
               )}
             </tbody>
+            {sortedStockGroups.length > 0 && (
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 font-semibold text-gray-800">
+                  <td className="py-2" colSpan={2}>
+                    Total restant
+                  </td>
+                  <td className="py-2">{grandTotal}</td>
+                </tr>
+              </tfoot>
+            )}
           </table>
         )}
       </Card>
