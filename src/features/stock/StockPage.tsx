@@ -1,5 +1,7 @@
+import { Fragment } from "react";
 import { useAuth } from "@/auth/useAuth";
 import { useTransactions } from "@/features/stock/useTransactions";
+import { useProductStocks } from "@/features/stock/useProductStocks";
 import { StockMovementForm } from "@/features/stock/StockMovementForm";
 import { Card } from "@/components/ui/Card";
 
@@ -9,11 +11,47 @@ const TYPE_LABELS: Record<string, string> = {
   ADJUSTMENT: "Ajustement",
 };
 
+const LOW_STOCK_THRESHOLD = 5;
+
+interface ProductStockGroup {
+  productId: string;
+  productName: string;
+  total: number;
+  byWarehouse: { warehouseName: string; stock: number }[];
+}
+
 export function StockPage() {
   const { profile } = useAuth();
   const { data: transactions, isLoading, error } = useTransactions();
+  const {
+    data: productStocks,
+    isLoading: isLoadingStocks,
+    error: stocksError,
+  } = useProductStocks();
   const canRecord =
     profile?.role === "warehouse_manager" || profile?.role === "logistics_transport";
+
+  const stockGroups = new Map<string, ProductStockGroup>();
+  for (const row of productStocks ?? []) {
+    const product = row.products as
+      { id: string; name: string } | { id: string; name: string }[] | null;
+    const productInfo = Array.isArray(product) ? product[0] : product;
+    const warehouse = row.warehouses as { name: string } | { name: string }[] | null;
+    const warehouseName = (Array.isArray(warehouse) ? warehouse[0]?.name : warehouse?.name) ?? "—";
+    if (!productInfo) continue;
+    const group = stockGroups.get(productInfo.id) ?? {
+      productId: productInfo.id,
+      productName: productInfo.name,
+      total: 0,
+      byWarehouse: [],
+    };
+    group.total += row.stock;
+    group.byWarehouse.push({ warehouseName, stock: row.stock });
+    stockGroups.set(productInfo.id, group);
+  }
+  const sortedStockGroups = [...stockGroups.values()].sort((a, b) =>
+    a.productName.localeCompare(b.productName, "fr"),
+  );
 
   return (
     <div className="space-y-6">
@@ -24,6 +62,58 @@ export function StockPage() {
           <StockMovementForm />
         </Card>
       )}
+
+      <Card>
+        <h2 className="mb-3 text-base font-semibold text-gray-800">Synthèse du stock disponible</h2>
+        {isLoadingStocks && <p className="text-sm text-gray-500">Chargement…</p>}
+        {stocksError && (
+          <p className="text-sm text-red-600">Impossible de charger la synthèse du stock.</p>
+        )}
+        {productStocks && (
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-gray-500">
+                <th className="py-2">Produit</th>
+                <th className="py-2">Magasin</th>
+                <th className="py-2">Stock disponible</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedStockGroups.map((group) => (
+                <Fragment key={group.productId}>
+                  <tr className="border-b border-gray-100 bg-gray-50 font-medium">
+                    <td className="py-2" colSpan={2}>
+                      {group.productName}
+                    </td>
+                    <td
+                      className={`py-2 ${group.total < LOW_STOCK_THRESHOLD ? "text-red-600" : ""}`}
+                    >
+                      {group.total}
+                    </td>
+                  </tr>
+                  {group.byWarehouse.map((w) => (
+                    <tr
+                      key={`${group.productId}-${w.warehouseName}`}
+                      className="border-b border-gray-100 text-gray-500"
+                    >
+                      <td className="py-1"></td>
+                      <td className="py-1 pl-2">{w.warehouseName}</td>
+                      <td className="py-1">{w.stock}</td>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+              {sortedStockGroups.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="py-4 text-center text-gray-400">
+                    Aucun stock enregistré.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </Card>
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
@@ -44,7 +134,9 @@ export function StockPage() {
                 const product = tx.products as { name: string } | { name: string }[] | null;
                 const productName = Array.isArray(product) ? product[0]?.name : product?.name;
                 const warehouse = tx.warehouses as { name: string } | { name: string }[] | null;
-                const warehouseName = Array.isArray(warehouse) ? warehouse[0]?.name : warehouse?.name;
+                const warehouseName = Array.isArray(warehouse)
+                  ? warehouse[0]?.name
+                  : warehouse?.name;
                 return (
                   <tr key={tx.id} className="border-b border-gray-100">
                     <td className="py-2">{new Date(tx.created_at).toLocaleString("fr-FR")}</td>
