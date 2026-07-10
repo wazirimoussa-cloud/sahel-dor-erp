@@ -374,6 +374,15 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     net, marge commerciale, autonomie financière, liquidité générale, délai moyen de
     règlement clients).
 
+20. **Synthèse du stock disponible** (page "Mouvements de stock") : récapitulatif du
+    stock actuel regroupé par produit (total en gras) avec le détail par magasin en
+    dessous, trié alphabétiquement, même mise en évidence du stock bas (< 5) que la page
+    Produits. Réutilise `product_stocks` (source de vérité déjà tenue à jour par les
+    transactions), aucune nouvelle table ni RPC. Deux sélecteurs (Produit, Magasin)
+    permettent de filtrer la synthèse sur une seule combinaison ; une ligne "Total
+    restant" en bas de tableau reflète la somme du stock affiché après filtrage (donc le
+    total général si aucun filtre n'est actif).
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
