@@ -1,11 +1,28 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useForm } from "react-hook-form";
 import { useAuth } from "@/auth/useAuth";
-import { usePurchase, useReceivePurchase, useCancelPurchase } from "@/features/purchases/usePurchases";
+import {
+  usePurchase,
+  useReceivePurchase,
+  useCancelPurchase,
+  usePurchaseLosses,
+} from "@/features/purchases/usePurchases";
+import { useTransporters } from "@/features/transporters/useTransporters";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { generatePurchasePdf } from "@/lib/pdf";
+import { Input } from "@/components/ui/Input";
+import { generatePurchasePdf, generateCreditNotePdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
+
+interface ReceptionLine {
+  quantityReceived: number;
+  transporterId: string;
+  reason: string;
+}
+interface ReceptionFormValues {
+  lines: ReceptionLine[];
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -24,12 +41,17 @@ export function PurchaseDetailPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { data: purchase, isLoading, error } = usePurchase(id);
+  const { data: losses } = usePurchaseLosses(id);
+  const { data: transporters } = useTransporters();
   const receivePurchase = useReceivePurchase();
   const cancelPurchase = useCancelPurchase();
   const [actionError, setActionError] = useState<string | null>(null);
 
   const canReceive = profile?.role === "warehouse_manager";
   const canCancel = profile?.role === "purchasing";
+
+  const { register: registerReception, handleSubmit: handleReceptionSubmit } =
+    useForm<ReceptionFormValues>();
 
   if (isLoading) return <p className="text-sm text-gray-500">Chargement…</p>;
   if (error || !purchase) {
@@ -49,15 +71,25 @@ export function PurchaseDetailPage() {
     unit_cost: number;
     products: { id: string; name: string } | { id: string; name: string }[] | null;
   }[];
+  function productInfoOf(item: (typeof items)[number]) {
+    return Array.isArray(item.products) ? item.products[0] : item.products;
+  }
   const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
-  const companyRelation = purchase.companies as { vat_rate: number } | { vat_rate: number }[] | null;
-  const vatRate = Array.isArray(companyRelation) ? companyRelation[0]?.vat_rate : companyRelation?.vat_rate;
+  const companyRelation = purchase.companies as
+    { vat_rate: number } | { vat_rate: number }[] | null;
+  const vatRate = Array.isArray(companyRelation)
+    ? companyRelation[0]?.vat_rate
+    : companyRelation?.vat_rate;
   const vatAmount = vatRate ? Math.round(totalHT * vatRate) / 100 : 0;
   const totalTTC = totalHT + vatAmount;
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
-  const creatorEmail = Array.isArray(creatorRelation) ? creatorRelation[0]?.email : creatorRelation?.email;
+  const creatorEmail = Array.isArray(creatorRelation)
+    ? creatorRelation[0]?.email
+    : creatorRelation?.email;
   const supplierRelation = purchase.suppliers as { name: string } | { name: string }[] | null;
-  const supplierName = Array.isArray(supplierRelation) ? supplierRelation[0]?.name : supplierRelation?.name;
+  const supplierName = Array.isArray(supplierRelation)
+    ? supplierRelation[0]?.name
+    : supplierRelation?.name;
   const warehouseRelation = purchase.warehouses as { name: string } | { name: string }[] | null;
   const warehouseName = Array.isArray(warehouseRelation)
     ? warehouseRelation[0]?.name
@@ -95,12 +127,33 @@ export function PurchaseDetailPage() {
     await shareOrDownloadPdf(doc, filename, `Bon d'achat #${purchaseId.slice(0, 8)}`);
   }
 
-  async function handleReceive() {
+  async function onReceptionSubmit(values: ReceptionFormValues) {
     setActionError(null);
+    const losses = [];
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      const line = values.lines[index];
+      const quantityLost = item.quantity - Number(line.quantityReceived);
+      if (quantityLost > 0) {
+        const productInfo = productInfoOf(item);
+        if (!line.transporterId) {
+          setActionError(
+            `Un transporteur est requis pour la perte constatée sur "${productInfo?.name ?? "un produit"}".`,
+          );
+          return;
+        }
+        losses.push({
+          productId: productInfo?.id ?? item.id,
+          transporterId: line.transporterId,
+          quantityLost,
+          reason: line.reason,
+        });
+      }
+    }
     try {
-      await receivePurchase.mutateAsync(purchaseId);
+      await receivePurchase.mutateAsync({ purchaseId, losses });
     } catch {
-      setActionError("Action refusée (droits insuffisants ou achat déjà traité).");
+      setActionError("Action refusée (droits insuffisants, achat déjà traité, ou perte invalide).");
     }
   }
 
@@ -128,11 +181,13 @@ export function PurchaseDetailPage() {
           <h1 className="text-lg font-semibold text-gray-800">Achat #{purchase.id.slice(0, 8)}</h1>
           <p className="text-sm text-gray-500">
             Créé le {new Date(purchase.created_at).toLocaleString("fr-FR")} par{" "}
-            {creatorEmail ?? "utilisateur inconnu"} — Fournisseur : {supplierName ?? "—"} — Magasin :{" "}
-            {warehouseName ?? "—"}
+            {creatorEmail ?? "utilisateur inconnu"} — Fournisseur : {supplierName ?? "—"} — Magasin
+            : {warehouseName ?? "—"}
           </p>
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASSES[purchase.status] ?? ""}`}>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASSES[purchase.status] ?? ""}`}
+        >
           {STATUS_LABELS[purchase.status] ?? purchase.status}
         </span>
       </div>
@@ -201,13 +256,139 @@ export function PurchaseDetailPage() {
 
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
 
-      {purchase.status === "pending" && (canReceive || canCancel) && (
-        <div className="flex gap-3">
-          {canReceive && (
-            <Button disabled={receivePurchase.isPending} onClick={() => void handleReceive()}>
+      {purchase.status === "pending" && canReceive && (
+        <Card>
+          <h2 className="mb-3 text-sm font-medium text-gray-700">Réceptionner l'achat</h2>
+          <p className="mb-3 text-xs text-gray-500">
+            Par défaut, la quantité reçue est égale à la quantité commandée. Réduisez-la si une
+            perte est constatée à la livraison — un transporteur devient alors requis pour cette
+            ligne.
+          </p>
+          <form
+            onSubmit={handleReceptionSubmit(onReceptionSubmit)}
+            className="space-y-3"
+            noValidate
+          >
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-gray-500">
+                  <th className="py-2">Produit</th>
+                  <th className="py-2">Commandé</th>
+                  <th className="py-2">Reçu</th>
+                  <th className="py-2">Transporteur (si perte)</th>
+                  <th className="py-2">Motif</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, index) => (
+                  <tr key={item.id} className="border-b border-gray-100">
+                    <td className="py-2">{productInfoOf(item)?.name ?? "Produit supprimé"}</td>
+                    <td className="py-2">{item.quantity}</td>
+                    <td className="py-2">
+                      <Input
+                        type="number"
+                        defaultValue={item.quantity}
+                        min={0}
+                        max={item.quantity}
+                        className="w-20"
+                        {...registerReception(`lines.${index}.quantityReceived` as const)}
+                      />
+                    </td>
+                    <td className="py-2">
+                      <select
+                        className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+                        {...registerReception(`lines.${index}.transporterId` as const)}
+                      >
+                        <option value="">— Aucune —</option>
+                        {transporters?.map((transporter) => (
+                          <option key={transporter.id} value={transporter.id}>
+                            {transporter.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="py-2">
+                      <Input
+                        type="text"
+                        placeholder="Optionnel"
+                        {...registerReception(`lines.${index}.reason` as const)}
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Button type="submit" disabled={receivePurchase.isPending}>
               Recevoir l'achat
             </Button>
-          )}
+          </form>
+        </Card>
+      )}
+
+      {losses && losses.length > 0 && (
+        <Card>
+          <h2 className="mb-3 text-sm font-medium text-gray-700">Pertes constatées</h2>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-gray-500">
+                <th className="py-2">Produit</th>
+                <th className="py-2">Quantité perdue</th>
+                <th className="py-2">Valeur</th>
+                <th className="py-2">Transporteur</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {losses.map((loss) => {
+                const productRelation = loss.products as
+                  { name: string } | { name: string }[] | null;
+                const productName = Array.isArray(productRelation)
+                  ? productRelation[0]?.name
+                  : productRelation?.name;
+                const transporterRelation = loss.transporters as
+                  { id: string; name: string } | { id: string; name: string }[] | null;
+                const transporter = Array.isArray(transporterRelation)
+                  ? transporterRelation[0]
+                  : transporterRelation;
+                return (
+                  <tr key={loss.id} className="border-b border-gray-100">
+                    <td className="py-2">{productName ?? "—"}</td>
+                    <td className="py-2">{loss.quantity_lost}</td>
+                    <td className="py-2">
+                      {(loss.quantity_lost * loss.unit_cost).toLocaleString("fr-FR")} FCFA
+                    </td>
+                    <td className="py-2">{transporter?.name ?? "—"}</td>
+                    <td className="py-2 text-right">
+                      <Button
+                        variant="secondary"
+                        onClick={() =>
+                          void generateCreditNotePdf({
+                            purchaseId,
+                            transporterName: transporter?.name ?? "—",
+                            createdAt: loss.created_at,
+                            items: [
+                              {
+                                productName: productName ?? "Produit supprimé",
+                                quantityLost: loss.quantity_lost,
+                                unitCost: loss.unit_cost,
+                              },
+                            ],
+                          }).then(({ doc, filename }) => doc.save(filename))
+                        }
+                      >
+                        Facture d'avoir (PDF)
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      {purchase.status === "pending" && canCancel && (
+        <div className="flex gap-3">
           {canCancel && (
             <Button
               variant="danger"

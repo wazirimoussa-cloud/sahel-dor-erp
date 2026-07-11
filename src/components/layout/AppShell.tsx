@@ -31,6 +31,16 @@ const NAV_ITEMS: NavItem[] = [
     roles: ["warehouse_manager"],
   },
   {
+    to: "/transporteurs",
+    label: "Transporteurs",
+    roles: ["admin", "controller", "warehouse_manager", "logistics_transport"],
+  },
+  {
+    to: "/pertes-transport",
+    label: "Pertes transport",
+    roles: ["admin", "controller", "warehouse_manager", "logistics_transport"],
+  },
+  {
     to: "/productions",
     label: "Production",
     roles: ["admin", "controller", "production_manager"],
@@ -60,6 +70,11 @@ const NAV_ITEMS: NavItem[] = [
   {
     to: "/etats-financiers",
     label: "États financiers",
+    roles: ["admin", "controller", "accounting"],
+  },
+  {
+    to: "/declaration-tva",
+    label: "Déclaration TVA",
     roles: ["admin", "controller", "accounting"],
   },
   { to: "/logs", label: "Journal d'audit", roles: ["admin", "controller"] },

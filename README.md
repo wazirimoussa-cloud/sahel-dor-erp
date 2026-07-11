@@ -411,6 +411,51 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     constater physiquement une livraison reçue — décision opérationnelle confirmée
     avec l'utilisateur, aucun changement de code.
 
+22. **Paiements partiels avec historique** (`0019_order_payments.sql`) : nouvelle table
+    append-only `order_payments` (`order_id, amount, user_id, created_at`) — chaque
+    versement devient une ligne distincte et auditable, plutôt qu'un seul montant
+    mutable. `record_payment` change de signature : **`record_payment(order_id,
+    amount)`** — le Comptable saisit désormais le montant reçu à l'instant T, plus un
+    nouveau total cumulé à calculer mentalement. La fonction calcule elle-même le Total
+    TTC de la commande, rejette tout versement qui dépasserait ce total, et recalcule
+    automatiquement `payment_status` (`unpaid`/`partial`/`paid`) à partir de la somme des
+    paiements. `OrderDetailPage` affiche le "Reste à payer" et une section "Historique
+    des paiements" (date, montant, utilisateur).
+
+    **Correction d'un bug comptable découvert au passage** : la génération de l'écriture
+    Trésorerie (521/411) à chaque paiement, présente dans les migrations 0011/0012, avait
+    été perdue lors de la réécriture des rôles en 0014/0016 — `record_payment` ne faisait
+    plus qu'un `UPDATE orders`, sans impact sur le grand livre. Un paiement enregistré ne
+    remontait donc jamais au Bilan. Corrigé dans `0019` (l'écriture Trésorerie est de
+    nouveau générée à chaque paiement) ; la migration inclut aussi une écriture de
+    rattrapage ponctuelle pour l'unique commande historique affectée (32 130 FCFA) et un
+    backfill de `order_payments` pour toutes les commandes déjà partiellement/totalement
+    payées avant cette migration.
+
+23. **Facture d'avoir transporteur en cas de perte à la réception**
+    (`0020_transporters_purchase_losses.sql`, module Transporteurs, page "Pertes
+    transport") : nouvelle table `transporters` (même modèle que Fournisseurs/Clients,
+    lecture large scopée société, écriture par Gestionnaire de magasin/Logistique-
+    Transport) et nouvelle table append-only `purchase_losses`
+    (`purchase_id, transporter_id, product_id, quantity_lost, unit_cost, reason`).
+    `receive_purchase` change de signature : **`receive_purchase(purchase_id, losses
+    jsonb default '[]')`** — la réception d'un achat accepte désormais une quantité
+    réellement reçue par ligne (par défaut égale à la quantité commandée) ; si elle est
+    réduite, un transporteur devient obligatoire pour cette ligne. Seule la quantité
+    effectivement reçue entre en stock ; l'écart devient une ligne `purchase_losses`,
+    consultable depuis le détail de l'achat et depuis la page "Pertes transport"
+    (transversale, tous achats de la société), avec téléchargement d'une facture d'avoir
+    PDF par perte (`generateCreditNotePdf`).
+
+    **Décision assumée** : l'écriture comptable ACHATS (601/401/4452) reste calculée sur
+    la **quantité commandée complète**, jamais réduite par la perte — Sahel d'Or doit
+    toujours au fournisseur le montant facturé pour la commande passée ; la perte est une
+    réclamation séparée contre le transporteur, pas une réduction de la dette
+    fournisseur. Cette fonctionnalité reste **documentaire** pour l'instant : aucun compte
+    "Transporteurs à recevoir" n'existe dans le plan comptable actuel, donc la facture
+    d'avoir n'a aucune contrepartie comptable générée automatiquement (limite à lever si
+    un compte dédié est ajouté au plan SYSCOHADA).
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement

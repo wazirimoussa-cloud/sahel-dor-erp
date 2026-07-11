@@ -322,6 +322,45 @@ export type Database = {
           },
         ];
       };
+      order_payments: {
+        Row: {
+          amount: number;
+          created_at: string;
+          id: string;
+          order_id: string;
+          user_id: string;
+        };
+        Insert: {
+          amount: number;
+          created_at?: string;
+          id?: string;
+          order_id: string;
+          user_id: string;
+        };
+        Update: {
+          amount?: number;
+          created_at?: string;
+          id?: string;
+          order_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "order_payments_order_id_fkey";
+            columns: ["order_id"];
+            isOneToOne: false;
+            referencedRelation: "orders";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "order_payments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       orders: {
         Row: {
           amount_paid: number;
@@ -584,6 +623,71 @@ export type Database = {
             columns: ["purchase_id"];
             isOneToOne: false;
             referencedRelation: "purchases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      purchase_losses: {
+        Row: {
+          created_at: string;
+          id: string;
+          product_id: string;
+          purchase_id: string;
+          quantity_lost: number;
+          reason: string | null;
+          transporter_id: string;
+          unit_cost: number;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          product_id: string;
+          purchase_id: string;
+          quantity_lost: number;
+          reason?: string | null;
+          transporter_id: string;
+          unit_cost: number;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          product_id?: string;
+          purchase_id?: string;
+          quantity_lost?: number;
+          reason?: string | null;
+          transporter_id?: string;
+          unit_cost?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "purchase_losses_product_id_fkey";
+            columns: ["product_id"];
+            isOneToOne: false;
+            referencedRelation: "products";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "purchase_losses_purchase_id_fkey";
+            columns: ["purchase_id"];
+            isOneToOne: false;
+            referencedRelation: "purchases";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "purchase_losses_transporter_id_fkey";
+            columns: ["transporter_id"];
+            isOneToOne: false;
+            referencedRelation: "transporters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "purchase_losses_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
             referencedColumns: ["id"];
           },
         ];
@@ -928,6 +1032,47 @@ export type Database = {
           },
         ];
       };
+      transporters: {
+        Row: {
+          address: string | null;
+          company_id: string;
+          contact_name: string | null;
+          created_at: string;
+          email: string | null;
+          id: string;
+          name: string;
+          phone: string | null;
+        };
+        Insert: {
+          address?: string | null;
+          company_id: string;
+          contact_name?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          name: string;
+          phone?: string | null;
+        };
+        Update: {
+          address?: string | null;
+          company_id?: string;
+          contact_name?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          name?: string;
+          phone?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "transporters_company_id_fkey";
+            columns: ["company_id"];
+            isOneToOne: false;
+            referencedRelation: "companies";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       users: {
         Row: {
           company_id: string | null;
@@ -1119,7 +1264,7 @@ export type Database = {
       current_role_name: { Args: never; Returns: string };
       log_page_visit: { Args: { module: string }; Returns: undefined };
       receive_purchase: {
-        Args: { purchase_id: string };
+        Args: { losses?: Json; purchase_id: string };
         Returns: {
           company_id: string;
           created_at: string;
@@ -1137,11 +1282,7 @@ export type Database = {
         };
       };
       record_payment: {
-        Args: {
-          amount_paid: number;
-          order_id: string;
-          payment_status: Database["public"]["Enums"]["payment_status"];
-        };
+        Args: { amount: number; order_id: string };
         Returns: {
           amount_paid: number;
           client_id: string;

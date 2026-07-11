@@ -82,7 +82,8 @@ export async function generateOrderPdf(input: OrderPdfInput) {
     ]),
   });
 
-  const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 60;
+  const finalY =
+    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 60;
   addTotalsBlock(doc, finalY + 10, input.totals);
 
   return { doc, filename: `facture-${input.id.slice(0, 8)}.pdf` };
@@ -116,7 +117,8 @@ export async function generatePurchasePdf(input: PurchasePdfInput) {
     ]),
   });
 
-  const finalY = (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 60;
+  const finalY =
+    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 60;
   addTotalsBlock(doc, finalY + 10, input.totals);
 
   return { doc, filename: `bon-achat-${input.id.slice(0, 8)}.pdf` };
@@ -157,8 +159,88 @@ export async function generateJournalPdf(entries: JournalPdfEntry[]) {
       styles: { fontSize: 9 },
     });
 
-    y = ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y + 4) + 10;
+    y =
+      ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? y + 4) +
+      10;
   }
 
   return { doc, filename: `journal-comptable-${new Date().toISOString().slice(0, 10)}.pdf` };
+}
+
+export interface VatDeclarationPdfInput {
+  periodLabel: string;
+  vatRate: number;
+  chiffreAffairesHT: number;
+  tvaCollectee: number;
+  achatsHT: number;
+  tvaDeductible: number;
+  tvaNette: number;
+}
+
+export async function generateVatDeclarationPdf(input: VatDeclarationPdfInput) {
+  const { doc, autoTable } = await newDocument(`Déclaration TVA — ${input.periodLabel}`);
+
+  doc.setFontSize(10);
+  doc.text(`Taux de TVA applicable : ${input.vatRate}%`, 14, 42);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["", "Montant"]],
+    body: [
+      ["Chiffre d'affaires HT (ventes)", formatFcfa(input.chiffreAffairesHT)],
+      ["TVA collectée", formatFcfa(input.tvaCollectee)],
+      ["Achats HT", formatFcfa(input.achatsHT)],
+      ["TVA déductible", formatFcfa(input.tvaDeductible)],
+      [
+        input.tvaNette >= 0 ? "TVA nette à payer" : "Crédit de TVA à reporter",
+        formatFcfa(Math.abs(input.tvaNette)),
+      ],
+    ],
+  });
+
+  return {
+    doc,
+    filename: `declaration-tva-${input.periodLabel.replace(/\s+/g, "-").toLowerCase()}.pdf`,
+  };
+}
+
+export interface CreditNotePdfInput {
+  purchaseId: string;
+  transporterName: string;
+  createdAt: string;
+  items: { productName: string; quantityLost: number; unitCost: number }[];
+}
+
+export async function generateCreditNotePdf(input: CreditNotePdfInput) {
+  const { doc, autoTable } = await newDocument(
+    `Facture d'avoir — Transporteur (achat #${input.purchaseId.slice(0, 8)})`,
+  );
+
+  doc.setFontSize(10);
+  doc.text(`Date de constat : ${new Date(input.createdAt).toLocaleString("fr-FR")}`, 14, 42);
+  doc.text(`Transporteur : ${input.transporterName}`, 14, 48);
+  doc.text("Motif : pertes/dommages constatés à la réception, avant entrée en stock", 14, 54);
+
+  const total = input.items.reduce((sum, item) => sum + item.quantityLost * item.unitCost, 0);
+
+  autoTable(doc, {
+    startY: 62,
+    head: [["Produit", "Quantité perdue", "Coût unitaire", "Valeur réclamée"]],
+    body: input.items.map((item) => [
+      item.productName,
+      String(item.quantityLost),
+      formatFcfa(item.unitCost),
+      formatFcfa(item.quantityLost * item.unitCost),
+    ]),
+  });
+
+  const finalY =
+    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 62;
+  doc.setFontSize(11);
+  doc.text(`Total réclamé : ${formatFcfa(total)}`, 140, finalY + 10, { align: "left" });
+
+  return {
+    doc,
+    filename: `facture-avoir-${input.purchaseId.slice(0, 8)}.pdf`,
+  };
 }

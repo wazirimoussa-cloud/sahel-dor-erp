@@ -137,7 +137,11 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
       {errors.items?.root && <p className="text-xs text-red-600">{errors.items.root.message}</p>}
 
       <div className="flex gap-3">
-        <Button type="button" variant="secondary" onClick={() => append({ productId: "", quantity: 1 })}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => append({ productId: "", quantity: 1 })}
+        >
           + Ajouter une ligne
         </Button>
         <Button type="submit" disabled={isSubmitting}>

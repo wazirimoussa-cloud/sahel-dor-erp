@@ -16,6 +16,8 @@ import { WarehousesPage } from "@/features/warehouses/WarehousesPage";
 import { SuppliersPage } from "@/features/suppliers/SuppliersPage";
 import { PurchasesPage } from "@/features/purchases/PurchasesPage";
 import { PurchaseDetailPage } from "@/features/purchases/PurchaseDetailPage";
+import { PurchaseLossesPage } from "@/features/purchases/PurchaseLossesPage";
+import { TransportersPage } from "@/features/transporters/TransportersPage";
 import { ProductionsPage } from "@/features/productions/ProductionsPage";
 import { ProductionDetailPage } from "@/features/productions/ProductionDetailPage";
 import { TransformationsPage } from "@/features/transformations/TransformationsPage";
@@ -24,6 +26,7 @@ import { ClientsPage } from "@/features/clients/ClientsPage";
 import { ChartOfAccountsPage } from "@/features/accounting/ChartOfAccountsPage";
 import { JournalPage } from "@/features/accounting/JournalPage";
 import { FinancialStatementsPage } from "@/features/financials/FinancialStatementsPage";
+import { VatDeclarationPage } from "@/features/financials/VatDeclarationPage";
 
 export function AppRoutes() {
   return (
@@ -156,6 +159,30 @@ export function AppRoutes() {
         }
       />
       <Route
+        path="/transporteurs"
+        element={
+          <ProtectedRoute
+            allowedRoles={["admin", "controller", "warehouse_manager", "logistics_transport"]}
+          >
+            <AppShell>
+              <TransportersPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pertes-transport"
+        element={
+          <ProtectedRoute
+            allowedRoles={["admin", "controller", "warehouse_manager", "logistics_transport"]}
+          >
+            <AppShell>
+              <PurchaseLossesPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/productions"
         element={
           <ProtectedRoute allowedRoles={["admin", "controller", "production_manager"]}>
@@ -231,6 +258,16 @@ export function AppRoutes() {
           <ProtectedRoute allowedRoles={["admin", "controller", "accounting"]}>
             <AppShell>
               <FinancialStatementsPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/declaration-tva"
+        element={
+          <ProtectedRoute allowedRoles={["admin", "controller", "accounting"]}>
+            <AppShell>
+              <VatDeclarationPage />
             </AppShell>
           </ProtectedRoute>
         }

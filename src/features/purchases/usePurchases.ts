@@ -68,17 +68,68 @@ export function useCreatePurchase() {
   });
 }
 
+export interface ReceivePurchaseLossInput {
+  productId: string;
+  transporterId: string;
+  quantityLost: number;
+  reason?: string;
+}
+
 export function useReceivePurchase() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (purchaseId: string) => {
-      const { error } = await supabase.rpc("receive_purchase", { purchase_id: purchaseId });
+    mutationFn: async (params: { purchaseId: string; losses: ReceivePurchaseLossInput[] }) => {
+      const { error } = await supabase.rpc("receive_purchase", {
+        purchase_id: params.purchaseId,
+        losses: params.losses.map((loss) => ({
+          product_id: loss.productId,
+          transporter_id: loss.transporterId,
+          quantity_lost: loss.quantityLost,
+          reason: loss.reason || null,
+        })),
+      });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, params) => {
       void queryClient.invalidateQueries({ queryKey: ["purchases"] });
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["purchase_losses", params.purchaseId] });
+      void queryClient.invalidateQueries({ queryKey: ["purchase_losses"] });
+    },
+  });
+}
+
+export function usePurchaseLosses(purchaseId: string | undefined) {
+  return useQuery({
+    queryKey: ["purchase_losses", purchaseId],
+    enabled: Boolean(purchaseId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchase_losses")
+        .select(
+          "id, quantity_lost, unit_cost, reason, created_at, products(name), transporters(id, name)",
+        )
+        .eq("purchase_id", purchaseId as string)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useAllPurchaseLosses() {
+  return useQuery({
+    queryKey: ["purchase_losses"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchase_losses")
+        .select(
+          "id, quantity_lost, unit_cost, reason, created_at, purchase_id, products(name), transporters(id, name)",
+        )
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
     },
   });
 }

@@ -9,11 +9,11 @@ import {
   useValidateOrder,
   useCancelOrder,
   useRecordPayment,
+  useOrderPayments,
 } from "@/features/orders/useOrders";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import type { PaymentStatus } from "@/lib/database.types";
 import { generateOrderPdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
 
@@ -42,8 +42,7 @@ const PAYMENT_CLASSES: Record<string, string> = {
 };
 
 const paymentSchema = z.object({
-  paymentStatus: z.enum(["unpaid", "partial", "paid"]),
-  amountPaid: z.coerce.number().min(0, "Montant invalide"),
+  amount: z.coerce.number().positive("Montant invalide"),
 });
 
 type PaymentFormValues = z.infer<typeof paymentSchema>;
@@ -53,6 +52,7 @@ export function OrderDetailPage() {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const { data: order, isLoading, error } = useOrder(id);
+  const { data: payments } = useOrderPayments(id);
   const validateOrder = useValidateOrder();
   const cancelOrder = useCancelOrder();
   const recordPayment = useRecordPayment();
@@ -66,7 +66,7 @@ export function OrderDetailPage() {
     register: registerPayment,
     handleSubmit: handlePaymentSubmit,
     reset: resetPayment,
-    formState: { isSubmitting: isSubmittingPayment },
+    formState: { isSubmitting: isSubmittingPayment, errors: paymentErrors },
   } = useForm<PaymentFormValues>({ resolver: zodResolver(paymentSchema) });
 
   if (isLoading) return <p className="text-sm text-gray-500">Chargement…</p>;
@@ -89,11 +89,16 @@ export function OrderDetailPage() {
   }[];
   const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const companyRelation = order.companies as { vat_rate: number } | { vat_rate: number }[] | null;
-  const vatRate = Array.isArray(companyRelation) ? companyRelation[0]?.vat_rate : companyRelation?.vat_rate;
+  const vatRate = Array.isArray(companyRelation)
+    ? companyRelation[0]?.vat_rate
+    : companyRelation?.vat_rate;
   const vatAmount = vatRate ? Math.round(totalHT * vatRate) / 100 : 0;
   const totalTTC = totalHT + vatAmount;
+  const resteAPayer = Math.max(0, totalTTC - order.amount_paid);
   const creatorRelation = order.users as { email: string } | { email: string }[] | null;
-  const creatorEmail = Array.isArray(creatorRelation) ? creatorRelation[0]?.email : creatorRelation?.email;
+  const creatorEmail = Array.isArray(creatorRelation)
+    ? creatorRelation[0]?.email
+    : creatorRelation?.email;
   const clientRelation = order.clients as { name: string } | { name: string }[] | null;
   const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
   const orderId = order.id;
@@ -158,14 +163,12 @@ export function OrderDetailPage() {
   async function onPaymentSubmit(values: PaymentFormValues) {
     setActionError(null);
     try {
-      await recordPayment.mutateAsync({
-        orderId,
-        paymentStatus: values.paymentStatus as PaymentStatus,
-        amountPaid: values.amountPaid,
-      });
+      await recordPayment.mutateAsync({ orderId, amount: values.amount });
       resetPayment();
     } catch {
-      setActionError("Enregistrement du paiement refusé (droits insuffisants).");
+      setActionError(
+        "Enregistrement du paiement refusé (droits insuffisants, ou montant supérieur au reste à payer).",
+      );
     }
   }
 
@@ -179,16 +182,16 @@ export function OrderDetailPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-gray-800">
-            Commande #{order.id.slice(0, 8)}
-          </h1>
+          <h1 className="text-lg font-semibold text-gray-800">Commande #{order.id.slice(0, 8)}</h1>
           <p className="text-sm text-gray-500">
             Créée le {new Date(order.created_at).toLocaleString("fr-FR")} par{" "}
             {creatorEmail ?? "utilisateur inconnu"} — Client : {clientName ?? "—"}
           </p>
         </div>
         <div className="flex gap-2">
-          <span className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}
+          >
             {STATUS_LABELS[order.status] ?? order.status}
           </span>
           <span
@@ -246,6 +249,12 @@ export function OrderDetailPage() {
                 {totalTTC.toLocaleString("fr-FR")} FCFA
               </td>
             </tr>
+            <tr>
+              <td colSpan={3} className="text-right text-sm text-gray-600">
+                Reste à payer
+              </td>
+              <td className="text-sm text-gray-800">{resteAPayer.toLocaleString("fr-FR")} FCFA</td>
+            </tr>
           </tfoot>
         </table>
       </Card>
@@ -271,7 +280,11 @@ export function OrderDetailPage() {
             </Button>
           )}
           {canCancel && (
-            <Button variant="danger" disabled={cancelOrder.isPending} onClick={() => void handleCancel()}>
+            <Button
+              variant="danger"
+              disabled={cancelOrder.isPending}
+              onClick={() => void handleCancel()}
+            >
               Annuler la commande
             </Button>
           )}
@@ -284,35 +297,65 @@ export function OrderDetailPage() {
       {canRecordPayment && (
         <Card>
           <h2 className="mb-3 text-sm font-medium text-gray-700">Enregistrer un paiement</h2>
+          <p className="mb-2 text-xs text-gray-500">
+            Reste à payer : {resteAPayer.toLocaleString("fr-FR")} FCFA
+          </p>
           <form
             onSubmit={handlePaymentSubmit(onPaymentSubmit)}
             className="flex flex-wrap items-end gap-3"
             noValidate
           >
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Statut</label>
-              <select
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-                defaultValue={order.payment_status}
-                {...registerPayment("paymentStatus")}
-              >
-                <option value="unpaid">Impayé</option>
-                <option value="partial">Partiel</option>
-                <option value="paid">Payé</option>
-              </select>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Montant reçu (FCFA)
+              </label>
+              <Input type="number" {...registerPayment("amount")} />
+              {paymentErrors.amount && (
+                <p className="mt-1 text-xs text-red-600">{paymentErrors.amount.message}</p>
+              )}
             </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Montant payé (FCFA)</label>
-              <Input
-                type="number"
-                defaultValue={order.amount_paid}
-                {...registerPayment("amountPaid")}
-              />
-            </div>
-            <Button type="submit" disabled={isSubmittingPayment}>
+            <Button type="submit" disabled={isSubmittingPayment || resteAPayer <= 0}>
               Enregistrer le paiement
             </Button>
           </form>
+        </Card>
+      )}
+
+      {(canRecordPayment || payments?.length) && (
+        <Card>
+          <h2 className="mb-3 text-sm font-medium text-gray-700">Historique des paiements</h2>
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-gray-500">
+                <th className="py-2">Date</th>
+                <th className="py-2">Montant</th>
+                <th className="py-2">Enregistré par</th>
+              </tr>
+            </thead>
+            <tbody>
+              {payments?.map((payment) => {
+                const userRelation = payment.users as
+                  { email: string } | { email: string }[] | null;
+                const userEmail = Array.isArray(userRelation)
+                  ? userRelation[0]?.email
+                  : userRelation?.email;
+                return (
+                  <tr key={payment.id} className="border-b border-gray-100">
+                    <td className="py-2">{new Date(payment.created_at).toLocaleString("fr-FR")}</td>
+                    <td className="py-2">{payment.amount.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">{userEmail ?? "—"}</td>
+                  </tr>
+                );
+              })}
+              {payments?.length === 0 && (
+                <tr>
+                  <td colSpan={3} className="py-4 text-center text-gray-400">
+                    Aucun paiement enregistré.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </Card>
       )}
     </div>

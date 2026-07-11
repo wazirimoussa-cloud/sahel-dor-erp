@@ -53,24 +53,18 @@ export function PurchasesPage() {
               const items = purchase.purchase_items as { quantity: number; unit_cost: number }[];
               const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
               const companyRelation = purchase.companies as
-                | { vat_rate: number }
-                | { vat_rate: number }[]
-                | null;
+                { vat_rate: number } | { vat_rate: number }[] | null;
               const vatRate = Array.isArray(companyRelation)
                 ? companyRelation[0]?.vat_rate
                 : companyRelation?.vat_rate;
               const totalTTC = totalHT + (vatRate ? Math.round(totalHT * vatRate) / 100 : 0);
               const supplierRelation = purchase.suppliers as
-                | { name: string }
-                | { name: string }[]
-                | null;
+                { name: string } | { name: string }[] | null;
               const supplierName = Array.isArray(supplierRelation)
                 ? supplierRelation[0]?.name
                 : supplierRelation?.name;
               const warehouseRelation = purchase.warehouses as
-                | { name: string }
-                | { name: string }[]
-                | null;
+                { name: string } | { name: string }[] | null;
               const warehouseName = Array.isArray(warehouseRelation)
                 ? warehouseRelation[0]?.name
                 : warehouseRelation?.name;
@@ -89,7 +83,10 @@ export function PurchasesPage() {
                     </span>
                   </td>
                   <td className="py-2 text-right">
-                    <Link to={`/purchases/${purchase.id}`} className="text-brand-600 hover:underline">
+                    <Link
+                      to={`/purchases/${purchase.id}`}
+                      className="text-brand-600 hover:underline"
+                    >
                       Voir le détail
                     </Link>
                   </td>

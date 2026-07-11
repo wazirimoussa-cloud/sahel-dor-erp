@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-import type { PaymentStatus } from "@/lib/database.types";
 
 export interface OrderItemInput {
   productId: string;
@@ -26,12 +25,19 @@ export function useOrders() {
 export function useCreateOrder() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { warehouseId: string; clientId: string; items: OrderItemInput[] }) => {
+    mutationFn: async (params: {
+      warehouseId: string;
+      clientId: string;
+      items: OrderItemInput[];
+    }) => {
       const { error } = await supabase.rpc("create_order", {
         payload: {
           warehouse_id: params.warehouseId,
           client_id: params.clientId,
-          items: params.items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
+          items: params.items.map((item) => ({
+            product_id: item.productId,
+            quantity: item.quantity,
+          })),
         },
       });
       if (error) throw error;
@@ -93,16 +99,32 @@ export function useCancelOrder() {
 export function useRecordPayment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { orderId: string; paymentStatus: PaymentStatus; amountPaid: number }) => {
+    mutationFn: async (params: { orderId: string; amount: number }) => {
       const { error } = await supabase.rpc("record_payment", {
         order_id: params.orderId,
-        payment_status: params.paymentStatus,
-        amount_paid: params.amountPaid,
+        amount: params.amount,
       });
       if (error) throw error;
     },
-    onSuccess: () => {
+    onSuccess: (_data, params) => {
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
+      void queryClient.invalidateQueries({ queryKey: ["order_payments", params.orderId] });
+    },
+  });
+}
+
+export function useOrderPayments(orderId: string | undefined) {
+  return useQuery({
+    queryKey: ["order_payments", orderId],
+    enabled: Boolean(orderId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_payments")
+        .select("id, amount, created_at, users(email)")
+        .eq("order_id", orderId as string)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
     },
   });
 }
