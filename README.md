@@ -503,6 +503,16 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   pour purger les mouvements liés avant de supprimer le magasin — même compromis que pour
   les comptes (casse la traçabilité de ces entrées), à réserver à un cas réellement
   justifié plutôt qu'à un simple ménage de données de test.
+- **Une commande ou un achat n'est plus supprimable dès qu'il a été validé/réceptionné**
+  — même mécanisme, étendu par les points 22-23 : `order_payments` et `purchase_losses`
+  sont eux aussi append-only (`fn_block_mutation()`), en plus de `transactions` et
+  `journal_entries` déjà immuables depuis la Phase 4. Constaté en pratique lors de la
+  vérification des points 22-23 : une commande de test payée et deux achats de test
+  réceptionnés (dont un avec perte transporteur) restent tous bloqués en base
+  (`transactions_order_id_fkey`, `transactions_purchase_id_fkey`,
+  `purchase_losses_transporter_id_fkey`), malgré une tentative de suppression — pour la
+  même raison, un transporteur ayant déjà une perte enregistrée n'est pas non plus
+  supprimable.
 - **Module Ressources Humaines** : mentionné dans une version affinée du cahier des
   charges fournie par l'utilisateur ("gestion des stocks, achats/ventes, production,
   finances et ressources humaines") mais explicitement hors périmètre pour l'instant —
