@@ -538,6 +538,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     général) — seule la structure comptable (les 2 comptes, les 2 journaux) est en
     place pour l'instant.
 
+27. **Compte Caisse** (`0026_caisse_account.sql`) : complète la hiérarchie de trésorerie
+    — Banque d'opération → Banque de fonctionnement → **Caisse** (571). Destiné à être
+    approvisionné par le compte Banque de fonctionnement pour les dépenses en espèces.
+    Même limite que le point 26 : structure comptable uniquement, aucun mécanisme de
+    ravitaillement ni de dépense en espèces encore implémenté.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
