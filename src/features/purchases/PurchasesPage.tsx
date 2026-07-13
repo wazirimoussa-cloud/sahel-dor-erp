@@ -50,14 +50,24 @@ export function PurchasesPage() {
           </thead>
           <tbody>
             {purchases?.map((purchase) => {
-              const items = purchase.purchase_items as { quantity: number; unit_cost: number }[];
+              const items = purchase.purchase_items as {
+                quantity: number;
+                unit_cost: number;
+                products: { vat_exempt: boolean } | { vat_exempt: boolean }[] | null;
+              }[];
               const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+              const taxableHT = items.reduce((sum, item) => {
+                const p = item.products;
+                const productInfo = Array.isArray(p) ? p[0] : p;
+                if (productInfo?.vat_exempt) return sum;
+                return sum + item.quantity * item.unit_cost;
+              }, 0);
               const companyRelation = purchase.companies as
                 { vat_rate: number } | { vat_rate: number }[] | null;
               const vatRate = Array.isArray(companyRelation)
                 ? companyRelation[0]?.vat_rate
                 : companyRelation?.vat_rate;
-              const totalTTC = totalHT + (vatRate ? Math.round(totalHT * vatRate) / 100 : 0);
+              const totalTTC = totalHT + (vatRate ? Math.round(taxableHT * vatRate) / 100 : 0);
               const supplierRelation = purchase.suppliers as
                 { name: string } | { name: string }[] | null;
               const supplierName = Array.isArray(supplierRelation)

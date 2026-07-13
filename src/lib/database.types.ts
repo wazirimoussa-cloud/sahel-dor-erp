@@ -616,6 +616,7 @@ export type Database = {
           price: number
           stock: number
           unit: string
+          vat_exempt: boolean
         }
         Insert: {
           company_id: string
@@ -625,6 +626,7 @@ export type Database = {
           price: number
           stock?: number
           unit?: string
+          vat_exempt?: boolean
         }
         Update: {
           company_id?: string
@@ -634,6 +636,7 @@ export type Database = {
           price?: number
           stock?: number
           unit?: string
+          vat_exempt?: boolean
         }
         Relationships: [
           {
@@ -1380,6 +1383,7 @@ export type Database = {
           price: number
           stock: number
           unit: string
+          vat_exempt: boolean
         }
         SetofOptions: {
           from: "*"

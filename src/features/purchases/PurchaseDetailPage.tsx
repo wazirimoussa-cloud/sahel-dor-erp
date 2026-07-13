@@ -70,20 +70,24 @@ export function PurchaseDetailPage() {
     quantity: number;
     unit_cost: number;
     products:
-      | { id: string; name: string; unit: string }
-      | { id: string; name: string; unit: string }[]
+      | { id: string; name: string; unit: string; vat_exempt: boolean }
+      | { id: string; name: string; unit: string; vat_exempt: boolean }[]
       | null;
   }[];
   function productInfoOf(item: (typeof items)[number]) {
     return Array.isArray(item.products) ? item.products[0] : item.products;
   }
   const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+  const taxableHT = items.reduce((sum, item) => {
+    if (productInfoOf(item)?.vat_exempt) return sum;
+    return sum + item.quantity * item.unit_cost;
+  }, 0);
   const companyRelation = purchase.companies as
     { vat_rate: number } | { vat_rate: number }[] | null;
   const vatRate = Array.isArray(companyRelation)
     ? companyRelation[0]?.vat_rate
     : companyRelation?.vat_rate;
-  const vatAmount = vatRate ? Math.round(totalHT * vatRate) / 100 : 0;
+  const vatAmount = vatRate ? Math.round(taxableHT * vatRate) / 100 : 0;
   const totalTTC = totalHT + vatAmount;
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation)
@@ -210,7 +214,14 @@ export function PurchaseDetailPage() {
               const productInfo = productInfoOf(item);
               return (
                 <tr key={item.id} className="border-b border-gray-100">
-                  <td className="py-2">{productInfo?.name ?? "Produit supprimé"}</td>
+                  <td className="py-2">
+                    {productInfo?.name ?? "Produit supprimé"}
+                    {productInfo?.vat_exempt && (
+                      <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
+                        Exonéré TVA
+                      </span>
+                    )}
+                  </td>
                   <td className="py-2">
                     {item.quantity} {productInfo?.unit ?? ""}
                   </td>

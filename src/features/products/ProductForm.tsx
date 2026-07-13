@@ -13,6 +13,7 @@ const productSchema = z.object({
   price: z.coerce.number().min(0, "Le prix doit être positif"),
   stock: z.coerce.number().min(0, "Le stock initial doit être positif"),
   unit: z.enum(UNITS),
+  vatExempt: z.boolean(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -27,7 +28,7 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { stock: 0, unit: "unité" },
+    defaultValues: { stock: 0, unit: "unité", vatExempt: false },
   });
 
   async function onSubmit(values: ProductFormValues) {
@@ -66,6 +67,12 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
             </option>
           ))}
         </select>
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" id="vatExempt" className="h-4 w-4" {...register("vatExempt")} />
+        <label htmlFor="vatExempt" className="text-xs font-medium text-gray-600">
+          Exonéré de TVA (céréales, sel)
+        </label>
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le produit

@@ -60,8 +60,18 @@ export function OrdersPage() {
           </thead>
           <tbody>
             {orders?.map((order) => {
-              const items = order.order_items as { quantity: number; unit_price: number }[];
+              const items = order.order_items as {
+                quantity: number;
+                unit_price: number;
+                products: { vat_exempt: boolean } | { vat_exempt: boolean }[] | null;
+              }[];
               const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
+              const taxableHT = items.reduce((sum, item) => {
+                const p = item.products;
+                const productInfo = Array.isArray(p) ? p[0] : p;
+                if (productInfo?.vat_exempt) return sum;
+                return sum + item.quantity * item.unit_price;
+              }, 0);
               const companyRelation = order.companies as
                 | { vat_rate: number }
                 | { vat_rate: number }[]
@@ -69,7 +79,7 @@ export function OrdersPage() {
               const vatRate = Array.isArray(companyRelation)
                 ? companyRelation[0]?.vat_rate
                 : companyRelation?.vat_rate;
-              const totalTTC = totalHT + (vatRate ? Math.round(totalHT * vatRate) / 100 : 0);
+              const totalTTC = totalHT + (vatRate ? Math.round(taxableHT * vatRate) / 100 : 0);
               const clientRelation = order.clients as { name: string } | { name: string }[] | null;
               const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
               return (

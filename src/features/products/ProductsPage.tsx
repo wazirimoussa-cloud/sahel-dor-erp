@@ -108,7 +108,14 @@ export function ProductsPage() {
               {products.map((product) => (
                 <Fragment key={product.id}>
                   <tr className="border-b border-gray-100">
-                    <td className="py-2">{product.name}</td>
+                    <td className="py-2">
+                      {product.name}
+                      {product.vat_exempt && (
+                        <span className="ml-2 rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
+                          Exonéré TVA
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2">
                       {product.price.toLocaleString("fr-FR")} FCFA / {product.unit}
                     </td>

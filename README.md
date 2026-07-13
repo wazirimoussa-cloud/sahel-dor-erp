@@ -559,6 +559,20 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     précompte se calcule en principe sur le montant TTC de chaque transaction (Art. 92),
     mais le mécanisme exact (qui le précompte, sur achat ou vente, périodicité) reste à
     confirmer avant toute automatisation, pour ne pas fausser une écriture fiscale réelle.
+29. **Exonération de TVA sur les céréales** (`0028_vat_exemption_cereales.sql`) : d'après
+    l'Article 322 de l'Ordonnance N°2025-44, les céréales de base (maïs, mil, sorgho,
+    fonio, blé, riz) sont exonérées de TVA. Nouvelle colonne `products.vat_exempt`
+    (défaut `false`), positionnée à `true` pour Riz local, Sorgho et Mil dans les deux
+    sociétés. `validate_order`/`receive_purchase` calculent désormais la TVA **ligne par
+    ligne** (un produit exonéré ne contribue aucune TVA, même si d'autres lignes de la
+    même commande/achat sont taxables) — le sous-total HT et les comptes 601/701/401/411
+    restent calculés sur le montant total, seule la répartition TVA (4431/4452) tient
+    compte de l'exonération. Niébé et Arachide décortiquée sont volontairement **non**
+    exonérés (ce sont des légumineuses/oléagineux, pas des céréales au sens strict du
+    texte) — hypothèse à revoir si l'administration fiscale l'interprète plus largement.
+    Vérifié de bout en bout (frontend + écriture comptable générée) sur l'environnement
+    Formation : une vente mixte (produit exonéré + produit taxable) ne taxe que la
+    ligne taxable, et l'achat correspondant fait de même côté TVA déductible.
 
 ## Limites connues / pistes pour la suite
 
