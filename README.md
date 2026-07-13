@@ -524,6 +524,20 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     "Historique" (tout rôle authentifié) affichant chaque changement — ancien/nouveau
     prix, motif optionnel, auteur, date.
 
+26. **Structure bancaire : Banque d'opération / Banque de fonctionnement**
+    (`0025_bank_accounts_restructure.sql`) : le compte 521 (déjà débité par
+    l'encaissement client) est renommé "Banque d'opération" ; nouveau compte 522
+    "Banque de fonctionnement", destiné à être alimenté par le premier pour couvrir les
+    dépenses (paiement fournisseurs, frais généraux). Le journal "TRESORERIE" devient
+    "BANQUE" pour les encaissements générés à partir de cette migration (les écritures
+    antérieures gardent leur libellé d'origine — pas de réécriture de l'historique) ;
+    un journal "CAISSE" est réservé pour une future fonctionnalité de dépenses en
+    espèces. **Hors périmètre de cette passe, à cadrer séparément** : aucune
+    fonctionnalité ne permet encore de transférer réellement de l'argent entre les deux
+    comptes banque, ni d'enregistrer une dépense (paiement fournisseur ou frais
+    général) — seule la structure comptable (les 2 comptes, les 2 journaux) est en
+    place pour l'instant.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement

@@ -6,7 +6,9 @@ import { generateJournalPdf } from "@/lib/pdf";
 const JOURNAL_LABELS: Record<string, string> = {
   ACHATS: "Achats",
   VENTES: "Ventes",
-  TRESORERIE: "Trésorerie",
+  TRESORERIE: "Trésorerie", // ancien libellé, conservé pour les écritures antérieures à la Phase 16
+  BANQUE: "Banque",
+  CAISSE: "Caisse",
 };
 
 export function JournalPage() {
