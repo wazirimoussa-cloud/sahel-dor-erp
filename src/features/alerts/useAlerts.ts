@@ -1,23 +1,21 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-
-const LOW_STOCK_THRESHOLD = 5;
+import { isLowStock } from "@/lib/stockThreshold";
 
 export function useAlerts() {
   return useQuery({
     queryKey: ["alerts"],
     queryFn: async () => {
-      const [lowStock, pendingOrders, unpaidOrders] = await Promise.all([
-        supabase
-          .from("products")
-          .select("id", { count: "exact", head: true })
-          .lt("stock", LOW_STOCK_THRESHOLD),
+      const [products, pendingOrders, unpaidOrders] = await Promise.all([
+        supabase.from("products").select("stock, unit"),
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("orders").select("id", { count: "exact", head: true }).eq("payment_status", "unpaid"),
       ]);
 
+      const lowStockCount = (products.data ?? []).filter((p) => isLowStock(p.stock, p.unit)).length;
+
       return {
-        lowStockCount: lowStock.count ?? 0,
+        lowStockCount,
         pendingOrdersCount: pendingOrders.count ?? 0,
         unpaidOrdersCount: unpaidOrders.count ?? 0,
       };

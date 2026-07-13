@@ -7,6 +7,7 @@ interface PdfLineItem {
   productName: string;
   quantity: number;
   unitAmount: number;
+  unit?: string;
 }
 
 interface DocumentTotals {
@@ -76,7 +77,7 @@ export async function generateOrderPdf(input: OrderPdfInput) {
     head: [["Produit", "Quantité", "Prix unitaire", "Sous-total"]],
     body: input.items.map((item) => [
       item.productName,
-      String(item.quantity),
+      `${item.quantity}${item.unit ? " " + item.unit : ""}`,
       formatFcfa(item.unitAmount),
       formatFcfa(item.unitAmount * item.quantity),
     ]),
@@ -111,7 +112,7 @@ export async function generatePurchasePdf(input: PurchasePdfInput) {
     head: [["Produit", "Quantité", "Coût unitaire", "Sous-total"]],
     body: input.items.map((item) => [
       item.productName,
-      String(item.quantity),
+      `${item.quantity}${item.unit ? " " + item.unit : ""}`,
       formatFcfa(item.unitAmount),
       formatFcfa(item.unitAmount * item.quantity),
     ]),
@@ -208,7 +209,7 @@ export interface CreditNotePdfInput {
   purchaseId: string;
   transporterName: string;
   createdAt: string;
-  items: { productName: string; quantityLost: number; unitCost: number }[];
+  items: { productName: string; quantityLost: number; unitCost: number; unit?: string }[];
 }
 
 export async function generateCreditNotePdf(input: CreditNotePdfInput) {
@@ -228,7 +229,7 @@ export async function generateCreditNotePdf(input: CreditNotePdfInput) {
     head: [["Produit", "Quantité perdue", "Coût unitaire", "Valeur réclamée"]],
     body: input.items.map((item) => [
       item.productName,
-      String(item.quantityLost),
+      `${item.quantityLost}${item.unit ? " " + item.unit : ""}`,
       formatFcfa(item.unitCost),
       formatFcfa(item.quantityLost * item.unitCost),
     ]),

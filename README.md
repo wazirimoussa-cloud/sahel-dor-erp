@@ -456,6 +456,63 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     d'avoir n'a aucune contrepartie comptable générée automatiquement (limite à lever si
     un compte dédié est ajouté au plan SYSCOHADA).
 
+24. **Unités de mesure** (`0021_units_decimal_quantities.sql`, `0022_fix_unconverted_product_stocks.sql`,
+    `0023_reconcile_sorgho_stock.sql`) :
+    Sahel d'Or étant grossiste, les quantités sont désormais en **tonnes** pour les
+    céréales/légumineuses/sucre (Riz local, Sorgho, Mil, Niébé, Arachide décortiquée,
+    Sucre) et en **carton/bidon** pour l'huile d'arachide, plutôt qu'un décompte de sacs.
+    Nouvelle colonne `products.unit` (`tonne`/`carton`/`bidon`/`unité`). Toutes les
+    colonnes quantité/stock du schéma sont passées de `integer` à `numeric(12,3)` pour
+    accepter des quantités décimales (ex. 2,5 t) — achats, ventes, transferts,
+    production, transformation. Le catalogue huile (auparavant un seul produit "bidon
+    20L") est éclaté en 5 produits par format réel de conditionnement : carton de 20
+    bidons de 1L, carton de 4 bidons de 5L, et bidons simples non emballés de 10L/20L/25L
+    (seuls les deux formats carton utilisent l'unité "carton" — les bidons simples ne
+    sont pas conditionnés en carton).
+
+    **Conversion du catalogue existant** : nom débarrassé du suffixe "— sac Xkg", prix
+    reconverti (`prix_tonne = prix_sac ÷ facteur`), et stock courant rebasé vers la
+    nouvelle unité via une transaction `ADJUSTMENT` par ligne de stock concernée (ex. 14
+    sacs de 100kg → 1,4 t). **Limite assumée** : l'historique des mouvements *antérieurs*
+    à cette migration reste affiché avec son ancien décompte de sacs sous le nouveau
+    libellé "t" — seul le stock courant (et tout ce qui est enregistré après la
+    migration) est exact dans la nouvelle unité ; cohérent avec l'immutabilité déjà en
+    place ailleurs (aucune réécriture de l'historique).
+
+    **Bug préexistant découvert et corrigé au passage** (`0022`) : les produits créés
+    directement via le formulaire "Produits" (insert direct, sans passer par une
+    transaction) n'ont jamais eu de ligne `product_stocks` — seul `products.stock`
+    (total dénormalisé) était renseigné, jamais synchronisé avec la table par magasin qui
+    alimente la synthèse de stock. Ces produits étaient donc invisibles sur la page
+    "Mouvements de stock" et leur conversion en tonnes a été manquée par la première
+    passe de `0021` (qui ne boucle que sur `product_stocks`). Corrigé par `0022` :
+    conversion directe de leur `products.stock` + création rétroactive de leur ligne
+    `product_stocks` au "Magasin principal".
+
+    **Deuxième désynchronisation découverte** (`0023`) : `products.stock` (total
+    dénormalisé) et `product_stocks` (source de vérité par magasin) avaient dérivé d'un
+    écart identique de 100 (avant conversion) pour Sorgho dans les deux sociétés — origine
+    non élucidée, sans lien avec la conversion d'unité (le trigger met toujours les deux
+    tables à jour ensemble). `product_stocks` fait foi car exclusivement alimentée par de
+    vraies transactions ; `products.stock` a été réconcilié dessus par `0023`.
+
+    **4 nouveaux produits huile par société ont un prix à 0 FCFA** (carton 1L, carton
+    5L, bidon 10L, bidon 25L — seul le bidon 20L existant conserve son prix) : à saisir
+    manuellement via la page Produits avant toute utilisation commerciale. Le prix du
+    Sucre - brésilien après conversion mécanique (11 100 FCFA/t, dérivé d'un prix de
+    démo à 555 FCFA/sac) est probablement à corriger également — aucune valeur n'a été
+    inventée au-delà de la conversion arithmétique du prix existant.
+
+    **Seuil "stock bas" recalibré par unité** (`src/lib/stockThreshold.ts`, désormais
+    centralisé — il était dupliqué à l'identique dans 4 fichiers) : 1 t, 5 cartons, 5
+    bidons, 5 unités — un seuil unique de "5" n'avait plus de sens une fois les tonnes en
+    place (5 tonnes n'est pas un stock bas). Le "Total restant" de la synthèse de stock
+    et le calcul de "rendement" d'une transformation (Phase 11) sont désormais
+    **groupés/gardés par unité** : additionner des tonnes et des cartons n'a pas de sens,
+    et un rendement extrants/intrants n'est calculé que si toutes les lignes partagent la
+    même unité (affiche "unités différentes" sinon) — un cas réel pour ce métier
+    (transformation d'Arachide décortiquée en tonnes vers de l'Huile en cartons/bidons).
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement

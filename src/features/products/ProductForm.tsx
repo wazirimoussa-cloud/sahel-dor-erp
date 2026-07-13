@@ -6,10 +6,13 @@ import { useCreateProduct } from "@/features/products/useProducts";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
+const UNITS = ["tonne", "carton", "bidon", "unité"] as const;
+
 const productSchema = z.object({
   name: z.string().min(1, "Nom requis"),
   price: z.coerce.number().min(0, "Le prix doit être positif"),
-  stock: z.coerce.number().int().min(0, "Le stock initial doit être positif"),
+  stock: z.coerce.number().min(0, "Le stock initial doit être positif"),
+  unit: z.enum(UNITS),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -24,7 +27,7 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { stock: 0 },
+    defaultValues: { stock: 0, unit: "unité" },
   });
 
   async function onSubmit(values: ProductFormValues) {
@@ -48,8 +51,21 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-600">Stock initial</label>
-        <Input type="number" {...register("stock")} />
+        <Input type="number" step="0.001" {...register("stock")} />
         {errors.stock && <p className="mt-1 text-xs text-red-600">{errors.stock.message}</p>}
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-gray-600">Unité</label>
+        <select
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          {...register("unit")}
+        >
+          {UNITS.map((u) => (
+            <option key={u} value={u}>
+              {u}
+            </option>
+          ))}
+        </select>
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le produit

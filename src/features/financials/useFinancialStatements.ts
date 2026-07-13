@@ -4,7 +4,7 @@ import { useAuth } from "@/auth/useAuth";
 
 interface StockSnapshot {
   total: number;
-  unvalued: { productId: string; name: string; quantity: number }[];
+  unvalued: { productId: string; name: string; quantity: number; unit: string }[];
 }
 
 interface AccountBalance {
@@ -29,7 +29,7 @@ export function useFinancialStatements(startDate: string, endDate: string) {
 
       const [productsRes, purchaseItemsRes, transactionsRes, journalRes, companyRes] =
         await Promise.all([
-          supabase.from("products").select("id, name"),
+          supabase.from("products").select("id, name, unit"),
           supabase
             .from("purchase_items")
             .select("product_id, quantity, unit_cost, purchases!inner(status)")
@@ -53,6 +53,7 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       const transactions = transactionsRes.data ?? [];
       const journalEntries = journalRes.data ?? [];
       const productNameById = new Map(productsRes.data.map((p) => [p.id, p.name]));
+      const productUnitById = new Map(productsRes.data.map((p) => [p.id, p.unit]));
 
       // CUMP global par produit, à partir des seuls achats réceptionnés (coût réel).
       const cump = new Map<string, { qty: number; cost: number }>();
@@ -75,14 +76,19 @@ export function useFinancialStatements(startDate: string, endDate: string) {
           qtyByProduct.set(t.product_id, (qtyByProduct.get(t.product_id) ?? 0) + delta);
         }
         let total = 0;
-        const unvalued: { productId: string; name: string; quantity: number }[] = [];
+        const unvalued: { productId: string; name: string; quantity: number; unit: string }[] = [];
         for (const [productId, quantity] of qtyByProduct) {
           if (quantity <= 0) continue;
           const unitCost = unitCostByProduct.get(productId);
           if (unitCost !== undefined) {
             total += quantity * unitCost;
           } else {
-            unvalued.push({ productId, name: productNameById.get(productId) ?? "?", quantity });
+            unvalued.push({
+              productId,
+              name: productNameById.get(productId) ?? "?",
+              quantity,
+              unit: productUnitById.get(productId) ?? "",
+            });
           }
         }
         return { total, unvalued };

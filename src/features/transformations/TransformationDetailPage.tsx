@@ -23,18 +23,23 @@ export function TransformationDetailPage() {
   const inputs = transformation.transformation_inputs as {
     id: string;
     quantity: number;
-    products: { id: string; name: string } | { id: string; name: string }[] | null;
+    products:
+      | { id: string; name: string; unit: string }
+      | { id: string; name: string; unit: string }[]
+      | null;
   }[];
   const outputs = transformation.transformation_outputs as {
     id: string;
     quantity: number;
     unit_cost: number;
-    products: { id: string; name: string } | { id: string; name: string }[] | null;
+    products:
+      | { id: string; name: string; unit: string }
+      | { id: string; name: string; unit: string }[]
+      | null;
   }[];
   const total = outputs.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
   const totalInputQty = inputs.reduce((sum, item) => sum + item.quantity, 0);
   const totalOutputQty = outputs.reduce((sum, item) => sum + item.quantity, 0);
-  const rendement = totalInputQty > 0 ? (totalOutputQty / totalInputQty) * 100 : null;
   const creatorRelation = transformation.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
@@ -45,11 +50,21 @@ export function TransformationDetailPage() {
     ? warehouseRelation[0]?.name
     : warehouseRelation?.name;
 
-  function productName(
-    product: { id: string; name: string } | { id: string; name: string }[] | null,
+  function productInfo(
+    product:
+      | { id: string; name: string; unit: string }
+      | { id: string; name: string; unit: string }[]
+      | null,
   ) {
-    return Array.isArray(product) ? product[0]?.name : product?.name;
+    return Array.isArray(product) ? product[0] : product;
   }
+
+  const allUnits = new Set([
+    ...inputs.map((item) => productInfo(item.products)?.unit),
+    ...outputs.map((item) => productInfo(item.products)?.unit),
+  ]);
+  const sameUnit = allUnits.size === 1;
+  const rendement = sameUnit && totalInputQty > 0 ? (totalOutputQty / totalInputQty) * 100 : null;
 
   return (
     <div className="space-y-6">
@@ -79,10 +94,12 @@ export function TransformationDetailPage() {
               ({rendement.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}%)
             </span>
           )}
+          {!sameUnit && <span className="ml-1 text-gray-500">(unités différentes)</span>}
         </p>
         <p className="mt-1 text-xs text-gray-400">
-          Ratio en nombre d'unités (les produits n'ont pas d'unité de mesure standardisée dans cette
-          version) — pas un rendement massique réel.
+          {sameUnit
+            ? "Ratio de quantités (extrants/intrants) — pas un rendement massique réel."
+            : "Non calculable : les intrants et extrants ne partagent pas la même unité de mesure."}
         </p>
       </Card>
 
@@ -98,8 +115,10 @@ export function TransformationDetailPage() {
           <tbody>
             {inputs.map((item) => (
               <tr key={item.id} className="border-b border-gray-100">
-                <td className="py-2">{productName(item.products) ?? "Produit supprimé"}</td>
-                <td className="py-2">{item.quantity}</td>
+                <td className="py-2">{productInfo(item.products)?.name ?? "Produit supprimé"}</td>
+                <td className="py-2">
+                  {item.quantity} {productInfo(item.products)?.unit ?? ""}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -120,8 +139,10 @@ export function TransformationDetailPage() {
           <tbody>
             {outputs.map((item) => (
               <tr key={item.id} className="border-b border-gray-100">
-                <td className="py-2">{productName(item.products) ?? "Produit supprimé"}</td>
-                <td className="py-2">{item.quantity}</td>
+                <td className="py-2">{productInfo(item.products)?.name ?? "Produit supprimé"}</td>
+                <td className="py-2">
+                  {item.quantity} {productInfo(item.products)?.unit ?? ""}
+                </td>
                 <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
                 <td className="py-2">
                   {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA

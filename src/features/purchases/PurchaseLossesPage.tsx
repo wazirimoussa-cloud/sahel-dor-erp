@@ -37,10 +37,10 @@ export function PurchaseLossesPage() {
             <tbody>
               {losses.map((loss) => {
                 const productRelation = loss.products as
-                  { name: string } | { name: string }[] | null;
-                const productName = Array.isArray(productRelation)
-                  ? productRelation[0]?.name
-                  : productRelation?.name;
+                  { name: string; unit: string } | { name: string; unit: string }[] | null;
+                const productInfo = Array.isArray(productRelation)
+                  ? productRelation[0]
+                  : productRelation;
                 const transporterRelation = loss.transporters as
                   { id: string; name: string } | { id: string; name: string }[] | null;
                 const transporter = Array.isArray(transporterRelation)
@@ -50,8 +50,10 @@ export function PurchaseLossesPage() {
                   <tr key={loss.id} className="border-b border-gray-100">
                     <td className="py-2">{new Date(loss.created_at).toLocaleString("fr-FR")}</td>
                     <td className="py-2">{transporter?.name ?? "—"}</td>
-                    <td className="py-2">{productName ?? "—"}</td>
-                    <td className="py-2">{loss.quantity_lost}</td>
+                    <td className="py-2">{productInfo?.name ?? "—"}</td>
+                    <td className="py-2">
+                      {loss.quantity_lost} {productInfo?.unit ?? ""}
+                    </td>
                     <td className="py-2">
                       {(loss.quantity_lost * loss.unit_cost).toLocaleString("fr-FR")} FCFA
                     </td>
@@ -73,9 +75,10 @@ export function PurchaseLossesPage() {
                             createdAt: loss.created_at,
                             items: [
                               {
-                                productName: productName ?? "Produit supprimé",
+                                productName: productInfo?.name ?? "Produit supprimé",
                                 quantityLost: loss.quantity_lost,
                                 unitCost: loss.unit_cost,
+                                unit: productInfo?.unit,
                               },
                             ],
                           }).then(({ doc, filename }) => doc.save(filename))

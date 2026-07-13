@@ -2,6 +2,7 @@ import { useAuth } from "@/auth/useAuth";
 import { useProducts } from "@/features/products/useProducts";
 import { ProductForm } from "@/features/products/ProductForm";
 import { Card } from "@/components/ui/Card";
+import { isLowStock } from "@/lib/stockThreshold";
 
 export function ProductsPage() {
   const { profile } = useAuth();
@@ -35,9 +36,13 @@ export function ProductsPage() {
               {products.map((product) => (
                 <tr key={product.id} className="border-b border-gray-100">
                   <td className="py-2">{product.name}</td>
-                  <td className="py-2">{product.price.toLocaleString("fr-FR")} FCFA</td>
-                  <td className={`py-2 ${product.stock < 5 ? "font-semibold text-red-600" : ""}`}>
-                    {product.stock}
+                  <td className="py-2">
+                    {product.price.toLocaleString("fr-FR")} FCFA / {product.unit}
+                  </td>
+                  <td
+                    className={`py-2 ${isLowStock(product.stock, product.unit) ? "font-semibold text-red-600" : ""}`}
+                  >
+                    {product.stock} {product.unit}
                   </td>
                 </tr>
               ))}

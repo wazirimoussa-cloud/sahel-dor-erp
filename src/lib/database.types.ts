@@ -1,1458 +1,1473 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5";
-  };
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
       graphql: {
         Args: {
-          extensions?: Json;
-          operationName?: string;
-          query?: string;
-          variables?: Json;
-        };
-        Returns: Json;
-      };
-    };
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
     Enums: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       chart_of_accounts: {
         Row: {
-          code: string;
-          company_id: string;
-          created_at: string;
-          id: string;
-          name: string;
-        };
+          code: string
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+        }
         Insert: {
-          code: string;
-          company_id: string;
-          created_at?: string;
-          id?: string;
-          name: string;
-        };
+          code: string
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+        }
         Update: {
-          code?: string;
-          company_id?: string;
-          created_at?: string;
-          id?: string;
-          name?: string;
-        };
+          code?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "chart_of_accounts_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "chart_of_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       clients: {
         Row: {
-          address: string | null;
-          company_id: string;
-          contact_name: string | null;
-          created_at: string;
-          email: string | null;
-          id: string;
-          name: string;
-          phone: string | null;
-        };
+          address: string | null
+          company_id: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
         Insert: {
-          address?: string | null;
-          company_id: string;
-          contact_name?: string | null;
-          created_at?: string;
-          email?: string | null;
-          id?: string;
-          name: string;
-          phone?: string | null;
-        };
+          address?: string | null
+          company_id: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
         Update: {
-          address?: string | null;
-          company_id?: string;
-          contact_name?: string | null;
-          created_at?: string;
-          email?: string | null;
-          id?: string;
-          name?: string;
-          phone?: string | null;
-        };
+          address?: string | null
+          company_id?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "clients_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "clients_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       companies: {
         Row: {
-          capital_social: number;
-          created_at: string;
-          id: string;
-          name: string;
-          vat_rate: number;
-        };
+          capital_social: number
+          created_at: string
+          id: string
+          name: string
+          vat_rate: number
+        }
         Insert: {
-          capital_social?: number;
-          created_at?: string;
-          id?: string;
-          name: string;
-          vat_rate?: number;
-        };
+          capital_social?: number
+          created_at?: string
+          id?: string
+          name: string
+          vat_rate?: number
+        }
         Update: {
-          capital_social?: number;
-          created_at?: string;
-          id?: string;
-          name?: string;
-          vat_rate?: number;
-        };
-        Relationships: [];
-      };
+          capital_social?: number
+          created_at?: string
+          id?: string
+          name?: string
+          vat_rate?: number
+        }
+        Relationships: []
+      }
       erp_data: {
         Row: {
-          key: string;
-          updated_at: string | null;
-          value: string;
-        };
+          key: string
+          updated_at: string | null
+          value: string
+        }
         Insert: {
-          key: string;
-          updated_at?: string | null;
-          value: string;
-        };
+          key: string
+          updated_at?: string | null
+          value: string
+        }
         Update: {
-          key?: string;
-          updated_at?: string | null;
-          value?: string;
-        };
-        Relationships: [];
-      };
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
       journal_entries: {
         Row: {
-          company_id: string;
-          created_at: string;
-          description: string;
-          entry_date: string;
-          id: string;
-          journal_code: string;
-          order_id: string | null;
-          purchase_id: string | null;
-        };
+          company_id: string
+          created_at: string
+          description: string
+          entry_date: string
+          id: string
+          journal_code: string
+          order_id: string | null
+          purchase_id: string | null
+        }
         Insert: {
-          company_id: string;
-          created_at?: string;
-          description: string;
-          entry_date?: string;
-          id?: string;
-          journal_code: string;
-          order_id?: string | null;
-          purchase_id?: string | null;
-        };
+          company_id: string
+          created_at?: string
+          description: string
+          entry_date?: string
+          id?: string
+          journal_code: string
+          order_id?: string | null
+          purchase_id?: string | null
+        }
         Update: {
-          company_id?: string;
-          created_at?: string;
-          description?: string;
-          entry_date?: string;
-          id?: string;
-          journal_code?: string;
-          order_id?: string | null;
-          purchase_id?: string | null;
-        };
+          company_id?: string
+          created_at?: string
+          description?: string
+          entry_date?: string
+          id?: string
+          journal_code?: string
+          order_id?: string | null
+          purchase_id?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "journal_entries_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "journal_entries_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "journal_entries_order_id_fkey";
-            columns: ["order_id"];
-            isOneToOne: false;
-            referencedRelation: "orders";
-            referencedColumns: ["id"];
+            foreignKeyName: "journal_entries_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "journal_entries_purchase_id_fkey";
-            columns: ["purchase_id"];
-            isOneToOne: false;
-            referencedRelation: "purchases";
-            referencedColumns: ["id"];
+            foreignKeyName: "journal_entries_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       journal_entry_lines: {
         Row: {
-          account_id: string;
-          created_at: string;
-          credit: number;
-          debit: number;
-          entry_id: string;
-          id: string;
-        };
+          account_id: string
+          created_at: string
+          credit: number
+          debit: number
+          entry_id: string
+          id: string
+        }
         Insert: {
-          account_id: string;
-          created_at?: string;
-          credit?: number;
-          debit?: number;
-          entry_id: string;
-          id?: string;
-        };
+          account_id: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          entry_id: string
+          id?: string
+        }
         Update: {
-          account_id?: string;
-          created_at?: string;
-          credit?: number;
-          debit?: number;
-          entry_id?: string;
-          id?: string;
-        };
+          account_id?: string
+          created_at?: string
+          credit?: number
+          debit?: number
+          entry_id?: string
+          id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "journal_entry_lines_account_id_fkey";
-            columns: ["account_id"];
-            isOneToOne: false;
-            referencedRelation: "chart_of_accounts";
-            referencedColumns: ["id"];
+            foreignKeyName: "journal_entry_lines_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "chart_of_accounts"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "journal_entry_lines_entry_id_fkey";
-            columns: ["entry_id"];
-            isOneToOne: false;
-            referencedRelation: "journal_entries";
-            referencedColumns: ["id"];
+            foreignKeyName: "journal_entry_lines_entry_id_fkey"
+            columns: ["entry_id"]
+            isOneToOne: false
+            referencedRelation: "journal_entries"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       logs: {
         Row: {
-          action: string;
-          created_at: string;
-          id: string;
-          metadata: Json | null;
-          module: string;
-          user_id: string | null;
-        };
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          module: string
+          user_id: string | null
+        }
         Insert: {
-          action: string;
-          created_at?: string;
-          id?: string;
-          metadata?: Json | null;
-          module: string;
-          user_id?: string | null;
-        };
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          module: string
+          user_id?: string | null
+        }
         Update: {
-          action?: string;
-          created_at?: string;
-          id?: string;
-          metadata?: Json | null;
-          module?: string;
-          user_id?: string | null;
-        };
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          module?: string
+          user_id?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "logs_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       order_items: {
         Row: {
-          created_at: string;
-          id: string;
-          order_id: string;
-          product_id: string;
-          quantity: number;
-          unit_price: number;
-        };
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string
+          quantity: number
+          unit_price: number
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          order_id: string;
-          product_id: string;
-          quantity: number;
-          unit_price: number;
-        };
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id: string
+          quantity: number
+          unit_price: number
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          order_id?: string;
-          product_id?: string;
-          quantity?: number;
-          unit_price?: number;
-        };
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string
+          quantity?: number
+          unit_price?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "order_items_order_id_fkey";
-            columns: ["order_id"];
-            isOneToOne: false;
-            referencedRelation: "orders";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_items_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       order_payments: {
         Row: {
-          amount: number;
-          created_at: string;
-          id: string;
-          order_id: string;
-          user_id: string;
-        };
+          amount: number
+          created_at: string
+          id: string
+          order_id: string
+          user_id: string
+        }
         Insert: {
-          amount: number;
-          created_at?: string;
-          id?: string;
-          order_id: string;
-          user_id: string;
-        };
+          amount: number
+          created_at?: string
+          id?: string
+          order_id: string
+          user_id: string
+        }
         Update: {
-          amount?: number;
-          created_at?: string;
-          id?: string;
-          order_id?: string;
-          user_id?: string;
-        };
+          amount?: number
+          created_at?: string
+          id?: string
+          order_id?: string
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "order_payments_order_id_fkey";
-            columns: ["order_id"];
-            isOneToOne: false;
-            referencedRelation: "orders";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_payments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "order_payments_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "order_payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       orders: {
         Row: {
-          amount_paid: number;
-          client_id: string;
-          company_id: string;
-          created_at: string;
-          id: string;
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          status: Database["public"]["Enums"]["order_status"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          amount_paid: number
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          status: Database["public"]["Enums"]["order_status"]
+          user_id: string
+          warehouse_id: string
+        }
         Insert: {
-          amount_paid?: number;
-          client_id: string;
-          company_id: string;
-          created_at?: string;
-          id?: string;
-          payment_status?: Database["public"]["Enums"]["payment_status"];
-          status?: Database["public"]["Enums"]["order_status"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          amount_paid?: number
+          client_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          status?: Database["public"]["Enums"]["order_status"]
+          user_id: string
+          warehouse_id: string
+        }
         Update: {
-          amount_paid?: number;
-          client_id?: string;
-          company_id?: string;
-          created_at?: string;
-          id?: string;
-          payment_status?: Database["public"]["Enums"]["payment_status"];
-          status?: Database["public"]["Enums"]["order_status"];
-          user_id?: string;
-          warehouse_id?: string;
-        };
+          amount_paid?: number
+          client_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          status?: Database["public"]["Enums"]["order_status"]
+          user_id?: string
+          warehouse_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "orders_client_id_fkey";
-            columns: ["client_id"];
-            isOneToOne: false;
-            referencedRelation: "clients";
-            referencedColumns: ["id"];
+            foreignKeyName: "orders_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "orders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "orders_warehouse_id_fkey";
-            columns: ["warehouse_id"];
-            isOneToOne: false;
-            referencedRelation: "warehouses";
-            referencedColumns: ["id"];
+            foreignKeyName: "orders_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       product_stocks: {
         Row: {
-          id: string;
-          product_id: string;
-          stock: number;
-          warehouse_id: string;
-        };
+          id: string
+          product_id: string
+          stock: number
+          warehouse_id: string
+        }
         Insert: {
-          id?: string;
-          product_id: string;
-          stock?: number;
-          warehouse_id: string;
-        };
+          id?: string
+          product_id: string
+          stock?: number
+          warehouse_id: string
+        }
         Update: {
-          id?: string;
-          product_id?: string;
-          stock?: number;
-          warehouse_id?: string;
-        };
+          id?: string
+          product_id?: string
+          stock?: number
+          warehouse_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "product_stocks_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_stocks_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "product_stocks_warehouse_id_fkey";
-            columns: ["warehouse_id"];
-            isOneToOne: false;
-            referencedRelation: "warehouses";
-            referencedColumns: ["id"];
+            foreignKeyName: "product_stocks_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       production_items: {
         Row: {
-          created_at: string;
-          id: string;
-          product_id: string;
-          production_id: string;
-          quantity: number;
-          unit_cost: number;
-        };
+          created_at: string
+          id: string
+          product_id: string
+          production_id: string
+          quantity: number
+          unit_cost: number
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          product_id: string;
-          production_id: string;
-          quantity: number;
-          unit_cost: number;
-        };
+          created_at?: string
+          id?: string
+          product_id: string
+          production_id: string
+          quantity: number
+          unit_cost: number
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          product_id?: string;
-          production_id?: string;
-          quantity?: number;
-          unit_cost?: number;
-        };
+          created_at?: string
+          id?: string
+          product_id?: string
+          production_id?: string
+          quantity?: number
+          unit_cost?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "production_items_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "production_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "production_items_production_id_fkey";
-            columns: ["production_id"];
-            isOneToOne: false;
-            referencedRelation: "productions";
-            referencedColumns: ["id"];
+            foreignKeyName: "production_items_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       productions: {
         Row: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          user_id: string
+          warehouse_id: string
+        }
         Insert: {
-          company_id: string;
-          created_at?: string;
-          id?: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          warehouse_id: string
+        }
         Update: {
-          company_id?: string;
-          created_at?: string;
-          id?: string;
-          user_id?: string;
-          warehouse_id?: string;
-        };
+          company_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          warehouse_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "productions_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "productions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "productions_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "productions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "productions_warehouse_id_fkey";
-            columns: ["warehouse_id"];
-            isOneToOne: false;
-            referencedRelation: "warehouses";
-            referencedColumns: ["id"];
+            foreignKeyName: "productions_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       products: {
         Row: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          name: string;
-          price: number;
-          stock: number;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          price: number
+          stock: number
+          unit: string
+        }
         Insert: {
-          company_id: string;
-          created_at?: string;
-          id?: string;
-          name: string;
-          price: number;
-          stock?: number;
-        };
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          price: number
+          stock?: number
+          unit?: string
+        }
         Update: {
-          company_id?: string;
-          created_at?: string;
-          id?: string;
-          name?: string;
-          price?: number;
-          stock?: number;
-        };
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          price?: number
+          stock?: number
+          unit?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "products_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "products_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       purchase_items: {
         Row: {
-          created_at: string;
-          id: string;
-          product_id: string;
-          purchase_id: string;
-          quantity: number;
-          unit_cost: number;
-        };
+          created_at: string
+          id: string
+          product_id: string
+          purchase_id: string
+          quantity: number
+          unit_cost: number
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          product_id: string;
-          purchase_id: string;
-          quantity: number;
-          unit_cost: number;
-        };
+          created_at?: string
+          id?: string
+          product_id: string
+          purchase_id: string
+          quantity: number
+          unit_cost: number
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          product_id?: string;
-          purchase_id?: string;
-          quantity?: number;
-          unit_cost?: number;
-        };
+          created_at?: string
+          id?: string
+          product_id?: string
+          purchase_id?: string
+          quantity?: number
+          unit_cost?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "purchase_items_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchase_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchase_items_purchase_id_fkey";
-            columns: ["purchase_id"];
-            isOneToOne: false;
-            referencedRelation: "purchases";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchase_items_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       purchase_losses: {
         Row: {
-          created_at: string;
-          id: string;
-          product_id: string;
-          purchase_id: string;
-          quantity_lost: number;
-          reason: string | null;
-          transporter_id: string;
-          unit_cost: number;
-          user_id: string;
-        };
+          created_at: string
+          id: string
+          product_id: string
+          purchase_id: string
+          quantity_lost: number
+          reason: string | null
+          transporter_id: string
+          unit_cost: number
+          user_id: string
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          product_id: string;
-          purchase_id: string;
-          quantity_lost: number;
-          reason?: string | null;
-          transporter_id: string;
-          unit_cost: number;
-          user_id: string;
-        };
+          created_at?: string
+          id?: string
+          product_id: string
+          purchase_id: string
+          quantity_lost: number
+          reason?: string | null
+          transporter_id: string
+          unit_cost: number
+          user_id: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          product_id?: string;
-          purchase_id?: string;
-          quantity_lost?: number;
-          reason?: string | null;
-          transporter_id?: string;
-          unit_cost?: number;
-          user_id?: string;
-        };
+          created_at?: string
+          id?: string
+          product_id?: string
+          purchase_id?: string
+          quantity_lost?: number
+          reason?: string | null
+          transporter_id?: string
+          unit_cost?: number
+          user_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "purchase_losses_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchase_losses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchase_losses_purchase_id_fkey";
-            columns: ["purchase_id"];
-            isOneToOne: false;
-            referencedRelation: "purchases";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchase_losses_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchase_losses_transporter_id_fkey";
-            columns: ["transporter_id"];
-            isOneToOne: false;
-            referencedRelation: "transporters";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchase_losses_transporter_id_fkey"
+            columns: ["transporter_id"]
+            isOneToOne: false
+            referencedRelation: "transporters"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchase_losses_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchase_losses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       purchases: {
         Row: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          status: Database["public"]["Enums"]["purchase_status"];
-          supplier_id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["purchase_status"]
+          supplier_id: string
+          user_id: string
+          warehouse_id: string
+        }
         Insert: {
-          company_id: string;
-          created_at?: string;
-          id?: string;
-          status?: Database["public"]["Enums"]["purchase_status"];
-          supplier_id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["purchase_status"]
+          supplier_id: string
+          user_id: string
+          warehouse_id: string
+        }
         Update: {
-          company_id?: string;
-          created_at?: string;
-          id?: string;
-          status?: Database["public"]["Enums"]["purchase_status"];
-          supplier_id?: string;
-          user_id?: string;
-          warehouse_id?: string;
-        };
+          company_id?: string
+          created_at?: string
+          id?: string
+          status?: Database["public"]["Enums"]["purchase_status"]
+          supplier_id?: string
+          user_id?: string
+          warehouse_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "purchases_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchases_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchases_supplier_id_fkey";
-            columns: ["supplier_id"];
-            isOneToOne: false;
-            referencedRelation: "suppliers";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchases_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchases_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "purchases_warehouse_id_fkey";
-            columns: ["warehouse_id"];
-            isOneToOne: false;
-            referencedRelation: "warehouses";
-            referencedColumns: ["id"];
+            foreignKeyName: "purchases_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       roles: {
         Row: {
-          id: number;
-          name: string;
-        };
+          id: number
+          name: string
+        }
         Insert: {
-          id?: never;
-          name: string;
-        };
+          id?: never
+          name: string
+        }
         Update: {
-          id?: never;
-          name?: string;
-        };
-        Relationships: [];
-      };
+          id?: never
+          name?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
-          address: string | null;
-          company_id: string;
-          contact_name: string | null;
-          created_at: string;
-          email: string | null;
-          id: string;
-          name: string;
-          phone: string | null;
-        };
+          address: string | null
+          company_id: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
         Insert: {
-          address?: string | null;
-          company_id: string;
-          contact_name?: string | null;
-          created_at?: string;
-          email?: string | null;
-          id?: string;
-          name: string;
-          phone?: string | null;
-        };
+          address?: string | null
+          company_id: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
         Update: {
-          address?: string | null;
-          company_id?: string;
-          contact_name?: string | null;
-          created_at?: string;
-          email?: string | null;
-          id?: string;
-          name?: string;
-          phone?: string | null;
-        };
+          address?: string | null
+          company_id?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "suppliers_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "suppliers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       transactions: {
         Row: {
-          created_at: string;
-          id: string;
-          note: string | null;
-          order_id: string | null;
-          product_id: string;
-          production_id: string | null;
-          purchase_id: string | null;
-          quantity: number;
-          transfer_group_id: string | null;
-          transformation_id: string | null;
-          type: Database["public"]["Enums"]["transaction_type"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          created_at: string
+          id: string
+          note: string | null
+          order_id: string | null
+          product_id: string
+          production_id: string | null
+          purchase_id: string | null
+          quantity: number
+          transfer_group_id: string | null
+          transformation_id: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+          warehouse_id: string
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          note?: string | null;
-          order_id?: string | null;
-          product_id: string;
-          production_id?: string | null;
-          purchase_id?: string | null;
-          quantity: number;
-          transfer_group_id?: string | null;
-          transformation_id?: string | null;
-          type: Database["public"]["Enums"]["transaction_type"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          product_id: string
+          production_id?: string | null
+          purchase_id?: string | null
+          quantity: number
+          transfer_group_id?: string | null
+          transformation_id?: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          user_id: string
+          warehouse_id: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          note?: string | null;
-          order_id?: string | null;
-          product_id?: string;
-          production_id?: string | null;
-          purchase_id?: string | null;
-          quantity?: number;
-          transfer_group_id?: string | null;
-          transformation_id?: string | null;
-          type?: Database["public"]["Enums"]["transaction_type"];
-          user_id?: string;
-          warehouse_id?: string;
-        };
+          created_at?: string
+          id?: string
+          note?: string | null
+          order_id?: string | null
+          product_id?: string
+          production_id?: string | null
+          purchase_id?: string | null
+          quantity?: number
+          transfer_group_id?: string | null
+          transformation_id?: string | null
+          type?: Database["public"]["Enums"]["transaction_type"]
+          user_id?: string
+          warehouse_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "transactions_order_id_fkey";
-            columns: ["order_id"];
-            isOneToOne: false;
-            referencedRelation: "orders";
-            referencedColumns: ["id"];
+            foreignKeyName: "transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "transactions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_production_id_fkey";
-            columns: ["production_id"];
-            isOneToOne: false;
-            referencedRelation: "productions";
-            referencedColumns: ["id"];
+            foreignKeyName: "transactions_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_purchase_id_fkey";
-            columns: ["purchase_id"];
-            isOneToOne: false;
-            referencedRelation: "purchases";
-            referencedColumns: ["id"];
+            foreignKeyName: "transactions_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_transformation_id_fkey";
-            columns: ["transformation_id"];
-            isOneToOne: false;
-            referencedRelation: "transformations";
-            referencedColumns: ["id"];
+            foreignKeyName: "transactions_transformation_id_fkey"
+            columns: ["transformation_id"]
+            isOneToOne: false
+            referencedRelation: "transformations"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transactions_warehouse_id_fkey";
-            columns: ["warehouse_id"];
-            isOneToOne: false;
-            referencedRelation: "warehouses";
-            referencedColumns: ["id"];
+            foreignKeyName: "transactions_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       transformation_inputs: {
         Row: {
-          created_at: string;
-          id: string;
-          product_id: string;
-          quantity: number;
-          transformation_id: string;
-        };
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          transformation_id: string
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          product_id: string;
-          quantity: number;
-          transformation_id: string;
-        };
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity: number
+          transformation_id: string
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          product_id?: string;
-          quantity?: number;
-          transformation_id?: string;
-        };
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          transformation_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "transformation_inputs_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "transformation_inputs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transformation_inputs_transformation_id_fkey";
-            columns: ["transformation_id"];
-            isOneToOne: false;
-            referencedRelation: "transformations";
-            referencedColumns: ["id"];
+            foreignKeyName: "transformation_inputs_transformation_id_fkey"
+            columns: ["transformation_id"]
+            isOneToOne: false
+            referencedRelation: "transformations"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       transformation_outputs: {
         Row: {
-          created_at: string;
-          id: string;
-          product_id: string;
-          quantity: number;
-          transformation_id: string;
-          unit_cost: number;
-        };
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          transformation_id: string
+          unit_cost: number
+        }
         Insert: {
-          created_at?: string;
-          id?: string;
-          product_id: string;
-          quantity: number;
-          transformation_id: string;
-          unit_cost: number;
-        };
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity: number
+          transformation_id: string
+          unit_cost: number
+        }
         Update: {
-          created_at?: string;
-          id?: string;
-          product_id?: string;
-          quantity?: number;
-          transformation_id?: string;
-          unit_cost?: number;
-        };
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          transformation_id?: string
+          unit_cost?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "transformation_outputs_product_id_fkey";
-            columns: ["product_id"];
-            isOneToOne: false;
-            referencedRelation: "products";
-            referencedColumns: ["id"];
+            foreignKeyName: "transformation_outputs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transformation_outputs_transformation_id_fkey";
-            columns: ["transformation_id"];
-            isOneToOne: false;
-            referencedRelation: "transformations";
-            referencedColumns: ["id"];
+            foreignKeyName: "transformation_outputs_transformation_id_fkey"
+            columns: ["transformation_id"]
+            isOneToOne: false
+            referencedRelation: "transformations"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       transformations: {
         Row: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          user_id: string
+          warehouse_id: string
+        }
         Insert: {
-          company_id: string;
-          created_at?: string;
-          id?: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          warehouse_id: string
+        }
         Update: {
-          company_id?: string;
-          created_at?: string;
-          id?: string;
-          user_id?: string;
-          warehouse_id?: string;
-        };
+          company_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          warehouse_id?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "transformations_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "transformations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transformations_user_id_fkey";
-            columns: ["user_id"];
-            isOneToOne: false;
-            referencedRelation: "users";
-            referencedColumns: ["id"];
+            foreignKeyName: "transformations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "transformations_warehouse_id_fkey";
-            columns: ["warehouse_id"];
-            isOneToOne: false;
-            referencedRelation: "warehouses";
-            referencedColumns: ["id"];
+            foreignKeyName: "transformations_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       transporters: {
         Row: {
-          address: string | null;
-          company_id: string;
-          contact_name: string | null;
-          created_at: string;
-          email: string | null;
-          id: string;
-          name: string;
-          phone: string | null;
-        };
+          address: string | null
+          company_id: string
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
         Insert: {
-          address?: string | null;
-          company_id: string;
-          contact_name?: string | null;
-          created_at?: string;
-          email?: string | null;
-          id?: string;
-          name: string;
-          phone?: string | null;
-        };
+          address?: string | null
+          company_id: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
         Update: {
-          address?: string | null;
-          company_id?: string;
-          contact_name?: string | null;
-          created_at?: string;
-          email?: string | null;
-          id?: string;
-          name?: string;
-          phone?: string | null;
-        };
+          address?: string | null
+          company_id?: string
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
         Relationships: [
           {
-            foreignKeyName: "transporters_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "transporters_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       users: {
         Row: {
-          company_id: string | null;
-          created_at: string;
-          email: string;
-          id: string;
-          must_change_password: boolean;
-          role_id: number;
-        };
+          company_id: string | null
+          created_at: string
+          email: string
+          id: string
+          must_change_password: boolean
+          role_id: number
+        }
         Insert: {
-          company_id?: string | null;
-          created_at?: string;
-          email: string;
-          id: string;
-          must_change_password?: boolean;
-          role_id: number;
-        };
+          company_id?: string | null
+          created_at?: string
+          email: string
+          id: string
+          must_change_password?: boolean
+          role_id: number
+        }
         Update: {
-          company_id?: string | null;
-          created_at?: string;
-          email?: string;
-          id?: string;
-          must_change_password?: boolean;
-          role_id?: number;
-        };
+          company_id?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          must_change_password?: boolean
+          role_id?: number
+        }
         Relationships: [
           {
-            foreignKeyName: "users_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "users_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "users_role_id_fkey";
-            columns: ["role_id"];
-            isOneToOne: false;
-            referencedRelation: "roles";
-            referencedColumns: ["id"];
+            foreignKeyName: "users_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
           },
-        ];
-      };
+        ]
+      }
       warehouses: {
         Row: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          location: string | null;
-          name: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          location: string | null
+          name: string
+        }
         Insert: {
-          company_id: string;
-          created_at?: string;
-          id?: string;
-          location?: string | null;
-          name: string;
-        };
+          company_id: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          name: string
+        }
         Update: {
-          company_id?: string;
-          created_at?: string;
-          id?: string;
-          location?: string | null;
-          name?: string;
-        };
+          company_id?: string
+          created_at?: string
+          id?: string
+          location?: string | null
+          name?: string
+        }
         Relationships: [
           {
-            foreignKeyName: "warehouses_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
+            foreignKeyName: "warehouses_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
           },
-        ];
-      };
-    };
+        ]
+      }
+    }
     Views: {
-      [_ in never]: never;
-    };
+      [_ in never]: never
+    }
     Functions: {
       cancel_order: {
-        Args: { order_id: string };
+        Args: { order_id: string }
         Returns: {
-          amount_paid: number;
-          client_id: string;
-          company_id: string;
-          created_at: string;
-          id: string;
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          status: Database["public"]["Enums"]["order_status"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          amount_paid: number
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          status: Database["public"]["Enums"]["order_status"]
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "orders";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_purchase: {
-        Args: { purchase_id: string };
+        Args: { purchase_id: string }
         Returns: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          status: Database["public"]["Enums"]["purchase_status"];
-          supplier_id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["purchase_status"]
+          supplier_id: string
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "purchases";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_order: {
-        Args: { payload: Json };
+        Args: { payload: Json }
         Returns: {
-          amount_paid: number;
-          client_id: string;
-          company_id: string;
-          created_at: string;
-          id: string;
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          status: Database["public"]["Enums"]["order_status"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          amount_paid: number
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          status: Database["public"]["Enums"]["order_status"]
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "orders";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_production: {
-        Args: { payload: Json };
+        Args: { payload: Json }
         Returns: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "productions";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "productions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_purchase: {
-        Args: { payload: Json };
+        Args: { payload: Json }
         Returns: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          status: Database["public"]["Enums"]["purchase_status"];
-          supplier_id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["purchase_status"]
+          supplier_id: string
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "purchases";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_transformation: {
-        Args: { payload: Json };
+        Args: { payload: Json }
         Returns: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "transformations";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-      current_company_id: { Args: never; Returns: string };
-      current_role_name: { Args: never; Returns: string };
-      log_page_visit: { Args: { module: string }; Returns: undefined };
+          from: "*"
+          to: "transformations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      current_company_id: { Args: never; Returns: string }
+      current_role_name: { Args: never; Returns: string }
+      log_page_visit: { Args: { module: string }; Returns: undefined }
       receive_purchase: {
-        Args: { losses?: Json; purchase_id: string };
+        Args: { losses?: Json; purchase_id: string }
         Returns: {
-          company_id: string;
-          created_at: string;
-          id: string;
-          status: Database["public"]["Enums"]["purchase_status"];
-          supplier_id: string;
-          user_id: string;
-          warehouse_id: string;
-        };
+          company_id: string
+          created_at: string
+          id: string
+          status: Database["public"]["Enums"]["purchase_status"]
+          supplier_id: string
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "purchases";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_payment: {
-        Args: { amount: number; order_id: string };
+        Args: { amount: number; order_id: string }
         Returns: {
-          amount_paid: number;
-          client_id: string;
-          company_id: string;
-          created_at: string;
-          id: string;
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          status: Database["public"]["Enums"]["order_status"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          amount_paid: number
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          status: Database["public"]["Enums"]["order_status"]
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "orders";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       transfer_stock: {
         Args: {
-          p_from_warehouse_id: string;
-          p_product_id: string;
-          p_quantity: number;
-          p_to_warehouse_id: string;
-        };
-        Returns: undefined;
-      };
+          p_from_warehouse_id: string
+          p_product_id: string
+          p_quantity: number
+          p_to_warehouse_id: string
+        }
+        Returns: undefined
+      }
       validate_order: {
-        Args: { order_id: string };
+        Args: { order_id: string }
         Returns: {
-          amount_paid: number;
-          client_id: string;
-          company_id: string;
-          created_at: string;
-          id: string;
-          payment_status: Database["public"]["Enums"]["payment_status"];
-          status: Database["public"]["Enums"]["order_status"];
-          user_id: string;
-          warehouse_id: string;
-        };
+          amount_paid: number
+          client_id: string
+          company_id: string
+          created_at: string
+          id: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          status: Database["public"]["Enums"]["order_status"]
+          user_id: string
+          warehouse_id: string
+        }
         SetofOptions: {
-          from: "*";
-          to: "orders";
-          isOneToOne: true;
-          isSetofReturn: false;
-        };
-      };
-    };
+          from: "*"
+          to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+    }
     Enums: {
-      order_status: "pending" | "validated" | "cancelled";
-      payment_status: "unpaid" | "partial" | "paid";
-      purchase_status: "pending" | "received" | "cancelled";
-      transaction_type: "IN" | "OUT" | "ADJUSTMENT";
-    };
+      order_status: "pending" | "validated" | "cancelled"
+      payment_status: "unpaid" | "partial" | "paid"
+      purchase_status: "pending" | "received" | "cancelled"
+      transaction_type: "IN" | "OUT" | "ADJUSTMENT"
+    }
     CompositeTypes: {
-      [_ in never]: never;
-    };
-  };
-};
+      [_ in never]: never
+    }
+  }
+}
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R;
+      Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R;
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
       }
       ? R
       : never
-    : never;
+    : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I;
+      Insert: infer I
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I;
+        Insert: infer I
       }
       ? I
       : never
-    : never;
+    : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
-  TableName extends (DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U;
+      Update: infer U
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U;
+        Update: infer U
       }
       ? U
       : never
-    : never;
+    : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never) = never,
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never;
+    : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals;
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never) = never,
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals;
+  schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never;
+    : never
 
 export const Constants = {
   graphql_public: {
@@ -1466,7 +1481,7 @@ export const Constants = {
       transaction_type: ["IN", "OUT", "ADJUSTMENT"],
     },
   },
-} as const;
+} as const
 
 // Alias pratiques utilisés dans le reste de l'app (auth, formulaires, RBAC).
 export type TransactionType = Database["public"]["Enums"]["transaction_type"];

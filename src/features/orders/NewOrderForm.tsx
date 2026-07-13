@@ -16,7 +16,7 @@ const orderSchema = z.object({
     .array(
       z.object({
         productId: z.string().uuid("Choisissez un produit"),
-        quantity: z.coerce.number().int().min(1, "Quantité minimale : 1"),
+        quantity: z.coerce.number().positive("La quantité doit être positive"),
       }),
     )
     .min(1, "Ajoutez au moins une ligne"),
@@ -108,7 +108,7 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
               <option value="">— Choisir —</option>
               {products?.map((product) => (
                 <option key={product.id} value={product.id}>
-                  {product.name} (stock : {product.stock})
+                  {product.name} (stock : {product.stock} {product.unit})
                 </option>
               ))}
             </select>
@@ -119,7 +119,7 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
 
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-            <Input type="number" {...register(`items.${index}.quantity` as const)} />
+            <Input type="number" step="0.001" {...register(`items.${index}.quantity` as const)} />
           </div>
 
           <Button type="button" variant="secondary" onClick={() => remove(index)}>

@@ -24,7 +24,10 @@ export function ProductionDetailPage() {
     id: string;
     quantity: number;
     unit_cost: number;
-    products: { id: string; name: string } | { id: string; name: string }[] | null;
+    products:
+      | { id: string; name: string; unit: string }
+      | { id: string; name: string; unit: string }[]
+      | null;
   }[];
   const total = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
   const creatorRelation = production.users as { email: string } | { email: string }[] | null;
@@ -63,11 +66,13 @@ export function ProductionDetailPage() {
           <tbody>
             {items.map((item) => {
               const product = item.products;
-              const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+              const productInfo = Array.isArray(product) ? product[0] : product;
               return (
                 <tr key={item.id} className="border-b border-gray-100">
-                  <td className="py-2">{productName ?? "Produit supprimé"}</td>
-                  <td className="py-2">{item.quantity}</td>
+                  <td className="py-2">{productInfo?.name ?? "Produit supprimé"}</td>
+                  <td className="py-2">
+                    {item.quantity} {productInfo?.unit ?? ""}
+                  </td>
                   <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
                   <td className="py-2">
                     {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA

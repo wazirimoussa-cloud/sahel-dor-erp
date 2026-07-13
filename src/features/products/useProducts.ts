@@ -6,6 +6,7 @@ export interface NewProduct {
   name: string;
   price: number;
   stock: number;
+  unit: string;
 }
 
 export function useProducts() {
@@ -14,7 +15,7 @@ export function useProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, stock, company_id, created_at")
+        .select("id, name, price, stock, unit, company_id, created_at")
         .order("name", { ascending: true });
       if (error) throw error;
       return data;
@@ -31,6 +32,7 @@ export function useCreateProduct() {
         name: product.name,
         price: product.price,
         stock: product.stock,
+        unit: product.unit,
       });
       if (error) throw error;
     },

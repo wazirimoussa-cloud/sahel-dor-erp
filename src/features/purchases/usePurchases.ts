@@ -31,7 +31,7 @@ export function usePurchase(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, user_id, users(email), suppliers(name), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name))",
+          "id, status, created_at, user_id, users(email), suppliers(name), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit))",
         )
         .eq("id", purchaseId as string)
         .single();
@@ -108,7 +108,7 @@ export function usePurchaseLosses(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchase_losses")
         .select(
-          "id, quantity_lost, unit_cost, reason, created_at, products(name), transporters(id, name)",
+          "id, quantity_lost, unit_cost, reason, created_at, products(name, unit), transporters(id, name)",
         )
         .eq("purchase_id", purchaseId as string)
         .order("created_at", { ascending: false });
@@ -125,7 +125,7 @@ export function useAllPurchaseLosses() {
       const { data, error } = await supabase
         .from("purchase_losses")
         .select(
-          "id, quantity_lost, unit_cost, reason, created_at, purchase_id, products(name), transporters(id, name)",
+          "id, quantity_lost, unit_cost, reason, created_at, purchase_id, products(name, unit), transporters(id, name)",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;

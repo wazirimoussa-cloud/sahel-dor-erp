@@ -29,7 +29,7 @@ export function useProduction(productionId: string | undefined) {
       const { data, error } = await supabase
         .from("productions")
         .select(
-          "id, created_at, user_id, users(email), warehouses(name), production_items(id, quantity, unit_cost, products(id, name))",
+          "id, created_at, user_id, users(email), warehouses(name), production_items(id, quantity, unit_cost, products(id, name, unit))",
         )
         .eq("id", productionId as string)
         .single();

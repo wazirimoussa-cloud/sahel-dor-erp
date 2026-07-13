@@ -15,7 +15,6 @@ const movementSchema = z.object({
   type: z.enum(["IN", "OUT", "ADJUSTMENT"]),
   quantity: z.coerce
     .number()
-    .int()
     .refine((value) => value !== 0, "La quantité ne peut pas être 0"),
   note: z.string().max(200).optional(),
 });
@@ -76,7 +75,7 @@ export function StockMovementForm() {
           <option value="">— Choisir —</option>
           {products?.map((product) => (
             <option key={product.id} value={product.id}>
-              {product.name}
+              {product.name} ({product.unit})
             </option>
           ))}
         </select>
@@ -117,7 +116,7 @@ export function StockMovementForm() {
 
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-        <Input type="number" {...register("quantity")} />
+        <Input type="number" step="0.001" {...register("quantity")} />
         {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
       </div>
 

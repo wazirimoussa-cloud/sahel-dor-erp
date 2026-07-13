@@ -37,11 +37,24 @@ export function TransformationsPage() {
           </thead>
           <tbody>
             {transformations?.map((transformation) => {
-              const inputs = transformation.transformation_inputs as { quantity: number }[];
-              const outputs = transformation.transformation_outputs as { quantity: number }[];
+              const inputs = transformation.transformation_inputs as {
+                quantity: number;
+                products: { unit: string } | { unit: string }[] | null;
+              }[];
+              const outputs = transformation.transformation_outputs as {
+                quantity: number;
+                products: { unit: string } | { unit: string }[] | null;
+              }[];
+              const unitOf = (row: { products: { unit: string } | { unit: string }[] | null }) => {
+                const p = row.products;
+                return (Array.isArray(p) ? p[0] : p)?.unit;
+              };
               const totalInputQty = inputs.reduce((sum, item) => sum + item.quantity, 0);
               const totalOutputQty = outputs.reduce((sum, item) => sum + item.quantity, 0);
-              const rendement = totalInputQty > 0 ? (totalOutputQty / totalInputQty) * 100 : null;
+              const allUnits = new Set([...inputs.map(unitOf), ...outputs.map(unitOf)]);
+              const sameUnit = allUnits.size === 1;
+              const rendement =
+                sameUnit && totalInputQty > 0 ? (totalOutputQty / totalInputQty) * 100 : null;
               const warehouseRelation = transformation.warehouses as
                 { name: string } | { name: string }[] | null;
               const warehouseName = Array.isArray(warehouseRelation)
@@ -56,9 +69,11 @@ export function TransformationsPage() {
                   <td className="py-2">{inputs.length}</td>
                   <td className="py-2">{outputs.length}</td>
                   <td className="py-2">
-                    {rendement === null
-                      ? "—"
-                      : `${rendement.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}%`}
+                    {!sameUnit
+                      ? "— (unités différentes)"
+                      : rendement === null
+                        ? "—"
+                        : `${rendement.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}%`}
                   </td>
                   <td className="py-2 text-right">
                     <Link

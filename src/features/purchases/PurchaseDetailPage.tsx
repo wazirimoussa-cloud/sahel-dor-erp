@@ -69,7 +69,10 @@ export function PurchaseDetailPage() {
     id: string;
     quantity: number;
     unit_cost: number;
-    products: { id: string; name: string } | { id: string; name: string }[] | null;
+    products:
+      | { id: string; name: string; unit: string }
+      | { id: string; name: string; unit: string }[]
+      | null;
   }[];
   function productInfoOf(item: (typeof items)[number]) {
     return Array.isArray(item.products) ? item.products[0] : item.products;
@@ -99,12 +102,12 @@ export function PurchaseDetailPage() {
 
   async function buildPurchasePdf() {
     const products = items.map((item) => {
-      const product = item.products;
-      const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+      const productInfo = productInfoOf(item);
       return {
-        productName: productName ?? "Produit supprimé",
+        productName: productInfo?.name ?? "Produit supprimé",
         quantity: item.quantity,
         unitAmount: item.unit_cost,
+        unit: productInfo?.unit,
       };
     });
     return generatePurchasePdf({
@@ -204,12 +207,13 @@ export function PurchaseDetailPage() {
           </thead>
           <tbody>
             {items.map((item) => {
-              const product = item.products;
-              const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+              const productInfo = productInfoOf(item);
               return (
                 <tr key={item.id} className="border-b border-gray-100">
-                  <td className="py-2">{productName ?? "Produit supprimé"}</td>
-                  <td className="py-2">{item.quantity}</td>
+                  <td className="py-2">{productInfo?.name ?? "Produit supprimé"}</td>
+                  <td className="py-2">
+                    {item.quantity} {productInfo?.unit ?? ""}
+                  </td>
                   <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
                   <td className="py-2">
                     {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
@@ -283,10 +287,13 @@ export function PurchaseDetailPage() {
                 {items.map((item, index) => (
                   <tr key={item.id} className="border-b border-gray-100">
                     <td className="py-2">{productInfoOf(item)?.name ?? "Produit supprimé"}</td>
-                    <td className="py-2">{item.quantity}</td>
+                    <td className="py-2">
+                      {item.quantity} {productInfoOf(item)?.unit ?? ""}
+                    </td>
                     <td className="py-2">
                       <Input
                         type="number"
+                        step="0.001"
                         defaultValue={item.quantity}
                         min={0}
                         max={item.quantity}
@@ -341,10 +348,10 @@ export function PurchaseDetailPage() {
             <tbody>
               {losses.map((loss) => {
                 const productRelation = loss.products as
-                  { name: string } | { name: string }[] | null;
-                const productName = Array.isArray(productRelation)
-                  ? productRelation[0]?.name
-                  : productRelation?.name;
+                  { name: string; unit: string } | { name: string; unit: string }[] | null;
+                const productInfo = Array.isArray(productRelation)
+                  ? productRelation[0]
+                  : productRelation;
                 const transporterRelation = loss.transporters as
                   { id: string; name: string } | { id: string; name: string }[] | null;
                 const transporter = Array.isArray(transporterRelation)
@@ -352,8 +359,10 @@ export function PurchaseDetailPage() {
                   : transporterRelation;
                 return (
                   <tr key={loss.id} className="border-b border-gray-100">
-                    <td className="py-2">{productName ?? "—"}</td>
-                    <td className="py-2">{loss.quantity_lost}</td>
+                    <td className="py-2">{productInfo?.name ?? "—"}</td>
+                    <td className="py-2">
+                      {loss.quantity_lost} {productInfo?.unit ?? ""}
+                    </td>
                     <td className="py-2">
                       {(loss.quantity_lost * loss.unit_cost).toLocaleString("fr-FR")} FCFA
                     </td>
@@ -368,9 +377,10 @@ export function PurchaseDetailPage() {
                             createdAt: loss.created_at,
                             items: [
                               {
-                                productName: productName ?? "Produit supprimé",
+                                productName: productInfo?.name ?? "Produit supprimé",
                                 quantityLost: loss.quantity_lost,
                                 unitCost: loss.unit_cost,
+                                unit: productInfo?.unit,
                               },
                             ],
                           }).then(({ doc, filename }) => doc.save(filename))

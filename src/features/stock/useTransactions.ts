@@ -24,7 +24,7 @@ export function useTransactions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, type, quantity, note, created_at, products(name), warehouses(name)")
+        .select("id, type, quantity, note, created_at, products(name, unit), warehouses(name)")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;

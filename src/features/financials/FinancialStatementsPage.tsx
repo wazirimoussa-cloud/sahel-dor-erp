@@ -225,7 +225,7 @@ export function FinancialStatementsPage() {
               <div className="mt-4 rounded-md bg-amber-50 p-3 text-xs text-amber-700">
                 Stock non valorisé (issu uniquement de production/transformation, jamais acheté —
                 non inclus dans le total Actif) :{" "}
-                {data.unvaluedStock.map((s) => `${s.name} (${s.quantity})`).join(", ")}
+                {data.unvaluedStock.map((s) => `${s.name} (${s.quantity} ${s.unit})`).join(", ")}
               </div>
             )}
           </Card>

@@ -19,7 +19,7 @@ export function useTransformations() {
       const { data, error } = await supabase
         .from("transformations")
         .select(
-          "id, created_at, warehouses(name), transformation_inputs(quantity), transformation_outputs(quantity, unit_cost)",
+          "id, created_at, warehouses(name), transformation_inputs(quantity, products(unit)), transformation_outputs(quantity, unit_cost, products(unit))",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -36,7 +36,7 @@ export function useTransformation(transformationId: string | undefined) {
       const { data, error } = await supabase
         .from("transformations")
         .select(
-          "id, created_at, user_id, users(email), warehouses(name), transformation_inputs(id, quantity, products(id, name)), transformation_outputs(id, quantity, unit_cost, products(id, name))",
+          "id, created_at, user_id, users(email), warehouses(name), transformation_inputs(id, quantity, products(id, name, unit)), transformation_outputs(id, quantity, unit_cost, products(id, name, unit))",
         )
         .eq("id", transformationId as string)
         .single();

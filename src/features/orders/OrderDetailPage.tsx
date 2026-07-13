@@ -85,7 +85,10 @@ export function OrderDetailPage() {
     id: string;
     quantity: number;
     unit_price: number;
-    products: { id: string; name: string } | { id: string; name: string }[] | null;
+    products:
+      | { id: string; name: string; unit: string }
+      | { id: string; name: string; unit: string }[]
+      | null;
   }[];
   const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
   const companyRelation = order.companies as { vat_rate: number } | { vat_rate: number }[] | null;
@@ -108,11 +111,12 @@ export function OrderDetailPage() {
   async function buildOrderPdf() {
     const products = items.map((item) => {
       const product = item.products;
-      const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+      const productInfo = Array.isArray(product) ? product[0] : product;
       return {
-        productName: productName ?? "Produit supprimé",
+        productName: productInfo?.name ?? "Produit supprimé",
         quantity: item.quantity,
         unitAmount: item.unit_price,
+        unit: productInfo?.unit,
       };
     });
     return generateOrderPdf({
@@ -215,11 +219,13 @@ export function OrderDetailPage() {
           <tbody>
             {items.map((item) => {
               const product = item.products;
-              const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+              const productInfo = Array.isArray(product) ? product[0] : product;
               return (
                 <tr key={item.id} className="border-b border-gray-100">
-                  <td className="py-2">{productName ?? "Produit supprimé"}</td>
-                  <td className="py-2">{item.quantity}</td>
+                  <td className="py-2">{productInfo?.name ?? "Produit supprimé"}</td>
+                  <td className="py-2">
+                    {item.quantity} {productInfo?.unit ?? ""}
+                  </td>
                   <td className="py-2">{item.unit_price.toLocaleString("fr-FR")} FCFA</td>
                   <td className="py-2">
                     {(item.unit_price * item.quantity).toLocaleString("fr-FR")} FCFA

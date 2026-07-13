@@ -13,7 +13,7 @@ const transferSchema = z
     productId: z.string().uuid("Choisissez un produit"),
     fromWarehouseId: z.string().uuid("Choisissez un magasin source"),
     toWarehouseId: z.string().uuid("Choisissez un magasin destination"),
-    quantity: z.coerce.number().int().positive("La quantité doit être positive"),
+    quantity: z.coerce.number().positive("La quantité doit être positive"),
   })
   .refine((values) => values.fromWarehouseId !== values.toWarehouseId, {
     message: "Le magasin source et le magasin destination doivent être différents",
@@ -61,7 +61,7 @@ export function TransferStockForm() {
           <option value="">— Choisir —</option>
           {products?.map((product) => (
             <option key={product.id} value={product.id}>
-              {product.name}
+              {product.name} ({product.unit})
             </option>
           ))}
         </select>
@@ -108,7 +108,7 @@ export function TransferStockForm() {
 
       <div>
         <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-        <Input type="number" {...register("quantity")} />
+        <Input type="number" step="0.001" {...register("quantity")} />
         {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
       </div>
 

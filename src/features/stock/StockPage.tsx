@@ -5,6 +5,7 @@ import { useProductStocks } from "@/features/stock/useProductStocks";
 import { StockMovementForm } from "@/features/stock/StockMovementForm";
 import { TransferStockForm } from "@/features/stock/TransferStockForm";
 import { Card } from "@/components/ui/Card";
+import { isLowStock } from "@/lib/stockThreshold";
 
 const TYPE_LABELS: Record<string, string> = {
   IN: "Entrée",
@@ -12,11 +13,10 @@ const TYPE_LABELS: Record<string, string> = {
   ADJUSTMENT: "Ajustement",
 };
 
-const LOW_STOCK_THRESHOLD = 5;
-
 interface ProductStockGroup {
   productId: string;
   productName: string;
+  unit: string;
   total: number;
   byWarehouse: { warehouseName: string; stock: number }[];
 }
@@ -39,7 +39,9 @@ export function StockPage() {
     () =>
       (productStocks ?? []).flatMap((row) => {
         const product = row.products as
-          { id: string; name: string } | { id: string; name: string }[] | null;
+          | { id: string; name: string; unit: string }
+          | { id: string; name: string; unit: string }[]
+          | null;
         const productInfo = Array.isArray(product) ? product[0] : product;
         const warehouse = row.warehouses as
           { id: string; name: string } | { id: string; name: string }[] | null;
@@ -76,6 +78,7 @@ export function StockPage() {
     const group = stockGroups.get(row.product.id) ?? {
       productId: row.product.id,
       productName: row.product.name,
+      unit: row.product.unit,
       total: 0,
       byWarehouse: [],
     };
@@ -86,7 +89,15 @@ export function StockPage() {
   const sortedStockGroups = [...stockGroups.values()].sort((a, b) =>
     a.productName.localeCompare(b.productName, "fr"),
   );
-  const grandTotal = filteredRows.reduce((sum, r) => sum + r.stock, 0);
+  // Regroupé par unité plutôt qu'une somme unique : des tonnes et des cartons ne
+  // s'additionnent pas entre eux.
+  const totalsByUnit = new Map<string, number>();
+  for (const row of filteredRows) {
+    totalsByUnit.set(row.product.unit, (totalsByUnit.get(row.product.unit) ?? 0) + row.stock);
+  }
+  const grandTotalLabel = [...totalsByUnit.entries()]
+    .map(([unit, total]) => `${total.toLocaleString("fr-FR")} ${unit}`)
+    .join(" · ");
 
   return (
     <div className="space-y-6">
@@ -160,9 +171,9 @@ export function StockPage() {
                       {group.productName}
                     </td>
                     <td
-                      className={`py-2 ${group.total < LOW_STOCK_THRESHOLD ? "text-red-600" : ""}`}
+                      className={`py-2 ${isLowStock(group.total, group.unit) ? "text-red-600" : ""}`}
                     >
-                      {group.total}
+                      {group.total} {group.unit}
                     </td>
                   </tr>
                   {group.byWarehouse.map((w) => (
@@ -172,7 +183,9 @@ export function StockPage() {
                     >
                       <td className="py-1"></td>
                       <td className="py-1 pl-2">{w.warehouseName}</td>
-                      <td className="py-1">{w.stock}</td>
+                      <td className="py-1">
+                        {w.stock} {group.unit}
+                      </td>
                     </tr>
                   ))}
                 </Fragment>
@@ -191,7 +204,7 @@ export function StockPage() {
                   <td className="py-2" colSpan={2}>
                     Total restant
                   </td>
-                  <td className="py-2">{grandTotal}</td>
+                  <td className="py-2">{grandTotalLabel}</td>
                 </tr>
               </tfoot>
             )}
@@ -216,8 +229,9 @@ export function StockPage() {
             </thead>
             <tbody>
               {transactions.map((tx) => {
-                const product = tx.products as { name: string } | { name: string }[] | null;
-                const productName = Array.isArray(product) ? product[0]?.name : product?.name;
+                const product = tx.products as
+                  { name: string; unit: string } | { name: string; unit: string }[] | null;
+                const productInfo = Array.isArray(product) ? product[0] : product;
                 const warehouse = tx.warehouses as { name: string } | { name: string }[] | null;
                 const warehouseName = Array.isArray(warehouse)
                   ? warehouse[0]?.name
@@ -225,10 +239,12 @@ export function StockPage() {
                 return (
                   <tr key={tx.id} className="border-b border-gray-100">
                     <td className="py-2">{new Date(tx.created_at).toLocaleString("fr-FR")}</td>
-                    <td className="py-2">{productName ?? "—"}</td>
+                    <td className="py-2">{productInfo?.name ?? "—"}</td>
                     <td className="py-2">{warehouseName ?? "—"}</td>
                     <td className="py-2">{TYPE_LABELS[tx.type] ?? tx.type}</td>
-                    <td className="py-2">{tx.quantity}</td>
+                    <td className="py-2">
+                      {tx.quantity} {productInfo?.unit ?? ""}
+                    </td>
                     <td className="py-2 text-gray-500">{tx.note ?? "—"}</td>
                   </tr>
                 );
