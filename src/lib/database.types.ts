@@ -432,6 +432,51 @@ export type Database = {
           },
         ]
       }
+      product_price_history: {
+        Row: {
+          created_at: string
+          id: string
+          new_price: number
+          old_price: number
+          product_id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          new_price: number
+          old_price: number
+          product_id: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          new_price?: number
+          old_price?: number
+          product_id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_price_history_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_price_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_stocks: {
         Row: {
           id: string
@@ -1318,6 +1363,24 @@ export type Database = {
           p_to_warehouse_id: string
         }
         Returns: undefined
+      }
+      update_product_price: {
+        Args: { new_price: number; product_id: string; reason?: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          price: number
+          stock: number
+          unit: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       validate_order: {
         Args: { order_id: string }

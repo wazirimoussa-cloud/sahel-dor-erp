@@ -513,6 +513,17 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     même unité (affiche "unités différentes" sinon) — un cas réel pour ce métier
     (transformation d'Arachide décortiquée en tonnes vers de l'Huile en cartons/bidons).
 
+25. **Historique des changements de prix** (`0024_product_price_history.sql`) : jusqu'ici
+    aucune fonctionnalité ne permettait de modifier le prix d'un produit existant (seule
+    la création en fixait un). Nouvelle table append-only `product_price_history`
+    (`product_id, old_price, new_price, reason, user_id, created_at`, immuable comme le
+    reste du grand livre) et RPC `update_product_price(product_id, new_price, reason)` —
+    réservée à `warehouse_manager`/`production_manager` (mêmes rôles que la gestion du
+    catalogue depuis la Phase 9), n'insère une ligne d'historique que si le prix change
+    réellement. Page "Produits" : bouton "Modifier le prix" (rôles autorisés) et bouton
+    "Historique" (tout rôle authentifié) affichant chaque changement — ancien/nouveau
+    prix, motif optionnel, auteur, date.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
@@ -574,3 +585,11 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   charges fournie par l'utilisateur ("gestion des stocks, achats/ventes, production,
   finances et ressources humaines") mais explicitement hors périmètre pour l'instant —
   aucune fiche employé, aucun suivi RH ou paie dans l'app.
+- **Un produit créé via le formulaire "Produits" n'obtient toujours pas de ligne
+  `product_stocks`** (`useCreateProduct`, insert direct dans `products`, sans passer par
+  une transaction) : c'est le bug corrigé rétroactivement en Phase 14 (points 24, `0022`)
+  pour les produits existants, mais la cause (le formulaire de création) n'a pas été
+  changée — un nouveau produit créé avec un stock initial non nul reproduira le même
+  écart (invisible sur la synthèse de stock tant qu'aucun mouvement réel ne le
+  concerne). À corriger en insérant aussi une ligne `product_stocks` au magasin par
+  défaut lors de la création, si ce cas se represente.
