@@ -117,27 +117,33 @@ export type Database = {
           capital_social: number
           created_at: string
           id: string
+          impot_societes_rate: number
           name: string
           precompte_isb_rate: number
           taxe_immobiliere_rate: number
+          taxe_professionnelle_rate: number
           vat_rate: number
         }
         Insert: {
           capital_social?: number
           created_at?: string
           id?: string
+          impot_societes_rate?: number
           name: string
           precompte_isb_rate?: number
           taxe_immobiliere_rate?: number
+          taxe_professionnelle_rate?: number
           vat_rate?: number
         }
         Update: {
           capital_social?: number
           created_at?: string
           id?: string
+          impot_societes_rate?: number
           name?: string
           precompte_isb_rate?: number
           taxe_immobiliere_rate?: number
+          taxe_professionnelle_rate?: number
           vat_rate?: number
         }
         Relationships: []

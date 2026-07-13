@@ -585,6 +585,23 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     "Magasin principal" de sa société avec ce stock — protège toute voie de création
     (formulaire actuel, insert direct, tout outil futur), pas seulement le formulaire.
     Aucun changement frontend nécessaire.
+31. **IS et Taxe Professionnelle — structure préparée**
+    (`0030_is_taxe_professionnelle_structure.sql`) : suite à l'inventaire fiscal complet
+    de l'Ordonnance N°2025-44 (point 29), deux impositions supplémentaires jugées
+    clairement applicables à Sahel d'Or (SARL commerciale, activité de gros) même en
+    l'absence de salariés : l'**Impôt sur les Sociétés** et la **Taxe Professionnelle**
+    (patente). Même traitement que le point 28 (Précompte ISB/TI) : nouvelles colonnes
+    `companies.impot_societes_rate` / `companies.taxe_professionnelle_rate` (0 par
+    défaut) et deux comptes (`695 — Impôts sur les bénéfices (IS)`,
+    `646 — Taxe professionnelle (patente)`), **sans aucun calcul automatique** — le texte
+    ne fixe pas ces taux (même limite que TVA/Précompte ISB/TI). Le reste de l'inventaire
+    (ITS, taxe sur paiements en espèces, droits d'enregistrement, IRCM, publicité, droits
+    fonciers) reste volontairement hors périmètre : soit bloqué par un prérequis absent
+    de l'app (ITS nécessite un module paie, la taxe sur paiements en espèces nécessite un
+    suivi du mode de paiement fournisseur — décaissement — qui n'existe pas encore), soit
+    trop ponctuel pour justifier une structure comptable permanente (droits
+    d'enregistrement, IRCM, publicité, droits fonciers ne concernent que des événements
+    rares : contrats, dividendes, enseignes, achat de terrain).
 
 ## Limites connues / pistes pour la suite
 
