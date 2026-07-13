@@ -573,6 +573,18 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     Vérifié de bout en bout (frontend + écriture comptable générée) sur l'environnement
     Formation : une vente mixte (produit exonéré + produit taxable) ne taxe que la
     ligne taxable, et l'achat correspondant fait de même côté TVA déductible.
+30. **Correction à la source du trou `product_stocks` manquant**
+    (`0029_seed_product_stock_on_create.sql`) : le bug déjà patché rétroactivement en
+    `0022`/`0023` (point 24) n'avait jamais été corrigé à sa source — tout produit créé
+    directement via le formulaire "Produits" continuait de n'avoir qu'un
+    `products.stock` dénormalisé, sans ligne `product_stocks` réelle, ce qui faisait
+    échouer la toute première vente/achat de ce produit (le trigger de stock voit
+    correctement zéro stock en magasin et refuse de passer en négatif). Nouveau trigger
+    `trg_seed_product_stock` (`AFTER INSERT ON products`) : si le produit est créé avec
+    un stock initial > 0, une ligne `product_stocks` est automatiquement créée au
+    "Magasin principal" de sa société avec ce stock — protège toute voie de création
+    (formulaire actuel, insert direct, tout outil futur), pas seulement le formulaire.
+    Aucun changement frontend nécessaire.
 
 ## Limites connues / pistes pour la suite
 
