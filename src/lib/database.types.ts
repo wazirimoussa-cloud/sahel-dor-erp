@@ -118,6 +118,8 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          precompte_isb_rate: number
+          taxe_immobiliere_rate: number
           vat_rate: number
         }
         Insert: {
@@ -125,6 +127,8 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          precompte_isb_rate?: number
+          taxe_immobiliere_rate?: number
           vat_rate?: number
         }
         Update: {
@@ -132,6 +136,8 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          precompte_isb_rate?: number
+          taxe_immobiliere_rate?: number
           vat_rate?: number
         }
         Relationships: []

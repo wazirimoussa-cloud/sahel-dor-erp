@@ -544,6 +544,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     Même limite que le point 26 : structure comptable uniquement, aucun mécanisme de
     ravitaillement ni de dépense en espèces encore implémenté.
 
+28. **Précompte P.IS/IBA et Taxe Immobilière — structure préparée**
+    (`0027_precompte_isb_taxe_immobiliere.sql`) : d'après l'Ordonnance N°2025-44 (Loi de
+    Finances 2026, `Art. 90/92` pour le précompte, `Art. 257` pour la TI), aucune des
+    dispenses listées ne semble s'appliquer à Sahel d'Or (Sarl commerciale classique) —
+    ces deux impositions sont donc probablement dues, mais **ni le texte ni cette
+    migration ne fixent leur taux réel** (non présent dans l'ordonnance, qui ne modifie
+    que des articles d'exonération/base de calcul du Code Général des Impôts existant —
+    même situation que pour le taux de TVA en Phase 5). Nouvelles colonnes
+    `companies.precompte_isb_rate` / `companies.taxe_immobiliere_rate` (0 par défaut =
+    aucun impact tant que le taux réel n'est pas saisi) et deux comptes dédiés
+    (`4494 — Précompte ISB (Etat)`, `647 — Taxe immobilière`, à faire valider par un
+    comptable). **Aucun calcul automatique n'est branché sur les transactions** — le
+    précompte se calcule en principe sur le montant TTC de chaque transaction (Art. 92),
+    mais le mécanisme exact (qui le précompte, sur achat ou vente, périodicité) reste à
+    confirmer avant toute automatisation, pour ne pas fausser une écriture fiscale réelle.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
