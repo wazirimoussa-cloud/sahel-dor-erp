@@ -8,7 +8,7 @@ export function useLowStockProducts() {
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("id, name, stock, unit");
       if (error) throw error;
-      return (data ?? []).filter((p) => isLowStock(p.stock, p.unit));
+      return (data ?? []).filter((p) => p.stock > 0 && isLowStock(p.stock, p.unit));
     },
   });
 }
