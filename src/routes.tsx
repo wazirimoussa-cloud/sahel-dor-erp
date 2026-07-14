@@ -17,6 +17,7 @@ import { SuppliersPage } from "@/features/suppliers/SuppliersPage";
 import { PurchasesPage } from "@/features/purchases/PurchasesPage";
 import { PurchaseDetailPage } from "@/features/purchases/PurchaseDetailPage";
 import { PurchaseLossesPage } from "@/features/purchases/PurchaseLossesPage";
+import { StockLossRequestsPage } from "@/features/stock-losses/StockLossRequestsPage";
 import { TransportersPage } from "@/features/transporters/TransportersPage";
 import { ProductionsPage } from "@/features/productions/ProductionsPage";
 import { ProductionDetailPage } from "@/features/productions/ProductionDetailPage";
@@ -178,6 +179,24 @@ export function AppRoutes() {
           >
             <AppShell>
               <PurchaseLossesPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pertes-stock"
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "admin",
+              "controller",
+              "warehouse_manager",
+              "production_manager",
+              "logistics_transport",
+            ]}
+          >
+            <AppShell>
+              <StockLossRequestsPage />
             </AppShell>
           </ProtectedRoute>
         }

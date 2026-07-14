@@ -21,6 +21,7 @@ import {
   History,
   UserCog,
   UserCircle,
+  ShieldAlert,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
@@ -78,6 +79,18 @@ const NAV_ITEMS: NavItem[] = [
     label: "Pertes transport",
     icon: PackageX,
     roles: ["admin", "controller", "warehouse_manager", "logistics_transport"],
+  },
+  {
+    to: "/pertes-stock",
+    label: "Pertes de stock",
+    icon: ShieldAlert,
+    roles: [
+      "admin",
+      "controller",
+      "warehouse_manager",
+      "production_manager",
+      "logistics_transport",
+    ],
   },
   {
     to: "/productions",

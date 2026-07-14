@@ -835,6 +835,110 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_loss_requests: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason: string | null
+          repackaged_quantity: number | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transaction_id: string | null
+          transformation_id: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason?: string | null
+          repackaged_quantity?: number | null
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transaction_id?: string | null
+          transformation_id?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          product_id?: string
+          quantity?: number
+          reason?: string
+          rejection_reason?: string | null
+          repackaged_quantity?: number | null
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          transaction_id?: string | null
+          transformation_id?: string | null
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_loss_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_loss_requests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_loss_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_loss_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_loss_requests_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_loss_requests_transformation_id_fkey"
+            columns: ["transformation_id"]
+            isOneToOne: false
+            referencedRelation: "transformations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_loss_requests_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -1221,6 +1325,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_stock_loss: {
+        Args: { p_request_id: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason: string | null
+          repackaged_quantity: number | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transaction_id: string | null
+          transformation_id: string | null
+          warehouse_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "stock_loss_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_order: {
         Args: { order_id: string }
         Returns: {
@@ -1366,6 +1496,64 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reject_stock_loss: {
+        Args: { p_rejection_reason: string; p_request_id: string }
+        Returns: {
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason: string | null
+          repackaged_quantity: number | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transaction_id: string | null
+          transformation_id: string | null
+          warehouse_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "stock_loss_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      request_stock_loss: {
+        Args: {
+          p_product_id: string
+          p_quantity: number
+          p_reason: string
+          p_repackaged_quantity?: number
+          p_warehouse_id: string
+        }
+        Returns: {
+          company_id: string
+          created_at: string
+          id: string
+          product_id: string
+          quantity: number
+          reason: string
+          rejection_reason: string | null
+          repackaged_quantity: number | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          transaction_id: string | null
+          transformation_id: string | null
+          warehouse_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "stock_loss_requests"
           isOneToOne: true
           isSetofReturn: false
         }

@@ -602,6 +602,25 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     trop ponctuel pour justifier une structure comptable permanente (droits
     d'enregistrement, IRCM, publicité, droits fonciers ne concernent que des événements
     rares : contrats, dividendes, enseignes, achat de terrain).
+32. **Pertes de stock avec circuit d'approbation** (`0031_stock_loss_requests.sql`,
+    page "Pertes de stock") : couvre les sacs déchirés/produits endommagés constatés en
+    magasin (après réception, contrairement aux pertes transport qui sont vues à la
+    livraison) et le reconditionnement avec perte (ex. contenu sain d'un sac abîmé
+    reconditionné dans un plus petit emballage). Pour empêcher qu'une perte déclarée
+    serve à couvrir un vol, la déclaration (`warehouse_manager`/`production_manager`/
+    `logistics_transport`) n'a **aucun effet sur le stock tant qu'elle n'est pas
+    approuvée par le Contrôleur** (nouvelle table `stock_loss_requests`, RPC
+    `request_stock_loss`/`approve_stock_loss`/`reject_stock_loss`) — même principe de
+    séparation des tâches que commandes (création/validation) et achats
+    (création/réception). Une perte sèche approuvée génère une transaction
+    `ADJUSTMENT` négative ; un reconditionnement approuvé génère une transformation où
+    le même produit est à la fois intrant (quantité de départ) et extrant (quantité
+    récupérée) — cas volontairement interdit dans `create_transformation` (RPC
+    réservée aux transformations multi-produits normales) pour qu'aucun contournement
+    de l'approbation ne soit possible via l'écran Transformation existant. Aucune
+    écriture comptable générée (même limite assumée que les ajustements manuels
+    existants — pas de compte de stock dans la méthode d'inventaire intermittent
+    actuelle).
 
 ## Limites connues / pistes pour la suite
 
