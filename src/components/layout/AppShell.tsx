@@ -165,34 +165,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t border-forest-700 p-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-forest-100/60">
-            Environnement
-          </p>
-          <div className="flex rounded-md bg-forest-800 p-1 text-xs font-semibold">
-            <span
-              className={clsx(
-                "flex-1 rounded px-3 py-1.5 text-center",
-                ENV_LABEL === "Réel" ? "bg-cream-50 text-forest-900" : "text-forest-100/60",
-              )}
-            >
-              Réel
-            </span>
-            <span
-              className={clsx(
-                "flex-1 rounded px-3 py-1.5 text-center",
-                ENV_LABEL !== "Réel" ? "bg-cream-50 text-forest-900" : "text-forest-100/60",
-              )}
-            >
-              Formation
-            </span>
-          </div>
-          <p className="mt-3 text-xs leading-snug text-forest-100/50">
-            {ENV_LABEL === "Réel"
-              ? "Données réelles partagées entre tous les utilisateurs."
-              : "Environnement de formation — données de test, réinitialisables."}
-          </p>
-        </div>
+        <div
+          className={clsx("h-3 border-t border-forest-700", ENV_LABEL === "Réel" ? "bg-forest-700" : "bg-brand-500")}
+          title={ENV_LABEL === "Réel" ? "Environnement réel" : "Environnement Formation"}
+        />
       </aside>
 
       <div className="flex flex-1 flex-col">
