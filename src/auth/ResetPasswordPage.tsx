@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { EnvBanner } from "@/components/layout/EnvBanner";
+import logo from "@/assets/logo.png";
 
 // Page atteinte via le lien reçu par email ("mot de passe oublié", admin uniquement —
 // voir supabase/functions/request-password-reset). L'identité est déjà prouvée par le
@@ -53,8 +54,9 @@ export function ResetPasswordPage() {
       <EnvBanner />
       <div className="flex flex-1 items-center justify-center bg-gray-50 px-4">
         <Card className="w-full max-w-sm">
-          <h1 className="mb-1 text-xl font-semibold text-brand-700">Sahel d'Or</h1>
-          <p className="mb-6 text-sm text-gray-500">Définir un nouveau mot de passe</p>
+          <img src={logo} alt="Sahel d'Or" className="mx-auto mb-4 h-24 w-24 rounded-lg object-cover" />
+          <h1 className="mb-1 text-center text-xl font-semibold text-brand-700">Sahel d'Or</h1>
+          <p className="mb-6 text-center text-sm text-gray-500">Définir un nouveau mot de passe</p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>

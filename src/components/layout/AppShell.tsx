@@ -8,6 +8,7 @@ import { AlertsBell } from "@/components/layout/AlertsBell";
 import type { RoleName } from "@/lib/database.types";
 import { ROLE_LABELS } from "@/lib/roles";
 import { useLogPageVisit } from "@/lib/useLogPageVisit";
+import logo from "@/assets/logo.png";
 
 interface NavItem {
   to: string;
@@ -95,7 +96,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       <EnvBanner />
       <div className="flex flex-1">
         <aside className="w-56 shrink-0 border-r border-gray-200 bg-white">
-          <div className="border-b border-gray-200 px-4 py-4">
+          <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-4">
+            <img src={logo} alt="Sahel d'Or" className="h-8 w-8 rounded object-cover" />
             <span className="text-lg font-semibold text-brand-700">Sahel d'Or</span>
           </div>
           <nav className="flex flex-col gap-1 p-2">
