@@ -7,7 +7,7 @@ export function AccountPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Mon compte</h1>
+      <h1 className="text-lg font-bold text-forest-900">Mon compte</h1>
 
       <Card className="max-w-sm">
         <p className="text-sm text-gray-500">Connecté en tant que</p>

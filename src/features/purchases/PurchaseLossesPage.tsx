@@ -10,7 +10,7 @@ export function PurchaseLossesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-gray-800">Pertes transport</h1>
+        <h1 className="text-lg font-bold text-forest-900">Pertes transport</h1>
         <p className="mt-1 text-sm text-gray-500">
           Pertes constatées à la réception des achats, avant l'entrée en stock — facturées en avoir
           au transporteur responsable. Enregistrées depuis la page de détail d'un achat, au moment

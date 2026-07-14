@@ -44,7 +44,7 @@ export function JournalPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-800">Journal comptable</h1>
+        <h1 className="text-lg font-bold text-forest-900">Journal comptable</h1>
         {entries && entries.length > 0 && (
           <Button variant="secondary" onClick={() => void handleExportPdf()}>
             Exporter en PDF

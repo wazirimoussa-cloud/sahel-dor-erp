@@ -10,7 +10,7 @@ export function ChartOfAccountsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Plan comptable</h1>
+      <h1 className="text-lg font-bold text-forest-900">Plan comptable</h1>
       <p className="text-sm text-gray-500">
         Comptes SYSCOHADA minimaux utilisés par les écritures générées automatiquement
         (voir "Journal comptable"). Vous pouvez en ajouter d'autres, mais ils ne seront

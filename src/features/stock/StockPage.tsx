@@ -101,7 +101,7 @@ export function StockPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Mouvements de stock</h1>
+      <h1 className="text-lg font-bold text-forest-900">Mouvements de stock</h1>
 
       {canRecord && (
         <Card>

@@ -75,7 +75,7 @@ export function TransformationDetailPage() {
       </div>
 
       <div>
-        <h1 className="text-lg font-semibold text-gray-800">
+        <h1 className="text-lg font-bold text-forest-900">
           Transformation #{transformation.id.slice(0, 8)}
         </h1>
         <p className="text-sm text-gray-500">

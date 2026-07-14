@@ -185,7 +185,7 @@ export function PurchaseDetailPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-gray-800">Achat #{purchase.id.slice(0, 8)}</h1>
+          <h1 className="text-lg font-bold text-forest-900">Achat #{purchase.id.slice(0, 8)}</h1>
           <p className="text-sm text-gray-500">
             Créé le {new Date(purchase.created_at).toLocaleString("fr-FR")} par{" "}
             {creatorEmail ?? "utilisateur inconnu"} — Fournisseur : {supplierName ?? "—"} — Magasin

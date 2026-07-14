@@ -6,7 +6,7 @@ export function LogsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Journal d'audit</h1>
+      <h1 className="text-lg font-bold text-forest-900">Journal d'audit</h1>
       <p className="text-sm text-gray-500">
         Écritures (création/modification/suppression) journalisées automatiquement par
         des triggers côté base de données ; consultations (action "VIEW") journalisées à

@@ -6,22 +6,27 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Tableau de bord</h1>
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+          Vue d'ensemble
+        </p>
+        <h1 className="mt-1 font-serif text-3xl font-bold text-forest-900">Tableau de bord</h1>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card>
+        <Card accent="forest">
           <p className="text-xs uppercase text-gray-500">Produits</p>
           <p className="mt-1 text-2xl font-semibold text-gray-800">
             {isLoading ? "…" : data?.productsCount}
           </p>
         </Card>
-        <Card>
+        <Card accent="red">
           <p className="text-xs uppercase text-gray-500">Stock bas</p>
           <p className="mt-1 text-2xl font-semibold text-red-600">
             {isLoading ? "…" : data?.lowStockCount}
           </p>
         </Card>
-        <Card>
+        <Card accent="gold">
           <p className="text-xs uppercase text-gray-500">Commandes en attente</p>
           <p className="mt-1 text-2xl font-semibold text-brand-600">
             {isLoading ? "…" : data?.pendingOrdersCount}
@@ -30,7 +35,9 @@ export function DashboardPage() {
       </div>
 
       <Card>
-        <p className="mb-3 text-sm font-medium text-gray-700">Derniers mouvements de stock</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-forest-700">
+          Derniers mouvements de stock
+        </p>
         <ul className="space-y-2 text-sm text-gray-600">
           {data?.recentTransactions.map((tx) => {
             const product = tx.products as

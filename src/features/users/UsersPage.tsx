@@ -26,7 +26,7 @@ export function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Utilisateurs</h1>
+      <h1 className="text-lg font-bold text-forest-900">Utilisateurs</h1>
 
       <Card>
         <UserForm />

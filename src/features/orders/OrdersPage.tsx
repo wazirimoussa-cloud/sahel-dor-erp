@@ -35,7 +35,7 @@ export function OrdersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Commandes</h1>
+      <h1 className="text-lg font-bold text-forest-900">Commandes</h1>
 
       {canCreate && (
         <Card>

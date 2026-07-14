@@ -46,7 +46,7 @@ export function FinancialStatementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold text-gray-800">États financiers</h1>
+        <h1 className="text-lg font-bold text-forest-900">États financiers</h1>
         <p className="mt-1 text-sm text-gray-500">
           Bilan et compte de résultat SYSCOHADA simplifiés, calculés automatiquement à partir du
           journal comptable et des mouvements de stock. Ne couvre que les comptes déjà alimentés par
@@ -235,31 +235,31 @@ export function FinancialStatementsPage() {
             <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
                 <dt className="text-xs text-gray-500">Résultat net (période)</dt>
-                <dd className="text-lg font-semibold text-gray-800">
+                <dd className="text-lg font-bold text-forest-900">
                   {formatFCFA(data.ratios.resultatNetPeriode)}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Marge commerciale</dt>
-                <dd className="text-lg font-semibold text-gray-800">
+                <dd className="text-lg font-bold text-forest-900">
                   {formatRatio(data.ratios.margeCommerciale, "%")}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Autonomie financière</dt>
-                <dd className="text-lg font-semibold text-gray-800">
+                <dd className="text-lg font-bold text-forest-900">
                   {formatRatio(data.ratios.autonomieFinanciere, "%")}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Liquidité générale</dt>
-                <dd className="text-lg font-semibold text-gray-800">
+                <dd className="text-lg font-bold text-forest-900">
                   {formatRatio(data.ratios.liquiditeGenerale, "")}
                 </dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-500">Délai moyen de règlement clients</dt>
-                <dd className="text-lg font-semibold text-gray-800">
+                <dd className="text-lg font-bold text-forest-900">
                   {formatRatio(data.ratios.delaiReglementClients, " j")}
                 </dd>
               </div>

@@ -46,7 +46,7 @@ export function ProductionDetailPage() {
       </div>
 
       <div>
-        <h1 className="text-lg font-semibold text-gray-800">Production #{production.id.slice(0, 8)}</h1>
+        <h1 className="text-lg font-bold text-forest-900">Production #{production.id.slice(0, 8)}</h1>
         <p className="text-sm text-gray-500">
           Créée le {new Date(production.created_at).toLocaleString("fr-FR")} par{" "}
           {creatorEmail ?? "utilisateur inconnu"} — Magasin : {warehouseName ?? "—"}

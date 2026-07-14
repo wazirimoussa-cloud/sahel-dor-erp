@@ -10,7 +10,7 @@ export function ClientsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-lg font-semibold text-gray-800">Clients</h1>
+      <h1 className="text-lg font-bold text-forest-900">Clients</h1>
 
       {canManage && (
         <Card>
