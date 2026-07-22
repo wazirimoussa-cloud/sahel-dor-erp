@@ -39,6 +39,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      attribution_conflicts: {
+        Row: {
+          attribution_a: string
+          attribution_b: string
+        }
+        Insert: {
+          attribution_a: string
+          attribution_b: string
+        }
+        Update: {
+          attribution_a?: string
+          attribution_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attribution_conflicts_attribution_a_fkey"
+            columns: ["attribution_a"]
+            isOneToOne: false
+            referencedRelation: "attributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attribution_conflicts_attribution_b_fkey"
+            columns: ["attribution_b"]
+            isOneToOne: false
+            referencedRelation: "attributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attributions: {
+        Row: {
+          action_key: string
+          id: string
+          label: string
+          module: string
+        }
+        Insert: {
+          action_key: string
+          id?: string
+          label: string
+          module: string
+        }
+        Update: {
+          action_key?: string
+          id?: string
+          label?: string
+          module?: string
+        }
+        Relationships: []
+      }
       chart_of_accounts: {
         Row: {
           code: string
@@ -165,6 +216,60 @@ export type Database = {
           value?: string
         }
         Relationships: []
+      }
+      fixed_assets: {
+        Row: {
+          acquisition_cost: number
+          acquisition_date: string
+          category: string
+          company_id: string
+          created_at: string
+          disposal_date: string | null
+          id: string
+          name: string
+          useful_life_years: number
+          user_id: string
+        }
+        Insert: {
+          acquisition_cost: number
+          acquisition_date: string
+          category: string
+          company_id: string
+          created_at?: string
+          disposal_date?: string | null
+          id?: string
+          name: string
+          useful_life_years: number
+          user_id: string
+        }
+        Update: {
+          acquisition_cost?: number
+          acquisition_date?: string
+          category?: string
+          company_id?: string
+          created_at?: string
+          disposal_date?: string | null
+          id?: string
+          name?: string
+          useful_life_years?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fixed_assets_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fixed_assets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journal_entries: {
         Row: {
@@ -939,6 +1044,77 @@ export type Database = {
           },
         ]
       }
+      stock_lots: {
+        Row: {
+          company_id: string
+          created_at: string
+          expiry_date: string | null
+          id: string
+          lot_number: number
+          product_id: string
+          quantity_received: number
+          quantity_remaining: number
+          source_transaction_id: string | null
+          unit_cost: number
+          warehouse_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          lot_number?: never
+          product_id: string
+          quantity_received: number
+          quantity_remaining: number
+          source_transaction_id?: string | null
+          unit_cost?: number
+          warehouse_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          lot_number?: never
+          product_id?: string
+          quantity_received?: number
+          quantity_remaining?: number
+          source_transaction_id?: string | null
+          unit_cost?: number
+          warehouse_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_lots_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_lots_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_lots_source_transaction_id_fkey"
+            columns: ["source_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_lots_warehouse_id_fkey"
+            columns: ["warehouse_id"]
+            isOneToOne: false
+            referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -980,9 +1156,46 @@ export type Database = {
           },
         ]
       }
+      transaction_lot_allocations: {
+        Row: {
+          id: string
+          lot_id: string
+          quantity: number
+          transaction_id: string
+        }
+        Insert: {
+          id?: string
+          lot_id: string
+          quantity: number
+          transaction_id: string
+        }
+        Update: {
+          id?: string
+          lot_id?: string
+          quantity?: number
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transaction_lot_allocations_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "stock_lots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transaction_lot_allocations_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           created_at: string
+          expiry_date: string | null
           id: string
           note: string | null
           order_id: string | null
@@ -993,11 +1206,13 @@ export type Database = {
           transfer_group_id: string | null
           transformation_id: string | null
           type: Database["public"]["Enums"]["transaction_type"]
+          unit_cost: number | null
           user_id: string
           warehouse_id: string
         }
         Insert: {
           created_at?: string
+          expiry_date?: string | null
           id?: string
           note?: string | null
           order_id?: string | null
@@ -1008,11 +1223,13 @@ export type Database = {
           transfer_group_id?: string | null
           transformation_id?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
+          unit_cost?: number | null
           user_id: string
           warehouse_id: string
         }
         Update: {
           created_at?: string
+          expiry_date?: string | null
           id?: string
           note?: string | null
           order_id?: string | null
@@ -1023,6 +1240,7 @@ export type Database = {
           transfer_group_id?: string | null
           transformation_id?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
+          unit_cost?: number | null
           user_id?: string
           warehouse_id?: string
         }
@@ -1246,6 +1464,55 @@ export type Database = {
           },
         ]
       }
+      user_attributions: {
+        Row: {
+          attribution_id: string
+          created_at: string
+          granted_by: string | null
+          id: string
+          level: string
+          user_id: string
+        }
+        Insert: {
+          attribution_id: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          level: string
+          user_id: string
+        }
+        Update: {
+          attribution_id?: string
+          created_at?: string
+          granted_by?: string | null
+          id?: string
+          level?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_attributions_attribution_id_fkey"
+            columns: ["attribution_id"]
+            isOneToOne: false
+            referencedRelation: "attributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_attributions_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_attributions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           company_id: string | null
@@ -1253,7 +1520,7 @@ export type Database = {
           email: string
           id: string
           must_change_password: boolean
-          role_id: number
+          role_id: number | null
         }
         Insert: {
           company_id?: string | null
@@ -1261,7 +1528,7 @@ export type Database = {
           email: string
           id: string
           must_change_password?: boolean
-          role_id: number
+          role_id?: number | null
         }
         Update: {
           company_id?: string | null
@@ -1269,7 +1536,7 @@ export type Database = {
           email?: string
           id?: string
           must_change_password?: boolean
-          role_id?: number
+          role_id?: number | null
         }
         Relationships: [
           {
@@ -1389,6 +1656,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_fixed_asset: {
+        Args: {
+          p_acquisition_cost: number
+          p_acquisition_date: string
+          p_category: string
+          p_name: string
+          p_useful_life_years: number
+        }
+        Returns: {
+          acquisition_cost: number
+          acquisition_date: string
+          category: string
+          company_id: string
+          created_at: string
+          disposal_date: string | null
+          id: string
+          name: string
+          useful_life_years: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "fixed_assets"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_order: {
         Args: { payload: Json }
         Returns: {
@@ -1461,25 +1755,83 @@ export type Database = {
       }
       current_company_id: { Args: never; Returns: string }
       current_role_name: { Args: never; Returns: string }
-      log_page_visit: { Args: { module: string }; Returns: undefined }
-      receive_purchase: {
-        Args: { losses?: Json; purchase_id: string }
+      dispose_fixed_asset: {
+        Args: { p_asset_id: string; p_disposal_date: string }
         Returns: {
+          acquisition_cost: number
+          acquisition_date: string
+          category: string
           company_id: string
           created_at: string
+          disposal_date: string | null
           id: string
-          status: Database["public"]["Enums"]["purchase_status"]
-          supplier_id: string
+          name: string
+          useful_life_years: number
           user_id: string
-          warehouse_id: string
         }
         SetofOptions: {
           from: "*"
-          to: "purchases"
+          to: "fixed_assets"
           isOneToOne: true
           isSetofReturn: false
         }
       }
+      fn_consume_stock_lots: {
+        Args: {
+          p_product_id: string
+          p_quantity: number
+          p_transaction_id: string
+          p_warehouse_id: string
+        }
+        Returns: undefined
+      }
+      has_attribution: {
+        Args: { p_action_key: string; p_min_level?: string }
+        Returns: boolean
+      }
+      has_module_access: { Args: { p_module: string }; Returns: boolean }
+      log_page_visit: { Args: { module: string }; Returns: undefined }
+      receive_purchase:
+        | {
+            Args: { losses?: Json; purchase_id: string }
+            Returns: {
+              company_id: string
+              created_at: string
+              id: string
+              status: Database["public"]["Enums"]["purchase_status"]
+              supplier_id: string
+              user_id: string
+              warehouse_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "purchases"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              losses?: Json
+              lot_expiry_dates?: Json
+              purchase_id: string
+            }
+            Returns: {
+              company_id: string
+              created_at: string
+              id: string
+              status: Database["public"]["Enums"]["purchase_status"]
+              supplier_id: string
+              user_id: string
+              warehouse_id: string
+            }
+            SetofOptions: {
+              from: "*"
+              to: "purchases"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       record_payment: {
         Args: { amount: number; order_id: string }
         Returns: {
@@ -1557,6 +1909,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_user_attributions: {
+        Args: { p_attributions: Json; p_user_id: string }
+        Returns: undefined
       }
       transfer_stock: {
         Args: {

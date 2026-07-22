@@ -5,9 +5,9 @@ import { NewProductionForm } from "@/features/productions/NewProductionForm";
 import { Card } from "@/components/ui/Card";
 
 export function ProductionsPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: productions, isLoading, error } = useProductions();
-  const canCreate = profile?.role === "production_manager";
+  const canCreate = hasAttribution("production.creer");
 
   return (
     <div className="space-y-6">

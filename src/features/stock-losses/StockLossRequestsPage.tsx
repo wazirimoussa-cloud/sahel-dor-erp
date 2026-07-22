@@ -30,18 +30,15 @@ function relationEmail(rel: { email: string } | { email: string }[] | null) {
 }
 
 export function StockLossRequestsPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: requests, isLoading, error } = useStockLossRequests();
   const approve = useApproveStockLoss();
   const reject = useRejectStockLoss();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
 
-  const canRequest =
-    profile?.role === "warehouse_manager" ||
-    profile?.role === "production_manager" ||
-    profile?.role === "logistics_transport";
-  const canApprove = profile?.role === "controller";
+  const canRequest = hasAttribution("pertes_stock.declarer");
+  const canApprove = hasAttribution("pertes_stock.approuver");
 
   return (
     <div className="space-y-6">

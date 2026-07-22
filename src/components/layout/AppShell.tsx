@@ -25,129 +25,72 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
+import type { AttributionLevel } from "@/auth/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { AlertsBell } from "@/components/layout/AlertsBell";
-import type { RoleName } from "@/lib/database.types";
 import { ROLE_LABELS } from "@/lib/roles";
 import { useLogPageVisit } from "@/lib/useLogPageVisit";
 import logo from "@/assets/logo.png";
 
 const ENV_LABEL = (import.meta.env.VITE_APP_LABEL as string | undefined) || "Réel";
 
+interface NavContext {
+  hasModuleAccess: (module: string) => boolean;
+  hasAttribution: (actionKey: string, minLevel?: AttributionLevel) => boolean;
+}
+
 interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-  roles?: RoleName[];
+  module?: string;
+  visible?: (ctx: NavContext) => boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { to: "/", label: "Tableau de bord", icon: LayoutDashboard },
   { to: "/products", label: "Produits", icon: Package },
-  {
-    to: "/warehouses",
-    label: "Magasins",
-    icon: Warehouse,
-    roles: ["admin", "controller", "warehouse_manager"],
-  },
-  {
-    to: "/suppliers",
-    label: "Fournisseurs",
-    icon: Truck,
-    roles: ["admin", "controller", "purchasing"],
-  },
+  { to: "/warehouses", label: "Magasins", icon: Warehouse, module: "entrepots" },
+  { to: "/suppliers", label: "Fournisseurs", icon: Truck, module: "fournisseurs" },
   {
     to: "/purchases",
     label: "Achats",
     icon: ClipboardList,
-    roles: ["admin", "controller", "purchasing"],
+    visible: ({ hasModuleAccess, hasAttribution }) =>
+      hasModuleAccess("achats") && !hasAttribution("achats.receptionner"),
   },
   {
     to: "/purchases",
     label: "Réceptions",
     icon: PackageCheck,
-    roles: ["warehouse_manager"],
+    visible: ({ hasAttribution }) => hasAttribution("achats.receptionner"),
   },
-  {
-    to: "/transporteurs",
-    label: "Transporteurs",
-    icon: Truck,
-    roles: ["admin", "controller", "warehouse_manager", "logistics_transport"],
-  },
-  {
-    to: "/pertes-transport",
-    label: "Pertes transport",
-    icon: PackageX,
-    roles: ["admin", "controller", "warehouse_manager", "logistics_transport"],
-  },
-  {
-    to: "/pertes-stock",
-    label: "Pertes de stock",
-    icon: ShieldAlert,
-    roles: [
-      "admin",
-      "controller",
-      "warehouse_manager",
-      "production_manager",
-      "logistics_transport",
-    ],
-  },
-  {
-    to: "/productions",
-    label: "Production",
-    icon: Factory,
-    roles: ["admin", "controller", "production_manager"],
-  },
-  {
-    to: "/transformations",
-    label: "Transformation",
-    icon: Layers,
-    roles: ["admin", "controller", "production_manager"],
-  },
+  { to: "/transporteurs", label: "Transporteurs", icon: Truck, module: "transporteurs" },
+  { to: "/pertes-transport", label: "Pertes transport", icon: PackageX, module: "transporteurs" },
+  { to: "/pertes-stock", label: "Pertes de stock", icon: ShieldAlert, module: "pertes_stock" },
+  { to: "/productions", label: "Production", icon: Factory, module: "production" },
+  { to: "/transformations", label: "Transformation", icon: Layers, module: "transformation" },
   { to: "/stock", label: "Mouvements de stock", icon: ArrowLeftRight },
-  { to: "/clients", label: "Clients", icon: Users, roles: ["admin", "controller", "sales_operator"] },
-  {
-    to: "/orders",
-    label: "Commandes",
-    icon: ShoppingCart,
-    roles: ["admin", "controller", "sales_operator", "supervisor", "accounting"],
-  },
-  {
-    to: "/chart-of-accounts",
-    label: "Plan comptable",
-    icon: BookOpen,
-    roles: ["admin", "controller", "accounting"],
-  },
-  {
-    to: "/journal-comptable",
-    label: "Journal comptable",
-    icon: NotebookText,
-    roles: ["admin", "controller", "accounting"],
-  },
-  {
-    to: "/etats-financiers",
-    label: "États financiers",
-    icon: LineChart,
-    roles: ["admin", "controller", "accounting"],
-  },
-  {
-    to: "/declaration-tva",
-    label: "Déclaration TVA",
-    icon: Receipt,
-    roles: ["admin", "controller", "accounting"],
-  },
-  { to: "/logs", label: "Journal d'audit", icon: History, roles: ["admin", "controller"] },
-  { to: "/users", label: "Utilisateurs", icon: UserCog, roles: ["admin"] },
+  { to: "/clients", label: "Clients", icon: Users, module: "clients" },
+  { to: "/orders", label: "Commandes", icon: ShoppingCart, module: "ventes" },
+  { to: "/chart-of-accounts", label: "Plan comptable", icon: BookOpen, module: "comptabilite" },
+  { to: "/journal-comptable", label: "Journal comptable", icon: NotebookText, module: "journal_comptable" },
+  { to: "/etats-financiers", label: "États financiers", icon: LineChart, module: "etats_financiers" },
+  { to: "/declaration-tva", label: "Déclaration TVA", icon: Receipt, module: "etats_financiers" },
+  { to: "/logs", label: "Journal d'audit", icon: History, module: "journal_audit" },
+  { to: "/users", label: "Utilisateurs", icon: UserCog, module: "utilisateurs" },
   { to: "/account", label: "Mon compte", icon: UserCircle },
 ];
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, hasModuleAccess, hasAttribution } = useAuth();
   useLogPageVisit();
 
-  const visibleItems = NAV_ITEMS.filter(
-    (item) => !item.roles || (profile && item.roles.includes(profile.role)),
-  );
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (!profile) return !item.module && !item.visible;
+    if (item.visible) return item.visible({ hasModuleAccess, hasAttribution });
+    return !item.module || hasModuleAccess(item.module);
+  });
 
   return (
     <div className="flex min-h-screen">
@@ -190,9 +133,11 @@ export function AppShell({ children }: { children: ReactNode }) {
             {profile ? (
               <>
                 <span className="font-medium text-gray-800">{profile.email}</span>
-                <span className="ml-2 rounded-full bg-forest-50 px-2 py-0.5 text-xs uppercase text-forest-700">
-                  {ROLE_LABELS[profile.role]}
-                </span>
+                {profile.role && (
+                  <span className="ml-2 rounded-full bg-forest-50 px-2 py-0.5 text-xs uppercase text-forest-700">
+                    {ROLE_LABELS[profile.role]}
+                  </span>
+                )}
               </>
             ) : (
               "Profil en cours de chargement…"

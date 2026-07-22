@@ -19,6 +19,7 @@ interface ReceptionLine {
   quantityReceived: number;
   transporterId: string;
   reason: string;
+  expiryDate: string;
 }
 interface ReceptionFormValues {
   lines: ReceptionLine[];
@@ -39,7 +40,7 @@ const STATUS_CLASSES: Record<string, string> = {
 export function PurchaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: purchase, isLoading, error } = usePurchase(id);
   const { data: losses } = usePurchaseLosses(id);
   const { data: transporters } = useTransporters();
@@ -47,8 +48,8 @@ export function PurchaseDetailPage() {
   const cancelPurchase = useCancelPurchase();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const canReceive = profile?.role === "warehouse_manager";
-  const canCancel = profile?.role === "purchasing";
+  const canReceive = hasAttribution("achats.receptionner");
+  const canCancel = hasAttribution("achats.annuler");
 
   const { register: registerReception, handleSubmit: handleReceptionSubmit } =
     useForm<ReceptionFormValues>();
@@ -137,12 +138,13 @@ export function PurchaseDetailPage() {
   async function onReceptionSubmit(values: ReceptionFormValues) {
     setActionError(null);
     const losses = [];
+    const lotExpiryDates = [];
     for (let index = 0; index < items.length; index += 1) {
       const item = items[index];
       const line = values.lines[index];
+      const productInfo = productInfoOf(item);
       const quantityLost = item.quantity - Number(line.quantityReceived);
       if (quantityLost > 0) {
-        const productInfo = productInfoOf(item);
         if (!line.transporterId) {
           setActionError(
             `Un transporteur est requis pour la perte constatée sur "${productInfo?.name ?? "un produit"}".`,
@@ -156,9 +158,12 @@ export function PurchaseDetailPage() {
           reason: line.reason,
         });
       }
+      if (line.expiryDate) {
+        lotExpiryDates.push({ productId: productInfo?.id ?? item.id, expiryDate: line.expiryDate });
+      }
     }
     try {
-      await receivePurchase.mutateAsync({ purchaseId, losses });
+      await receivePurchase.mutateAsync({ purchaseId, losses, lotExpiryDates });
     } catch {
       setActionError("Action refusée (droits insuffisants, achat déjà traité, ou perte invalide).");
     }
@@ -290,6 +295,7 @@ export function PurchaseDetailPage() {
                   <th className="py-2">Produit</th>
                   <th className="py-2">Commandé</th>
                   <th className="py-2">Reçu</th>
+                  <th className="py-2">Péremption</th>
                   <th className="py-2">Transporteur (si perte)</th>
                   <th className="py-2">Motif</th>
                 </tr>
@@ -310,6 +316,13 @@ export function PurchaseDetailPage() {
                         max={item.quantity}
                         className="w-20"
                         {...registerReception(`lines.${index}.quantityReceived` as const)}
+                      />
+                    </td>
+                    <td className="py-2">
+                      <Input
+                        type="date"
+                        className="w-36"
+                        {...registerReception(`lines.${index}.expiryDate` as const)}
                       />
                     </td>
                     <td className="py-2">

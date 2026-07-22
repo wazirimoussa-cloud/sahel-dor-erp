@@ -28,7 +28,6 @@ function json(body: unknown, status: number) {
 
 interface CreateUserPayload {
   email: string;
-  role: "admin" | "manager" | "seller" | "auditor";
   companyId: string;
 }
 
@@ -61,13 +60,15 @@ Deno.serve(async (req) => {
     return json({ error: "Session invalide" }, 401);
   }
 
-  const { data: callerRole } = await callerClient.rpc("current_role_name");
-  if (callerRole !== "admin") {
-    return json({ error: "Réservé aux administrateurs" }, 403);
+  const { data: canManageUsers } = await callerClient.rpc("has_attribution", {
+    p_action_key: "utilisateurs.gerer",
+  });
+  if (!canManageUsers) {
+    return json({ error: "Réservé à la gestion des utilisateurs" }, 403);
   }
 
   const payload = (await req.json()) as CreateUserPayload;
-  if (!payload.email || !payload.role || !payload.companyId) {
+  if (!payload.email || !payload.companyId) {
     return json({ error: "Champs manquants" }, 400);
   }
 
@@ -88,21 +89,13 @@ Deno.serve(async (req) => {
     return json({ error: createError?.message ?? "Création impossible" }, 400);
   }
 
-  const { data: role } = await adminClient
-    .from("roles")
-    .select("id")
-    .eq("name", payload.role)
-    .single();
-
-  if (!role) {
-    return json({ error: "Rôle inconnu" }, 400);
-  }
-
-  // handle_new_user (trigger DB) a déjà créé la ligne public.users avec le rôle par défaut ;
-  // on la met à jour avec le rôle et la société réellement demandés.
+  // handle_new_user (trigger DB) a déjà créé la ligne public.users sans rôle ni
+  // attribution (0033_new_user_no_default_role.sql) ; on ne renseigne ici que la
+  // société. L'attribution des opérations est une étape séparée, faite ensuite par
+  // l'admin via set_user_attributions (voir UserAttributionsPanel).
   const { error: updateError } = await adminClient
     .from("users")
-    .update({ role_id: role.id, company_id: payload.companyId })
+    .update({ company_id: payload.companyId })
     .eq("id", created.user.id);
 
   if (updateError) {

@@ -29,9 +29,9 @@ const PAYMENT_CLASSES: Record<string, string> = {
 };
 
 export function OrdersPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: orders, isLoading, error } = useOrders();
-  const canCreate = profile?.role === "sales_operator";
+  const canCreate = hasAttribution("ventes.creer_commande");
 
   return (
     <div className="space-y-6">

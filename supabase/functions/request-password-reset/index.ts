@@ -1,8 +1,9 @@
 // Edge Function : "mot de passe oublié" — publique (appelée depuis l'écran de connexion,
-// avant authentification). Réservée aux comptes admin : seul un email appartenant à un
-// compte de rôle admin reçoit réellement un lien de récupération. La réponse est
-// toujours le même message générique, qu'un compte admin existe ou non avec cet email,
-// pour ne jamais révéler qui est admin par ce biais.
+// avant authentification). Réservée aux profils qui gèrent les utilisateurs
+// (attribution utilisateurs.gerer, opérationnelle) : seul un email correspondant à un
+// tel profil reçoit réellement un lien de récupération. La réponse est toujours le même
+// message générique, que ce profil existe ou non avec cet email, pour ne jamais révéler
+// qui a ce pouvoir par ce biais.
 //
 // redirectTo est validé contre une liste blanche pour éviter tout détournement de
 // redirection — corrige au passage le bug rencontré en session (lien de récupération
@@ -30,7 +31,7 @@ const CORS_HEADERS = {
 };
 
 const GENERIC_MESSAGE =
-  "Si un compte administrateur existe avec cet email, un lien de réinitialisation vient d'être envoyé.";
+  "Si ce compte peut réinitialiser son mot de passe par ce moyen, un lien vient d'être envoyé.";
 
 function json(body: unknown, status: number) {
   return new Response(JSON.stringify(body), {
@@ -73,14 +74,22 @@ Deno.serve(async (req) => {
 
   const { data: targetUser } = await adminClient
     .from("users")
-    .select("roles(name)")
+    .select("id")
     .eq("email", payload.email)
     .maybeSingle();
 
-  const roleRelation = targetUser?.roles as { name: string } | { name: string }[] | null;
-  const roleName = Array.isArray(roleRelation) ? roleRelation[0]?.name : roleRelation?.name;
+  let canManageUsers = false;
+  if (targetUser) {
+    const { data: attributionRows } = await adminClient
+      .from("user_attributions")
+      .select("level, attributions!inner(action_key)")
+      .eq("user_id", targetUser.id)
+      .eq("attributions.action_key", "utilisateurs.gerer")
+      .eq("level", "operationnelle");
+    canManageUsers = (attributionRows?.length ?? 0) > 0;
+  }
 
-  if (roleName === "admin") {
+  if (canManageUsers) {
     await adminClient.auth.resetPasswordForEmail(payload.email, {
       redirectTo: payload.redirectTo,
     });

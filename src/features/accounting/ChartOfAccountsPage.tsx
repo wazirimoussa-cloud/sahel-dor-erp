@@ -4,9 +4,9 @@ import { ChartOfAccountForm } from "@/features/accounting/ChartOfAccountForm";
 import { Card } from "@/components/ui/Card";
 
 export function ChartOfAccountsPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: accounts, isLoading, error } = useChartOfAccounts();
-  const canManage = profile?.role === "accounting";
+  const canManage = hasAttribution("comptabilite.gerer_plan_comptable");
 
   return (
     <div className="space-y-6">

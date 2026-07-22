@@ -4,9 +4,9 @@ import { ClientForm } from "@/features/clients/ClientForm";
 import { Card } from "@/components/ui/Card";
 
 export function ClientsPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: clients, isLoading, error } = useClients();
-  const canManage = profile?.role === "sales_operator";
+  const canManage = hasAttribution("clients.gerer");
 
   return (
     <div className="space-y-6">

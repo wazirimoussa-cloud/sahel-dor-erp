@@ -77,6 +77,10 @@ export function useValidateOrder() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
+      void queryClient.invalidateQueries({ queryKey: ["products"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
 }
@@ -92,6 +96,8 @@ export function useCancelOrder() {
       void queryClient.invalidateQueries({ queryKey: ["orders"] });
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
 }

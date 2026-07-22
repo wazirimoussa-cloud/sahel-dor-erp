@@ -49,11 +49,11 @@ function PriceHistoryRows({ productId }: { productId: string }) {
 }
 
 export function ProductsPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: products, isLoading, error } = useProducts();
   const updatePrice = useUpdateProductPrice();
-  const canManage =
-    profile?.role === "warehouse_manager" || profile?.role === "production_manager";
+  const canManage = hasAttribution("produits.gerer_catalogue");
+  const canEditPrice = hasAttribution("produits.modifier_prix");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
@@ -126,7 +126,7 @@ export function ProductsPage() {
                     </td>
                     <td className="py-2 text-right">
                       <div className="flex justify-end gap-3">
-                        {canManage && (
+                        {canEditPrice && (
                           <button
                             type="button"
                             className="text-xs text-brand-600 hover:underline"

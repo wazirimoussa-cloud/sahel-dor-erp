@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/useAuth";
+import { depreciationForPeriod, netBookValueAsOf, type FixedAssetRow } from "@/features/financials/useFixedAssets";
 
 interface StockSnapshot {
   total: number;
@@ -27,7 +28,7 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       if (!companyId) throw new Error("Aucune société associée à ce profil.");
       const endBound = `${endDate}T23:59:59.999`;
 
-      const [productsRes, purchaseItemsRes, transactionsRes, journalRes, companyRes] =
+      const [productsRes, purchaseItemsRes, transactionsRes, journalRes, companyRes, fixedAssetsRes] =
         await Promise.all([
           supabase.from("products").select("id, name, unit"),
           supabase
@@ -42,6 +43,9 @@ export function useFinancialStatements(startDate: string, endDate: string) {
             .from("journal_entries")
             .select("entry_date, journal_entry_lines(debit, credit, chart_of_accounts(code))"),
           supabase.from("companies").select("capital_social").eq("id", companyId).single(),
+          supabase
+            .from("fixed_assets")
+            .select("id, name, category, acquisition_date, acquisition_cost, useful_life_years, disposal_date"),
         ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -49,6 +53,17 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       if (transactionsRes.error) throw transactionsRes.error;
       if (journalRes.error) throw journalRes.error;
       if (companyRes.error) throw companyRes.error;
+      if (fixedAssetsRes.error) throw fixedAssetsRes.error;
+
+      const fixedAssets: FixedAssetRow[] = fixedAssetsRes.data;
+      const immobilisationsNettes = fixedAssets.reduce(
+        (sum, asset) => sum + netBookValueAsOf(asset, endDate),
+        0,
+      );
+      const dotationsAmortissements = fixedAssets.reduce(
+        (sum, asset) => sum + depreciationForPeriod(asset, startDate, endDate),
+        0,
+      );
 
       const transactions = transactionsRes.data ?? [];
       const journalEntries = journalRes.data ?? [];
@@ -125,7 +140,8 @@ export function useFinancialStatements(startDate: string, endDate: string) {
         accountTotals("601", startDate, endDate).debit -
         accountTotals("601", startDate, endDate).credit;
       const variationStock = stockEnd.total - stockStart.total;
-      const resultatNetPeriode = produitsPeriode - chargesPeriode + variationStock;
+      const resultatNetPeriode =
+        produitsPeriode - chargesPeriode + variationStock - dotationsAmortissements;
 
       // Bilan : soldes cumulés depuis toujours jusqu'à la date de fin choisie.
       const clientsSolde =
@@ -146,12 +162,14 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       const tvaNette = tvaCollecteeSolde - tvaDeductibleSolde; // > 0 : à payer (passif) ; < 0 : créance (actif)
 
       const actif = {
+        immobilisationsNettes,
         stock: stockEnd.total,
         clients: clientsSolde,
         tvaCreance: tvaNette < 0 ? -tvaNette : 0,
         tresorerie: tresorerieSolde,
       };
-      const totalActif = actif.stock + actif.clients + actif.tvaCreance + actif.tresorerie;
+      const totalActif =
+        actif.immobilisationsNettes + actif.stock + actif.clients + actif.tvaCreance + actif.tresorerie;
 
       const capitalSocial = companyRes.data?.capital_social ?? 0;
       const fournisseurs = fournisseursSolde;
@@ -189,9 +207,14 @@ export function useFinancialStatements(startDate: string, endDate: string) {
           produits: produitsPeriode,
           charges: chargesPeriode,
           variationStock,
+          dotationsAmortissements,
           resultatNet: resultatNetPeriode,
         },
         balanceSheet: { actif, totalActif, passif, totalPassif },
+        fixedAssets: fixedAssets.map((asset) => ({
+          ...asset,
+          netBookValue: netBookValueAsOf(asset, endDate),
+        })),
         ratios: {
           resultatNetPeriode,
           margeCommerciale,

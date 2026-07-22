@@ -4,9 +4,9 @@ import { WarehouseForm } from "@/features/warehouses/WarehouseForm";
 import { Card } from "@/components/ui/Card";
 
 export function WarehousesPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: warehouses, isLoading, error } = useWarehouses();
-  const canManage = profile?.role === "warehouse_manager";
+  const canManage = hasAttribution("entrepots.gerer");
 
   return (
     <div className="space-y-6">

@@ -54,6 +54,8 @@ export function useApproveStockLoss() {
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["transformations"] });
+      void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
 }

@@ -15,6 +15,7 @@ const productionSchema = z.object({
       z.object({
         productId: z.string().uuid("Choisissez un produit"),
         quantity: z.coerce.number().positive("La quantité doit être positive"),
+        expiryDate: z.string().optional(),
       }),
     )
     .min(1, "Ajoutez au moins une ligne"),
@@ -36,7 +37,7 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<ProductionFormValues>({
     resolver: zodResolver(productionSchema),
-    defaultValues: { items: [{ productId: "", quantity: 1 }] },
+    defaultValues: { items: [{ productId: "", quantity: 1, expiryDate: "" }] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
@@ -48,7 +49,7 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
         warehouseId: values.warehouseId,
         items: values.items,
       });
-      reset({ warehouseId: values.warehouseId, items: [{ productId: "", quantity: 1 }] });
+      reset({ warehouseId: values.warehouseId, items: [{ productId: "", quantity: 1, expiryDate: "" }] });
       onCreated?.();
     } catch {
       setServerError("Production refusée (magasin/produit invalide, ou rôle non autorisé).");
@@ -100,6 +101,13 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
             <Input type="number" step="0.001" {...register(`items.${index}.quantity` as const)} />
           </div>
 
+          <div>
+            <label className="mb-1 block text-xs font-medium text-gray-600">
+              Péremption (optionnelle)
+            </label>
+            <Input type="date" {...register(`items.${index}.expiryDate` as const)} />
+          </div>
+
           <Button type="button" variant="secondary" onClick={() => remove(index)}>
             Retirer
           </Button>
@@ -109,7 +117,11 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
       {errors.items?.root && <p className="text-xs text-red-600">{errors.items.root.message}</p>}
 
       <div className="flex gap-3">
-        <Button type="button" variant="secondary" onClick={() => append({ productId: "", quantity: 1 })}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => append({ productId: "", quantity: 1, expiryDate: "" })}
+        >
           + Ajouter une ligne
         </Button>
         <Button type="submit" disabled={isSubmitting}>

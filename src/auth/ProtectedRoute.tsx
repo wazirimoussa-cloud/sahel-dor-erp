@@ -1,17 +1,16 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
-import type { RoleName } from "@/lib/database.types";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: RoleName[];
+  requiredModule?: string;
 }
 
 // Ce garde ne fait que de l'UX (masquer/rediriger dans l'interface) : la sécurité réelle
 // est appliquée par les policies RLS côté Supabase, jamais uniquement ici.
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { session, profile, loading } = useAuth();
+export function ProtectedRoute({ children, requiredModule }: ProtectedRouteProps) {
+  const { session, profile, loading, hasModuleAccess } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -26,10 +25,10 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/force-password-change" replace />;
   }
 
-  if (allowedRoles && (!profile || !allowedRoles.includes(profile.role))) {
+  if (requiredModule && (!profile || !hasModuleAccess(requiredModule))) {
     return (
       <div className="flex h-screen items-center justify-center text-gray-500">
-        Accès refusé pour votre rôle.
+        Accès refusé : aucune attribution pour ce module.
       </div>
     );
   }

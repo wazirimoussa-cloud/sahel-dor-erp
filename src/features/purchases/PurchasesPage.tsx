@@ -17,14 +17,14 @@ const STATUS_CLASSES: Record<string, string> = {
 };
 
 export function PurchasesPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: purchases, isLoading, error } = usePurchases();
-  const canCreate = profile?.role === "purchasing";
+  const canCreate = hasAttribution("achats.creer");
 
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-bold text-forest-900">
-        {profile?.role === "warehouse_manager" ? "Réceptions" : "Achats"}
+        {hasAttribution("achats.receptionner") ? "Réceptions" : "Achats"}
       </h1>
 
       {canCreate && (

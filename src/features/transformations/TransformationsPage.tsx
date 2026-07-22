@@ -5,9 +5,9 @@ import { NewTransformationForm } from "@/features/transformations/NewTransformat
 import { Card } from "@/components/ui/Card";
 
 export function TransformationsPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: transformations, isLoading, error } = useTransformations();
-  const canCreate = profile?.role === "production_manager";
+  const canCreate = hasAttribution("transformation.creer");
 
   return (
     <div className="space-y-6">

@@ -1,0 +1,11 @@
+-- Revue de sécurité : attribution_conflicts (0032) a été créée sans
+-- `enable row level security` explicite -- contrairement à toutes les autres tables du
+-- projet. La table se trouve actuellement protégée en pratique (RLS déjà activée côté
+-- serveur, aucune policy définie => accès refusé par défaut à anon/authenticated malgré
+-- des GRANT larges hérités des privilèges par défaut du schéma public), mais cette
+-- protection n'était garantie par aucune ligne de code -- un rejeu de cette migration
+-- sur un projet Supabase sans le même comportement implicite aurait laissé la table
+-- pleinement lisible ET modifiable par n'importe quel client authentifié (voire anonyme),
+-- ce qui aurait permis de supprimer les paires de conflit et de désactiver silencieusement
+-- la séparation des tâches. Rendu explicite, comme partout ailleurs.
+alter table public.attribution_conflicts enable row level security;

@@ -10,7 +10,8 @@ export function AlertsBell() {
   const lowStockCount = data?.lowStockCount ?? 0;
   const pendingOrdersCount = data?.pendingOrdersCount ?? 0;
   const unpaidOrdersCount = data?.unpaidOrdersCount ?? 0;
-  const total = lowStockCount + pendingOrdersCount + unpaidOrdersCount;
+  const expiringLotsCount = data?.expiringLotsCount ?? 0;
+  const total = lowStockCount + pendingOrdersCount + unpaidOrdersCount + expiringLotsCount;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -69,6 +70,13 @@ export function AlertsBell() {
                 <Link to="/orders" onClick={() => setOpen(false)} className="text-brand-600 hover:underline">
                   {unpaidOrdersCount} commande{unpaidOrdersCount > 1 ? "s" : ""} impayée
                   {unpaidOrdersCount > 1 ? "s" : ""}
+                </Link>
+              </li>
+            )}
+            {expiringLotsCount > 0 && (
+              <li>
+                <Link to="/stock" onClick={() => setOpen(false)} className="text-brand-600 hover:underline">
+                  {expiringLotsCount} lot{expiringLotsCount > 1 ? "s" : ""} expirant sous 30 jours
                 </Link>
               </li>
             )}

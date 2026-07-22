@@ -9,6 +9,7 @@ export interface NewTransaction {
   quantity: number;
   userId: string;
   note?: string;
+  expiryDate?: string;
 }
 
 export interface StockTransfer {
@@ -44,6 +45,7 @@ export function useCreateTransaction() {
         quantity: transaction.quantity,
         user_id: transaction.userId,
         note: transaction.note || null,
+        expiry_date: transaction.expiryDate || null,
       });
       if (error) throw error;
     },
@@ -53,6 +55,7 @@ export function useCreateTransaction() {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
 }
@@ -73,6 +76,7 @@ export function useTransferStock() {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
 }

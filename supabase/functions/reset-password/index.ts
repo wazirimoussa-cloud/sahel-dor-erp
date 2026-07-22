@@ -57,9 +57,11 @@ Deno.serve(async (req) => {
     return json({ error: "Session invalide" }, 401);
   }
 
-  const { data: callerRole } = await callerClient.rpc("current_role_name");
-  if (callerRole !== "admin") {
-    return json({ error: "Réservé aux administrateurs" }, 403);
+  const { data: canManageUsers } = await callerClient.rpc("has_attribution", {
+    p_action_key: "utilisateurs.gerer",
+  });
+  if (!canManageUsers) {
+    return json({ error: "Réservé à la gestion des utilisateurs" }, 403);
   }
 
   const payload = (await req.json()) as ResetPasswordPayload;

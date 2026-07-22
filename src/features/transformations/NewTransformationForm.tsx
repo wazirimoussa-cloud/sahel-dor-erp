@@ -13,10 +13,14 @@ const lineSchema = z.object({
   quantity: z.coerce.number().positive("La quantité doit être positive"),
 });
 
+const outputLineSchema = lineSchema.extend({
+  expiryDate: z.string().optional(),
+});
+
 const transformationSchema = z.object({
   warehouseId: z.string().uuid("Choisissez un magasin"),
   inputs: z.array(lineSchema).min(1, "Ajoutez au moins un intrant"),
-  outputs: z.array(lineSchema).min(1, "Ajoutez au moins un extrant"),
+  outputs: z.array(outputLineSchema).min(1, "Ajoutez au moins un extrant"),
 });
 
 type TransformationFormValues = z.infer<typeof transformationSchema>;
@@ -37,7 +41,7 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
     resolver: zodResolver(transformationSchema),
     defaultValues: {
       inputs: [{ productId: "", quantity: 1 }],
-      outputs: [{ productId: "", quantity: 1 }],
+      outputs: [{ productId: "", quantity: 1, expiryDate: "" }],
     },
   });
 
@@ -55,7 +59,7 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
       reset({
         warehouseId: values.warehouseId,
         inputs: [{ productId: "", quantity: 1 }],
-        outputs: [{ productId: "", quantity: 1 }],
+        outputs: [{ productId: "", quantity: 1, expiryDate: "" }],
       });
       onCreated?.();
     } catch {
@@ -156,6 +160,12 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
               <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
               <Input type="number" step="0.001" {...register(`outputs.${index}.quantity` as const)} />
             </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Péremption (optionnelle)
+              </label>
+              <Input type="date" {...register(`outputs.${index}.expiryDate` as const)} />
+            </div>
             <Button type="button" variant="secondary" onClick={() => outputsArray.remove(index)}>
               Retirer
             </Button>
@@ -167,7 +177,7 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
         <Button
           type="button"
           variant="secondary"
-          onClick={() => outputsArray.append({ productId: "", quantity: 1 })}
+          onClick={() => outputsArray.append({ productId: "", quantity: 1, expiryDate: "" })}
         >
           + Ajouter un extrant
         </Button>

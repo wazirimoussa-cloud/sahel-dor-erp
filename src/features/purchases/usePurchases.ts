@@ -75,10 +75,19 @@ export interface ReceivePurchaseLossInput {
   reason?: string;
 }
 
+export interface ReceivePurchaseLotExpiryInput {
+  productId: string;
+  expiryDate?: string;
+}
+
 export function useReceivePurchase() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { purchaseId: string; losses: ReceivePurchaseLossInput[] }) => {
+    mutationFn: async (params: {
+      purchaseId: string;
+      losses: ReceivePurchaseLossInput[];
+      lotExpiryDates?: ReceivePurchaseLotExpiryInput[];
+    }) => {
       const { error } = await supabase.rpc("receive_purchase", {
         purchase_id: params.purchaseId,
         losses: params.losses.map((loss) => ({
@@ -87,6 +96,9 @@ export function useReceivePurchase() {
           quantity_lost: loss.quantityLost,
           reason: loss.reason || null,
         })),
+        lot_expiry_dates: (params.lotExpiryDates ?? [])
+          .filter((lot) => lot.expiryDate)
+          .map((lot) => ({ product_id: lot.productId, expiry_date: lot.expiryDate })),
       });
       if (error) throw error;
     },
@@ -96,6 +108,7 @@ export function useReceivePurchase() {
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
       void queryClient.invalidateQueries({ queryKey: ["purchase_losses", params.purchaseId] });
       void queryClient.invalidateQueries({ queryKey: ["purchase_losses"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
 }

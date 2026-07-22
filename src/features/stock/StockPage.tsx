@@ -2,10 +2,27 @@ import { Fragment, useMemo, useState } from "react";
 import { useAuth } from "@/auth/useAuth";
 import { useTransactions } from "@/features/stock/useTransactions";
 import { useProductStocks } from "@/features/stock/useProductStocks";
+import { useStockLots } from "@/features/stock/useStockLots";
 import { StockMovementForm } from "@/features/stock/StockMovementForm";
 import { TransferStockForm } from "@/features/stock/TransferStockForm";
 import { Card } from "@/components/ui/Card";
 import { isLowStock } from "@/lib/stockThreshold";
+
+const EXPIRY_SOON_DAYS = 30;
+
+function lotStatus(expiryDate: string | null): { label: string; className: string } | null {
+  if (!expiryDate) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  if (expiryDate < today) {
+    return { label: "Expiré", className: "bg-red-100 text-red-700" };
+  }
+  const soon = new Date();
+  soon.setDate(soon.getDate() + EXPIRY_SOON_DAYS);
+  if (expiryDate <= soon.toISOString().slice(0, 10)) {
+    return { label: "Expire bientôt", className: "bg-amber-100 text-amber-700" };
+  }
+  return null;
+}
 
 const TYPE_LABELS: Record<string, string> = {
   IN: "Entrée",
@@ -22,15 +39,16 @@ interface ProductStockGroup {
 }
 
 export function StockPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: transactions, isLoading, error } = useTransactions();
   const {
     data: productStocks,
     isLoading: isLoadingStocks,
     error: stocksError,
   } = useProductStocks();
-  const canRecord =
-    profile?.role === "warehouse_manager" || profile?.role === "logistics_transport";
+  const canRecordMovement = hasAttribution("stock.mouvement_manuel");
+  const canTransfer = hasAttribution("stock.transfert");
+  const { data: lots, isLoading: isLoadingLots, error: lotsError } = useStockLots();
 
   const [productFilter, setProductFilter] = useState("all");
   const [warehouseFilter, setWarehouseFilter] = useState("all");
@@ -103,13 +121,13 @@ export function StockPage() {
     <div className="space-y-6">
       <h1 className="text-lg font-bold text-forest-900">Mouvements de stock</h1>
 
-      {canRecord && (
+      {canRecordMovement && (
         <Card>
           <StockMovementForm />
         </Card>
       )}
 
-      {canRecord && (
+      {canTransfer && (
         <Card>
           <h2 className="mb-3 text-base font-semibold text-gray-800">Transfert entre magasins</h2>
           <TransferStockForm />
@@ -208,6 +226,67 @@ export function StockPage() {
                 </tr>
               </tfoot>
             )}
+          </table>
+        )}
+      </Card>
+
+      <Card>
+        <h2 className="mb-3 text-base font-semibold text-gray-800">Lots</h2>
+        {isLoadingLots && <p className="text-sm text-gray-500">Chargement…</p>}
+        {lotsError && <p className="text-sm text-red-600">Impossible de charger les lots.</p>}
+        {lots && (
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-gray-500">
+                <th className="py-2">Lot</th>
+                <th className="py-2">Produit</th>
+                <th className="py-2">Magasin</th>
+                <th className="py-2">Quantité restante</th>
+                <th className="py-2">Coût unitaire</th>
+                <th className="py-2">Péremption</th>
+                <th className="py-2" />
+              </tr>
+            </thead>
+            <tbody>
+              {lots.map((lot) => {
+                const product = lot.products as
+                  { name: string; unit: string } | { name: string; unit: string }[] | null;
+                const productInfo = Array.isArray(product) ? product[0] : product;
+                const warehouse = lot.warehouses as { name: string } | { name: string }[] | null;
+                const warehouseName = Array.isArray(warehouse) ? warehouse[0]?.name : warehouse?.name;
+                const status = lotStatus(lot.expiry_date);
+                return (
+                  <tr key={lot.id} className="border-b border-gray-100">
+                    <td className="py-2">Lot #{lot.lot_number}</td>
+                    <td className="py-2">{productInfo?.name ?? "—"}</td>
+                    <td className="py-2">{warehouseName ?? "—"}</td>
+                    <td className="py-2">
+                      {lot.quantity_remaining} {productInfo?.unit ?? ""}
+                    </td>
+                    <td className="py-2">{lot.unit_cost.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">
+                      {lot.expiry_date
+                        ? new Date(lot.expiry_date).toLocaleDateString("fr-FR")
+                        : "—"}
+                    </td>
+                    <td className="py-2">
+                      {status && (
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>
+                          {status.label}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {lots.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="py-4 text-center text-gray-400">
+                    Aucun lot en stock.
+                  </td>
+                </tr>
+              )}
+            </tbody>
           </table>
         )}
       </Card>

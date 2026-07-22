@@ -1,10 +1,23 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
 import { useFinancialStatements } from "@/features/financials/useFinancialStatements";
 import { useUpdateCapitalSocial } from "@/features/financials/useUpdateCapitalSocial";
+import { useCreateFixedAsset, useDisposeFixedAsset } from "@/features/financials/useFixedAssets";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+
+const assetSchema = z.object({
+  name: z.string().min(1, "Nom requis"),
+  category: z.string().min(1, "Catégorie requise"),
+  acquisitionDate: z.string().min(1, "Date requise"),
+  acquisitionCost: z.coerce.number().positive("Le coût doit être positif"),
+  usefulLifeYears: z.coerce.number().positive("La durée doit être positive"),
+});
+type AssetFormValues = z.infer<typeof assetSchema>;
 
 function formatFCFA(value: number) {
   return `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
@@ -25,13 +38,24 @@ function defaultEndDate() {
 }
 
 export function FinancialStatementsPage() {
-  const { profile } = useAuth();
+  const { profile, hasAttribution } = useAuth();
   const [startDate, setStartDate] = useState(defaultStartDate);
   const [endDate, setEndDate] = useState(defaultEndDate);
   const { data, isLoading, error } = useFinancialStatements(startDate, endDate);
   const updateCapital = useUpdateCapitalSocial();
   const [capitalInput, setCapitalInput] = useState<string | null>(null);
-  const canEditCapital = profile?.role === "accounting";
+  const canEditCapital = hasAttribution("comptabilite.modifier_capital_social");
+  const canManageAssets = hasAttribution("comptabilite.gerer_immobilisations");
+  const createFixedAsset = useCreateFixedAsset();
+  const disposeFixedAsset = useDisposeFixedAsset();
+  const [assetError, setAssetError] = useState<string | null>(null);
+
+  const {
+    register: registerAsset,
+    handleSubmit: handleAssetSubmit,
+    reset: resetAssetForm,
+    formState: { errors: assetErrors, isSubmitting: isSubmittingAsset },
+  } = useForm<AssetFormValues>({ resolver: zodResolver(assetSchema) });
 
   const displayedCapital = capitalInput ?? (data ? String(data.capitalSocial) : "");
 
@@ -43,14 +67,35 @@ export function FinancialStatementsPage() {
     setCapitalInput(null);
   }
 
+  async function onCreateAsset(values: AssetFormValues) {
+    setAssetError(null);
+    try {
+      await createFixedAsset.mutateAsync(values);
+      resetAssetForm();
+    } catch {
+      setAssetError("Création refusée (droits insuffisants ou valeurs invalides).");
+    }
+  }
+
+  async function handleDisposeAsset(assetId: string) {
+    const disposalDate = window.prompt("Date de cession (AAAA-MM-JJ) ?", defaultEndDate());
+    if (!disposalDate) return;
+    setAssetError(null);
+    try {
+      await disposeFixedAsset.mutateAsync({ assetId, disposalDate });
+    } catch {
+      setAssetError("Cession refusée (droits insuffisants, date invalide, ou déjà cédée).");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-lg font-bold text-forest-900">États financiers</h1>
         <p className="mt-1 text-sm text-gray-500">
           Bilan et compte de résultat SYSCOHADA simplifiés, calculés automatiquement à partir du
-          journal comptable et des mouvements de stock. Ne couvre que les comptes déjà alimentés par
-          les flux achats/ventes/trésorerie ; aucune immobilisation n'est suivie (voir README).
+          journal comptable, des mouvements de stock et des immobilisations. Amortissement
+          linéaire recalculé à la demande, sans écriture de clôture (voir README).
         </p>
       </div>
 
@@ -103,6 +148,12 @@ export function FinancialStatementsPage() {
                     {formatFCFA(Math.abs(data.incomeStatement.variationStock))}
                   </td>
                 </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2">Dotations aux amortissements</td>
+                  <td className="py-2 text-right">
+                    − {formatFCFA(data.incomeStatement.dotationsAmortissements)}
+                  </td>
+                </tr>
                 <tr className="font-semibold">
                   <td className="py-2">Résultat net</td>
                   <td className="py-2 text-right">
@@ -122,6 +173,12 @@ export function FinancialStatementsPage() {
                 <h3 className="mb-2 text-sm font-medium text-gray-600">Actif</h3>
                 <table className="w-full text-left text-sm">
                   <tbody>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-2">Immobilisations nettes</td>
+                      <td className="py-2 text-right">
+                        {formatFCFA(data.balanceSheet.actif.immobilisationsNettes)}
+                      </td>
+                    </tr>
                     <tr className="border-b border-gray-100">
                       <td className="py-2">Stock valorisé</td>
                       <td className="py-2 text-right">
@@ -228,6 +285,115 @@ export function FinancialStatementsPage() {
                 {data.unvaluedStock.map((s) => `${s.name} (${s.quantity} ${s.unit})`).join(", ")}
               </div>
             )}
+          </Card>
+
+          <Card>
+            <h2 className="mb-3 text-base font-semibold text-gray-800">Immobilisations</h2>
+            {canManageAssets && (
+              <form
+                onSubmit={handleAssetSubmit(onCreateAsset)}
+                className="mb-4 flex flex-wrap items-end gap-3"
+                noValidate
+              >
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
+                  <Input type="text" {...registerAsset("name")} />
+                  {assetErrors.name && (
+                    <p className="mt-1 text-xs text-red-600">{assetErrors.name.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Catégorie</label>
+                  <Input type="text" placeholder="Véhicule, Bâtiment…" {...registerAsset("category")} />
+                  {assetErrors.category && (
+                    <p className="mt-1 text-xs text-red-600">{assetErrors.category.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Date d'acquisition
+                  </label>
+                  <Input type="date" {...registerAsset("acquisitionDate")} />
+                  {assetErrors.acquisitionDate && (
+                    <p className="mt-1 text-xs text-red-600">{assetErrors.acquisitionDate.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Coût (FCFA)</label>
+                  <Input type="number" step="0.01" {...registerAsset("acquisitionCost")} />
+                  {assetErrors.acquisitionCost && (
+                    <p className="mt-1 text-xs text-red-600">{assetErrors.acquisitionCost.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Durée (années)</label>
+                  <Input type="number" step="0.5" {...registerAsset("usefulLifeYears")} />
+                  {assetErrors.usefulLifeYears && (
+                    <p className="mt-1 text-xs text-red-600">{assetErrors.usefulLifeYears.message}</p>
+                  )}
+                </div>
+                <Button type="submit" disabled={isSubmittingAsset}>
+                  Créer
+                </Button>
+              </form>
+            )}
+            {assetError && <p className="mb-3 text-xs text-red-600">{assetError}</p>}
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-gray-500">
+                  <th className="py-2">Nom</th>
+                  <th className="py-2">Catégorie</th>
+                  <th className="py-2">Acquisition</th>
+                  <th className="py-2">Coût</th>
+                  <th className="py-2">VNC à la date de fin</th>
+                  <th className="py-2">Statut</th>
+                  <th className="py-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {data.fixedAssets.map((asset) => (
+                  <tr key={asset.id} className="border-b border-gray-100">
+                    <td className="py-2">{asset.name}</td>
+                    <td className="py-2">{asset.category}</td>
+                    <td className="py-2">
+                      {new Date(asset.acquisition_date).toLocaleDateString("fr-FR")}
+                    </td>
+                    <td className="py-2">{formatFCFA(asset.acquisition_cost)}</td>
+                    <td className="py-2">{formatFCFA(asset.netBookValue)}</td>
+                    <td className="py-2">
+                      {asset.disposal_date ? (
+                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                          Cédée le {new Date(asset.disposal_date).toLocaleDateString("fr-FR")}
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
+                          En service
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-2 text-right">
+                      {canManageAssets && !asset.disposal_date && (
+                        <Button
+                          variant="secondary"
+                          className="px-2 py-1 text-xs"
+                          disabled={disposeFixedAsset.isPending}
+                          onClick={() => void handleDisposeAsset(asset.id)}
+                        >
+                          Céder
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {data.fixedAssets.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="py-4 text-center text-gray-400">
+                      Aucune immobilisation enregistrée.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </Card>
 
           <Card>

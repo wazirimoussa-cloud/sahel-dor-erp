@@ -4,10 +4,9 @@ import { TransporterForm } from "@/features/transporters/TransporterForm";
 import { Card } from "@/components/ui/Card";
 
 export function TransportersPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: transporters, isLoading, error } = useTransporters();
-  const canManage =
-    profile?.role === "warehouse_manager" || profile?.role === "logistics_transport";
+  const canManage = hasAttribution("transporteurs.gerer");
 
   return (
     <div className="space-y-6">

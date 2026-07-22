@@ -17,6 +17,7 @@ const movementSchema = z.object({
     .number()
     .refine((value) => value !== 0, "La quantité ne peut pas être 0"),
   note: z.string().max(200).optional(),
+  expiryDate: z.string().optional(),
 });
 
 type MovementFormValues = z.infer<typeof movementSchema>;
@@ -57,6 +58,7 @@ export function StockMovementForm() {
         quantity: values.type === "ADJUSTMENT" ? values.quantity : Math.abs(values.quantity),
         userId: session.user.id,
         note: values.note,
+        expiryDate: values.type === "IN" ? values.expiryDate : undefined,
       });
       reset();
     } catch {
@@ -126,6 +128,15 @@ export function StockMovementForm() {
         </label>
         <Input type="text" placeholder="Optionnel" {...register("note")} />
       </div>
+
+      {selectedType === "IN" && (
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            Péremption (optionnelle)
+          </label>
+          <Input type="date" {...register("expiryDate")} />
+        </div>
+      )}
 
       {serverError && <p className="w-full text-xs text-red-600">{serverError}</p>}
 

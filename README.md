@@ -95,43 +95,33 @@ Hébergement statique au choix (Vercel, Netlify, serveur local...). Configurez
 
 ## Rôles applicatifs
 
-9 profils calqués sur le cahier des charges "Gestion des profils utilisateurs"
-(introduits en `supabase/migrations/0016_agribusiness_governance.sql`, ajustables via
-la table `roles` et les policies RLS) :
+**Depuis `0032_attributions.sql` (Phase 16), le contrôle d'accès n'est plus basé sur un
+rôle fixe mais sur des attributions granulaires** — voir point 33 ci-dessous pour le
+détail du modèle. Le tableau suivant décrit l'équivalent fonctionnel de chacun des 9
+profils historiques (toujours utilisés comme intitulé de poste informatif, `users.role_id`,
+optionnel, sans effet sur les droits) tel que reconstitué par le backfill de cette
+migration — utile pour comprendre "qui pouvait faire quoi" avant l'attribution
+granulaire, et ce que chaque combinaison d'attributions recrée aujourd'hui :
 
-| Rôle (slug interne) | Accès |
+| Poste (informatif) | Attributions opérationnelles équivalentes |
 |---|---|
-| Administrateur (`admin`) | **Lecture seule** sur toutes les sociétés, écriture réservée à la gestion des comptes utilisateurs (et des sociétés, exception pragmatique — voir plus bas) |
-| Gestionnaire de magasin (`warehouse_manager`) | Produits, entrepôts, réception des achats (stock IN), mouvements de stock manuels (société assignée) |
-| Superviseur (`supervisor`) | Lecture large ; seul rôle habilité à **valider** une commande (déclenche la sortie de stock + l'écriture comptable) |
-| Opérateur de vente (`sales_operator`) | Clients, création/annulation de commande (aucun impact stock à la création) (société assignée) |
-| Responsable des achats (`purchasing`) | Fournisseurs, création/annulation de bon de commande (aucun impact stock) (société assignée) |
-| Comptable (`accounting`) | Plan comptable (écriture), encaissement des paiements clients, lecture du journal comptable, États financiers (bilan, compte de résultat, capital social) (société assignée) |
-| Responsable de production (`production_manager`) | Produits, cycle production/transformation (société assignée) |
-| Contrôleur (`controller`) | Lecture seule (large, y compris journal d'audit et journal comptable) de sa société — pas d'écriture |
-| Logistique / Transport (`logistics_transport`) | Lecture large, mouvements de stock manuels (livraisons) (société assignée) |
+| Administrateur | Consultative sur tous les modules + `utilisateurs.gerer` |
+| Gestionnaire de magasin | `entrepots.gerer`, `achats.receptionner`, `stock.mouvement_manuel`, `stock.transfert`, `pertes_stock.declarer`, `produits.gerer_catalogue`, `produits.modifier_prix`, `transporteurs.gerer` |
+| Superviseur | `ventes.valider_commande` (+ consultative sur `ventes`) |
+| Opérateur de vente | `ventes.creer_commande`, `ventes.annuler_commande`, `clients.gerer` |
+| Responsable des achats | `achats.creer`, `achats.annuler`, `fournisseurs.gerer` |
+| Comptable | `ventes.encaisser_paiement`, `comptabilite.gerer_plan_comptable`, `comptabilite.modifier_capital_social`, `comptabilite.gerer_immobilisations` (+ consultative sur `journal_comptable`/`etats_financiers`) |
+| Responsable de production | `production.creer`, `transformation.creer`, `produits.gerer_catalogue`, `produits.modifier_prix`, `pertes_stock.declarer` |
+| Contrôleur | Consultative sur tous les modules + `pertes_stock.approuver` |
+| Logistique / Transport | `stock.mouvement_manuel`, `stock.transfert`, `transporteurs.gerer`, `pertes_stock.declarer` |
 
-Chaque rôle non-admin lit largement les autres tables opérationnelles de sa société
-(produits, magasins, achats, commandes, etc.) mais n'écrit que dans son périmètre —
-la navigation reflète cette spécialité, plus stricte que les policies `select`
-sous-jacentes (`admin` et `controller` voient tous les écrans métier en lecture,
-`admin` seul voit en plus "Utilisateurs"). Les libellés français sont centralisés dans
-`src/lib/roles.ts` (`ROLE_LABELS`). Le slug `admin` est resté inchangé (au lieu de
-`administrateur`) pour ne pas modifier les 3 Edge Functions qui vérifient déjà
-`callerRole === "admin"`. Exception assumée : la gestion des sociétés (`companies`)
-reste réservée à `admin` — action d'infrastructure (nouveau tenant), pas une
-"opération sensible" au sens métier du cahier, et aucun des 9 rôles n'en a la charge.
-Seule exception : `accounting` peut modifier `companies.capital_social` (sa société
-uniquement) depuis la page États financiers — nécessaire pour distinguer Capital de
-Résultat cumulé au bilan (voir point 19).
-
-**Séparation des tâches** : aucun rôle ne peut créer, valider et exécuter seul une même
-opération. Cycle de vente : Opérateur de vente crée la commande (aucun impact stock) →
-Superviseur valide (c'est cette étape, et seulement elle, qui fait sortir le stock et
-génère l'écriture comptable VENTES) → Comptable encaisse. Cycle d'achat : Responsable
-des achats crée le bon de commande (aucun impact stock) → Gestionnaire de magasin
-réceptionne physiquement (c'est cette étape qui fait entrer le stock et génère
-l'écriture comptable ACHATS).
+**Séparation des tâches** : un même profil ne peut pas cumuler en opérationnel les deux
+attributions d'une paire en conflit (`attribution_conflicts`, imposé par trigger) —
+créer + valider une commande, créer + réceptionner un achat, déclarer + approuver une
+perte de stock. Cycle de vente : créer la commande (aucun impact stock) → valider (c'est
+cette étape, et seulement elle, qui fait sortir le stock et génère l'écriture comptable
+VENTES) → encaisser. Cycle d'achat : créer le bon de commande (aucun impact stock) →
+réceptionner physiquement (fait entrer le stock et génère l'écriture comptable ACHATS).
 
 ## Écarts et améliorations par rapport au cahier des charges
 
@@ -622,6 +612,51 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     existants — pas de compte de stock dans la méthode d'inventaire intermittent
     actuelle).
 
+33. **Attributions détachées du rôle** (`0032_attributions.sql`-`0035_users_select_attribution.sql`,
+    page "Utilisateurs" → "Gérer les attributions") : remplace les 9 rôles fixes par un
+    catalogue de 25 attributions granulaires (module + action précise, ex.
+    `ventes.valider_commande`), assignables librement par profil avec un niveau
+    `operationnelle` (peut agir) ou `consultative` (peut seulement consulter) —
+    `has_attribution()`/`has_module_access()` remplacent `current_role_name()` dans
+    toutes les RPC et policies RLS d'écriture. La séparation des tâches reste imposée
+    par le système via `attribution_conflicts` + trigger, pas laissée au jugement de
+    l'admin. Un profil créé (`UserForm`) n'a plus aucun rôle ni attribution par défaut —
+    l'admin les assigne ensuite séparément. `role_id` devient un intitulé de poste
+    optionnel, purement informatif. Limite assumée : les policies de lecture qui
+    donnaient déjà à `admin` une vue cross-société (motif historique Phase 3, pas une
+    "opération" au sens de cette attribution) continuent de vérifier le rôle littéral
+    `admin`, sauf `users_select`/`set_user_attributions` corrigées pour rester
+    cohérentes avec le fonctionnement déjà cross-société de la gestion des utilisateurs
+    (`create-user`/`reset-password`).
+
+34. **Suivi par lot et péremption (FEFO)** (`0037_stock_lots.sql`, section "Lots" sur la
+    page "Mouvements de stock") : le stock, suivi jusqu'ici en agrégat, est désormais
+    aussi décomposé en lots (`stock_lots` : quantité restante, coût unitaire, péremption
+    optionnelle) créés/consommés par le trigger central `fn_apply_transaction_stock`
+    (pas par les 6 RPC qui touchent au stock, ni par le mouvement manuel direct — un
+    seul point de vérité pour tous les mouvements). La consommation suit l'ordre
+    FEFO (péremption la plus proche d'abord, FIFO par ancienneté en repli pour les lots
+    sans péremption connue). Un transfert entre magasins fait hériter le lot destination
+    de la péremption la plus proche et du coût moyen pondéré des lots réellement
+    consommés à la source — limite assumée : un transfert mélangeant des lots à
+    péremptions différentes perd cette granularité, le lot destination n'a qu'une seule
+    date. Alerte "lots expirant sous 30 jours" ajoutée à la cloche de notifications.
+    Backfill : chaque stock déjà en place à l'application de la migration a reçu un lot
+    d'ouverture synthétique (péremption inconnue, coût = CUMP des achats reçus ou prix de
+    vente en repli) pour ne pas perdre l'invariant "somme des lots = stock agrégé".
+
+35. **Immobilisations et amortissements** (`0036_fixed_assets.sql`, section
+    "Immobilisations" sur la page "États financiers") : nouvelle table `fixed_assets`
+    (coût, date d'acquisition, durée d'utilité), amortissement **linéaire uniquement**
+    (dégressif hors périmètre), recalculé à la demande (valeur nette comptable et
+    dotation de la période) exactement comme la valeur du stock — aucune écriture
+    d'amortissement n'est postée périodiquement, pas de compte "28"/"681" créé. Seule
+    l'acquisition génère une vraie écriture (Débit 21 / Crédit 521 Banque d'opération) —
+    hypothèse d'un paiement comptant, limite assumée (pas de dette fournisseur distincte
+    pour ce type d'achat). Cession simplifiée : un champ `disposal_date` retire l'actif
+    du bilan à cette date, sans plus/moins-value de cession calculée. Nouvelle
+    attribution `comptabilite.gerer_immobilisations`.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
@@ -634,9 +669,23 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
 - **Comptabilité** : périmètre volontairement réduit (voir points 13-14) — Production/
   Transformation restent hors du grand livre. Ne pas utiliser en l'état pour des
   déclarations fiscales ou un bilan officiel sans revue par un comptable.
-- **États financiers sans immobilisations** (point 19) : aucune ligne "Actif immobilisé"
-  (véhicules, bâtiments, matériel) — non tracées dans l'app. Le CUMP du stock est un
-  coût moyen global, pas recalculé après chaque entrée successive.
+- **Immobilisations** (point 35) : amortissement linéaire uniquement (pas de dégressif),
+  cession sans plus/moins-value calculée, acquisition supposée payée comptant (pas de
+  dette fournisseur distincte pour ce type d'achat). Le CUMP du stock reste un coût moyen
+  global, pas recalculé après chaque entrée successive.
+- **Suivi par lot** (point 34) : un transfert entre magasins mélangeant des lots à
+  péremptions différentes perd cette granularité (le lot destination hérite d'une seule
+  date, la plus proche parmi les lots consommés). Le module Pertes de stock ne permet pas
+  de cibler un lot précis — la consommation FEFO automatique tend déjà à retirer le lot
+  le plus proche de la péremption en premier, mais sans garantie absolue si plusieurs
+  lots ont la même date.
+- **Attributions et vue cross-société** (point 33) : les policies de lecture qui donnent
+  à `admin` une vue cross-société (motif historique Phase 3) vérifient encore le rôle
+  littéral `admin`, pas l'attribution `utilisateurs.gerer` — un nouveau profil greffé sur
+  cette attribution sans jamais avoir eu le rôle `admin` gère les comptes normalement
+  mais n'hérite pas de cette vue cross-société sur les autres modules (produits,
+  commandes, etc.). Hors périmètre de la demande initiale (opérations métier, pas
+  supervision cross-société).
 - **Taux de TVA sans écran de configuration** : `companies.vat_rate` se modifie
   directement en base (pas d'interface dédiée dans cette passe).
 - **Partage de fichier PDF** : dépend du support navigateur de `navigator.share` avec

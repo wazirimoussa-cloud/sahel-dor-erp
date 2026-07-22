@@ -4,9 +4,9 @@ import { SupplierForm } from "@/features/suppliers/SupplierForm";
 import { Card } from "@/components/ui/Card";
 
 export function SuppliersPage() {
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: suppliers, isLoading, error } = useSuppliers();
-  const canManage = profile?.role === "purchasing";
+  const canManage = hasAttribution("fournisseurs.gerer");
 
   return (
     <div className="space-y-6">

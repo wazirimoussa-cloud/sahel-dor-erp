@@ -10,6 +10,7 @@ export interface TransformationOutputInput {
   productId: string;
   quantity: number;
   unitCost?: number;
+  expiryDate?: string;
 }
 
 export function useTransformations() {
@@ -65,6 +66,7 @@ export function useCreateTransformation() {
             product_id: item.productId,
             quantity: item.quantity,
             unit_cost: item.unitCost,
+            expiry_date: item.expiryDate || null,
           })),
         },
       });
@@ -74,6 +76,8 @@ export function useCreateTransformation() {
       void queryClient.invalidateQueries({ queryKey: ["transformations"] });
       void queryClient.invalidateQueries({ queryKey: ["products"] });
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
 }

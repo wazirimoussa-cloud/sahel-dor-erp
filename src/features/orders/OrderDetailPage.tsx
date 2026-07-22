@@ -50,7 +50,7 @@ type PaymentFormValues = z.infer<typeof paymentSchema>;
 export function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { hasAttribution } = useAuth();
   const { data: order, isLoading, error } = useOrder(id);
   const { data: payments } = useOrderPayments(id);
   const validateOrder = useValidateOrder();
@@ -58,9 +58,9 @@ export function OrderDetailPage() {
   const recordPayment = useRecordPayment();
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const canValidate = profile?.role === "supervisor";
-  const canCancel = profile?.role === "sales_operator";
-  const canRecordPayment = profile?.role === "accounting";
+  const canValidate = hasAttribution("ventes.valider_commande");
+  const canCancel = hasAttribution("ventes.annuler_commande");
+  const canRecordPayment = hasAttribution("ventes.encaisser_paiement");
 
   const {
     register: registerPayment,
