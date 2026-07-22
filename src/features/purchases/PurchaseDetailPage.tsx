@@ -12,7 +12,7 @@ import { useTransporters } from "@/features/transporters/useTransporters";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { generatePurchasePdf, generateCreditNotePdf } from "@/lib/pdf";
+import { generatePurchasePdf, generateCreditNotePdf, generateReceptionPdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
 
 interface ReceptionLine {
@@ -23,6 +23,11 @@ interface ReceptionLine {
 }
 interface ReceptionFormValues {
   lines: ReceptionLine[];
+  driverName: string;
+  truckPlate: string;
+  driverPhone: string;
+  repackageCount: number;
+  observation: string;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -51,8 +56,11 @@ export function PurchaseDetailPage() {
   const canReceive = hasAttribution("achats.receptionner");
   const canCancel = hasAttribution("achats.annuler");
 
-  const { register: registerReception, handleSubmit: handleReceptionSubmit } =
-    useForm<ReceptionFormValues>();
+  const {
+    register: registerReception,
+    handleSubmit: handleReceptionSubmit,
+    formState: { errors: receptionErrors },
+  } = useForm<ReceptionFormValues>();
 
   if (isLoading) return <p className="text-sm text-gray-500">Chargement…</p>;
   if (error || !purchase) {
@@ -94,16 +102,26 @@ export function PurchaseDetailPage() {
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
     : creatorRelation?.email;
-  const supplierRelation = purchase.suppliers as { name: string } | { name: string }[] | null;
-  const supplierName = Array.isArray(supplierRelation)
-    ? supplierRelation[0]?.name
-    : supplierRelation?.name;
+  const supplierRelation = purchase.suppliers as
+    | { name: string; address: string | null }
+    | { name: string; address: string | null }[]
+    | null;
+  const supplierInfo = Array.isArray(supplierRelation) ? supplierRelation[0] : supplierRelation;
+  const supplierName = supplierInfo?.name;
+  const supplierAddress = supplierInfo?.address;
   const warehouseRelation = purchase.warehouses as { name: string } | { name: string }[] | null;
   const warehouseName = Array.isArray(warehouseRelation)
     ? warehouseRelation[0]?.name
     : warehouseRelation?.name;
   const purchaseId = purchase.id;
   const purchaseCreatedAt = purchase.created_at;
+  const receiptNumber = purchase.receipt_number;
+  const receivedAt = purchase.received_at;
+  const driverName = purchase.driver_name;
+  const truckPlate = purchase.truck_plate;
+  const driverPhone = purchase.driver_phone;
+  const repackageCount = purchase.repackage_count;
+  const observation = purchase.observation;
 
   async function buildPurchasePdf() {
     const products = items.map((item) => {
@@ -163,10 +181,54 @@ export function PurchaseDetailPage() {
       }
     }
     try {
-      await receivePurchase.mutateAsync({ purchaseId, losses, lotExpiryDates });
+      await receivePurchase.mutateAsync({
+        purchaseId,
+        losses,
+        lotExpiryDates,
+        driverName: values.driverName,
+        truckPlate: values.truckPlate,
+        driverPhone: values.driverPhone,
+        repackageCount: values.repackageCount ? Number(values.repackageCount) : undefined,
+        observation: values.observation,
+      });
     } catch {
       setActionError("Action refusée (droits insuffisants, achat déjà traité, ou perte invalide).");
     }
+  }
+
+  async function handleDownloadReceptionPdf() {
+    const products = items.map((item, index) => {
+      const productInfo = productInfoOf(item);
+      const loss = losses?.find((l) => {
+        const productRelation = l.products as { name: string } | { name: string }[] | null;
+        const lossProductName = Array.isArray(productRelation)
+          ? productRelation[0]?.name
+          : productRelation?.name;
+        return lossProductName === productInfo?.name;
+      });
+      const quantityLost = loss?.quantity_lost ?? 0;
+      return {
+        productName: productInfo?.name ?? `Produit ${index + 1}`,
+        unit: productInfo?.unit,
+        quantityLoaded: item.quantity,
+        quantityUnloaded: item.quantity - quantityLost,
+      };
+    });
+    const { doc, filename } = await generateReceptionPdf({
+      purchaseId,
+      receiptNumber: receiptNumber ?? 0,
+      receivedAt: receivedAt ?? purchaseCreatedAt,
+      warehouseName: warehouseName ?? "—",
+      supplierName: supplierName ?? "—",
+      supplierAddress: supplierAddress ?? undefined,
+      driverName: driverName ?? "—",
+      truckPlate: truckPlate ?? "—",
+      driverPhone: driverPhone ?? "—",
+      repackageCount: repackageCount ?? 0,
+      observation: observation ?? undefined,
+      items: products,
+    });
+    doc.save(filename);
   }
 
   async function handleCancel() {
@@ -272,6 +334,11 @@ export function PurchaseDetailPage() {
             Partager
           </Button>
         )}
+        {purchase.status === "received" && (
+          <Button variant="secondary" onClick={() => void handleDownloadReceptionPdf()}>
+            Bon de réception (PDF)
+          </Button>
+        )}
       </div>
 
       {actionError && <p className="text-sm text-red-600">{actionError}</p>}
@@ -349,6 +416,70 @@ export function PurchaseDetailPage() {
                 ))}
               </tbody>
             </table>
+
+            <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 sm:grid-cols-4">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Nom et prénom du chauffeur
+                </label>
+                <Input
+                  type="text"
+                  {...registerReception("driverName", { required: true })}
+                />
+                {receptionErrors.driverName && (
+                  <p className="mt-1 text-xs text-red-600">Requis</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Immatriculation du camion
+                </label>
+                <Input
+                  type="text"
+                  {...registerReception("truckPlate", { required: true })}
+                />
+                {receptionErrors.truckPlate && (
+                  <p className="mt-1 text-xs text-red-600">Requis</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Numéro de téléphone
+                </label>
+                <Input
+                  type="text"
+                  {...registerReception("driverPhone", { required: true })}
+                />
+                {receptionErrors.driverPhone && (
+                  <p className="mt-1 text-xs text-red-600">Requis</p>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Sacs à reconditionner
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  placeholder="0"
+                  {...registerReception("repackageCount")}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-gray-600">
+                Point d'observation
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Remarques générales sur la livraison (optionnel)"
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                {...registerReception("observation")}
+              />
+            </div>
+
             <Button type="submit" disabled={receivePurchase.isPending}>
               Recevoir l'achat
             </Button>

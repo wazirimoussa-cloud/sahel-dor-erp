@@ -31,7 +31,7 @@ export function usePurchase(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, user_id, users(email), suppliers(name), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt))",
+          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt))",
         )
         .eq("id", purchaseId as string)
         .single();
@@ -87,6 +87,11 @@ export function useReceivePurchase() {
       purchaseId: string;
       losses: ReceivePurchaseLossInput[];
       lotExpiryDates?: ReceivePurchaseLotExpiryInput[];
+      driverName: string;
+      truckPlate: string;
+      driverPhone: string;
+      repackageCount?: number;
+      observation?: string;
     }) => {
       const { error } = await supabase.rpc("receive_purchase", {
         purchase_id: params.purchaseId,
@@ -99,6 +104,11 @@ export function useReceivePurchase() {
         lot_expiry_dates: (params.lotExpiryDates ?? [])
           .filter((lot) => lot.expiryDate)
           .map((lot) => ({ product_id: lot.productId, expiry_date: lot.expiryDate })),
+        p_driver_name: params.driverName,
+        p_truck_plate: params.truckPlate,
+        p_driver_phone: params.driverPhone,
+        p_repackage_count: params.repackageCount,
+        p_observation: params.observation || undefined,
       });
       if (error) throw error;
     },

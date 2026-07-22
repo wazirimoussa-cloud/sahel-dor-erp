@@ -21,12 +21,12 @@ function formatFcfa(amount: number): string {
   return `${amount.toLocaleString("fr-FR")} FCFA`;
 }
 
-async function newDocument(title: string) {
+async function newDocument(title: string, orientation: "portrait" | "landscape" = "portrait") {
   const [{ default: JsPDF }, { default: autoTable }] = await Promise.all([
     import("jspdf"),
     import("jspdf-autotable"),
   ]);
-  const doc = new JsPDF();
+  const doc = new JsPDF({ orientation });
 
   doc.setFontSize(16);
   doc.text("Sahel d'Or", 14, 18);
@@ -202,6 +202,91 @@ export async function generateVatDeclarationPdf(input: VatDeclarationPdfInput) {
   return {
     doc,
     filename: `declaration-tva-${input.periodLabel.replace(/\s+/g, "-").toLowerCase()}.pdf`,
+  };
+}
+
+export interface ReceptionPdfInput {
+  purchaseId: string;
+  receiptNumber: number;
+  receivedAt: string;
+  warehouseName: string;
+  supplierName: string;
+  supplierAddress?: string;
+  driverName: string;
+  truckPlate: string;
+  driverPhone: string;
+  repackageCount?: number;
+  observation?: string;
+  items: { productName: string; unit?: string; quantityLoaded: number; quantityUnloaded: number }[];
+}
+
+// Bon de réception (entreposage en magasin) : provenance, chauffeur/camion, quantités
+// chargée/déchargée/écart par produit, nombre de sacs à reconditionner, un point
+// d'observation libre, et trois blocs de signature (chauffeur / magasinier /
+// gestionnaire du magasin) pour l'exemplaire papier archivé au magasin. Imprimé en
+// paysage : plus large que les autres documents (deux colonnes d'en-tête, signatures
+// mieux réparties), cohérent avec un vrai bon de livraison papier.
+export async function generateReceptionPdf(input: ReceptionPdfInput) {
+  const { doc, autoTable } = await newDocument(
+    `Bon de réception n° ${input.receiptNumber}`,
+    "landscape",
+  );
+
+  const leftX = 14;
+  const rightX = 155;
+
+  doc.setFontSize(10);
+  doc.text(`Référence bon de commande : #${input.purchaseId.slice(0, 8)}`, leftX, 42);
+  doc.text(`Date de réception : ${new Date(input.receivedAt).toLocaleString("fr-FR")}`, leftX, 48);
+  doc.text(`Magasin : ${input.warehouseName}`, leftX, 54);
+  doc.text(
+    `Provenance : ${input.supplierName}${input.supplierAddress ? " — " + input.supplierAddress : ""}`,
+    leftX,
+    60,
+  );
+
+  doc.text(`Chauffeur : ${input.driverName}`, rightX, 42);
+  doc.text(`Téléphone : ${input.driverPhone}`, rightX, 48);
+  doc.text(`Immatriculation du camion : ${input.truckPlate}`, rightX, 54);
+
+  autoTable(doc, {
+    startY: 68,
+    head: [["Nature du produit", "Qté chargée", "Qté déchargée", "Écart"]],
+    body: input.items.map((item) => {
+      const ecart = item.quantityLoaded - item.quantityUnloaded;
+      const unitSuffix = item.unit ? ` ${item.unit}` : "";
+      return [
+        item.productName,
+        `${item.quantityLoaded}${unitSuffix}`,
+        `${item.quantityUnloaded}${unitSuffix}`,
+        `${ecart}${unitSuffix}`,
+      ];
+    }),
+  });
+
+  const finalY =
+    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 68;
+
+  doc.setFontSize(10);
+  doc.text(`Nombre de sacs à reconditionner : ${input.repackageCount ?? 0}`, leftX, finalY + 10);
+
+  doc.text("Point d'observation :", leftX, finalY + 18);
+  const observationLines = doc.splitTextToSize(input.observation || "—", 269);
+  doc.text(observationLines, leftX, finalY + 24);
+  const observationBlockHeight = Array.isArray(observationLines) ? observationLines.length * 5 : 5;
+
+  const signatureY = finalY + 30 + observationBlockHeight;
+  doc.setFontSize(9);
+  doc.line(leftX, signatureY, 94, signatureY);
+  doc.text("Chauffeur", leftX, signatureY + 5);
+  doc.line(114, signatureY, 194, signatureY);
+  doc.text("Magasinier", 114, signatureY + 5);
+  doc.line(214, signatureY, 283, signatureY);
+  doc.text("Gestionnaire du magasin", 214, signatureY + 5);
+
+  return {
+    doc,
+    filename: `bon-reception-${input.receiptNumber}.pdf`,
   };
 }
 

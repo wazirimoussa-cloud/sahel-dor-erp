@@ -870,27 +870,48 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string
+          driver_name: string | null
+          driver_phone: string | null
           id: string
+          observation: string | null
+          receipt_number: number
+          received_at: string | null
+          repackage_count: number | null
           status: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          truck_plate: string | null
           user_id: string
           warehouse_id: string
         }
         Insert: {
           company_id: string
           created_at?: string
+          driver_name?: string | null
+          driver_phone?: string | null
           id?: string
+          observation?: string | null
+          receipt_number?: never
+          received_at?: string | null
+          repackage_count?: number | null
           status?: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          truck_plate?: string | null
           user_id: string
           warehouse_id: string
         }
         Update: {
           company_id?: string
           created_at?: string
+          driver_name?: string | null
+          driver_phone?: string | null
           id?: string
+          observation?: string | null
+          receipt_number?: never
+          received_at?: string | null
+          repackage_count?: number | null
           status?: Database["public"]["Enums"]["purchase_status"]
           supplier_id?: string
+          truck_plate?: string | null
           user_id?: string
           warehouse_id?: string
         }
@@ -1643,9 +1664,16 @@ export type Database = {
         Returns: {
           company_id: string
           created_at: string
+          driver_name: string | null
+          driver_phone: string | null
           id: string
+          observation: string | null
+          receipt_number: number
+          received_at: string | null
+          repackage_count: number | null
           status: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          truck_plate: string | null
           user_id: string
           warehouse_id: string
         }
@@ -1724,9 +1752,16 @@ export type Database = {
         Returns: {
           company_id: string
           created_at: string
+          driver_name: string | null
+          driver_phone: string | null
           id: string
+          observation: string | null
+          receipt_number: number
+          received_at: string | null
+          repackage_count: number | null
           status: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          truck_plate: string | null
           user_id: string
           warehouse_id: string
         }
@@ -1791,47 +1826,40 @@ export type Database = {
       }
       has_module_access: { Args: { p_module: string }; Returns: boolean }
       log_page_visit: { Args: { module: string }; Returns: undefined }
-      receive_purchase:
-        | {
-            Args: { losses?: Json; purchase_id: string }
-            Returns: {
-              company_id: string
-              created_at: string
-              id: string
-              status: Database["public"]["Enums"]["purchase_status"]
-              supplier_id: string
-              user_id: string
-              warehouse_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "purchases"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: {
-              losses?: Json
-              lot_expiry_dates?: Json
-              purchase_id: string
-            }
-            Returns: {
-              company_id: string
-              created_at: string
-              id: string
-              status: Database["public"]["Enums"]["purchase_status"]
-              supplier_id: string
-              user_id: string
-              warehouse_id: string
-            }
-            SetofOptions: {
-              from: "*"
-              to: "purchases"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      receive_purchase: {
+        Args: {
+          losses?: Json
+          lot_expiry_dates?: Json
+          p_driver_name?: string
+          p_driver_phone?: string
+          p_observation?: string
+          p_repackage_count?: number
+          p_truck_plate?: string
+          purchase_id: string
+        }
+        Returns: {
+          company_id: string
+          created_at: string
+          driver_name: string | null
+          driver_phone: string | null
+          id: string
+          observation: string | null
+          receipt_number: number
+          received_at: string | null
+          repackage_count: number | null
+          status: Database["public"]["Enums"]["purchase_status"]
+          supplier_id: string
+          truck_plate: string | null
+          user_id: string
+          warehouse_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       record_payment: {
         Args: { amount: number; order_id: string }
         Returns: {
