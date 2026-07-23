@@ -199,24 +199,6 @@ export type Database = {
         }
         Relationships: []
       }
-      erp_data: {
-        Row: {
-          key: string
-          updated_at: string | null
-          value: string
-        }
-        Insert: {
-          key: string
-          updated_at?: string | null
-          value: string
-        }
-        Update: {
-          key?: string
-          updated_at?: string | null
-          value?: string
-        }
-        Relationships: []
-      }
       fixed_assets: {
         Row: {
           acquisition_cost: number
