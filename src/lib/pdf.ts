@@ -3,6 +3,26 @@
 // améliorations". Chaque générateur reçoit des données déjà normalisées par la page
 // appelante (jamais la forme brute Supabase objet-ou-tableau).
 
+import logoUrl from "@/assets/logo.png";
+
+// Logo chargé une seule fois (data URL en cache) et posé en haut à droite de chaque
+// document généré — jsPDF ne sait pas dessiner depuis une URL réseau/relative, seulement
+// depuis une chaîne base64/data URL ou un élément image déjà chargé.
+let cachedLogoDataUrl: string | null = null;
+
+async function loadLogoDataUrl(): Promise<string> {
+  if (cachedLogoDataUrl) return cachedLogoDataUrl;
+  const response = await fetch(logoUrl);
+  const blob = await response.blob();
+  cachedLogoDataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+  return cachedLogoDataUrl;
+}
+
 interface PdfLineItem {
   productName: string;
   quantity: number;
@@ -27,6 +47,17 @@ async function newDocument(title: string, orientation: "portrait" | "landscape" 
     import("jspdf-autotable"),
   ]);
   const doc = new JsPDF({ orientation });
+
+  try {
+    const logoDataUrl = await loadLogoDataUrl();
+    const logoWidth = 16;
+    const logoHeight = 19;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.addImage(logoDataUrl, "PNG", pageWidth - logoWidth - 14, 8, logoWidth, logoHeight);
+  } catch {
+    // Le document reste utilisable sans logo si le chargement échoue pour une raison
+    // quelconque (réseau, format...) — jamais bloquant pour générer le PDF.
+  }
 
   doc.setFontSize(16);
   doc.text("Sahel d'Or", 14, 18);
