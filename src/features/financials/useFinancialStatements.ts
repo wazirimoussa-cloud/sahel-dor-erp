@@ -28,13 +28,13 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       if (!companyId) throw new Error("Aucune société associée à ce profil.");
       const endBound = `${endDate}T23:59:59.999`;
 
-      const [productsRes, purchaseItemsRes, transactionsRes, journalRes, companyRes, fixedAssetsRes] =
+      const [productsRes, purchaseLotsRes, transactionsRes, journalRes, companyRes, fixedAssetsRes] =
         await Promise.all([
           supabase.from("products").select("id, name, unit"),
           supabase
-            .from("purchase_items")
-            .select("product_id, quantity, unit_cost, purchases!inner(status)")
-            .eq("purchases.status", "received"),
+            .from("stock_lots")
+            .select("product_id, quantity_received, unit_cost, transactions!inner(purchase_id)")
+            .not("transactions.purchase_id", "is", null),
           supabase
             .from("transactions")
             .select("product_id, type, quantity, created_at")
@@ -49,7 +49,7 @@ export function useFinancialStatements(startDate: string, endDate: string) {
         ]);
 
       if (productsRes.error) throw productsRes.error;
-      if (purchaseItemsRes.error) throw purchaseItemsRes.error;
+      if (purchaseLotsRes.error) throw purchaseLotsRes.error;
       if (transactionsRes.error) throw transactionsRes.error;
       if (journalRes.error) throw journalRes.error;
       if (companyRes.error) throw companyRes.error;
@@ -70,13 +70,15 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       const productNameById = new Map(productsRes.data.map((p) => [p.id, p.name]));
       const productUnitById = new Map(productsRes.data.map((p) => [p.id, p.unit]));
 
-      // CUMP global par produit, à partir des seuls achats réceptionnés (coût réel).
+      // CUMP global par produit, à partir des lots créés par une réception d'achat —
+      // stock_lots.unit_cost porte désormais le prix de revient (achat + quote-part
+      // transport/manutention, voir migration 0043), pas seulement le prix d'achat brut.
       const cump = new Map<string, { qty: number; cost: number }>();
-      for (const item of purchaseItemsRes.data) {
-        const entry = cump.get(item.product_id) ?? { qty: 0, cost: 0 };
-        entry.qty += item.quantity;
-        entry.cost += item.quantity * item.unit_cost;
-        cump.set(item.product_id, entry);
+      for (const lot of purchaseLotsRes.data) {
+        const entry = cump.get(lot.product_id) ?? { qty: 0, cost: 0 };
+        entry.qty += lot.quantity_received;
+        entry.cost += lot.quantity_received * lot.unit_cost;
+        cump.set(lot.product_id, entry);
       }
       const unitCostByProduct = new Map(
         [...cump].map(([productId, { qty, cost }]) => [productId, qty > 0 ? cost / qty : 0]),

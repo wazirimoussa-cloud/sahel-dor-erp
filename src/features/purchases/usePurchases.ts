@@ -31,7 +31,7 @@ export function usePurchase(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt))",
+          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, freight_cost, handling_cost, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt))",
         )
         .eq("id", purchaseId as string)
         .single();
@@ -92,6 +92,8 @@ export function useReceivePurchase() {
       driverPhone: string;
       repackageCount?: number;
       observation?: string;
+      freightCost?: number;
+      handlingCost?: number;
     }) => {
       const { error } = await supabase.rpc("receive_purchase", {
         purchase_id: params.purchaseId,
@@ -109,6 +111,8 @@ export function useReceivePurchase() {
         p_driver_phone: params.driverPhone,
         p_repackage_count: params.repackageCount,
         p_observation: params.observation || undefined,
+        p_freight_cost: params.freightCost ?? 0,
+        p_handling_cost: params.handlingCost ?? 0,
       });
       if (error) throw error;
     },

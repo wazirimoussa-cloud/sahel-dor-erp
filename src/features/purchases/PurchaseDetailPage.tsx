@@ -28,6 +28,8 @@ interface ReceptionFormValues {
   driverPhone: string;
   repackageCount: number;
   observation: string;
+  freightCost: number;
+  handlingCost: number;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -55,6 +57,7 @@ export function PurchaseDetailPage() {
 
   const canReceive = hasAttribution("achats.receptionner");
   const canCancel = hasAttribution("achats.annuler");
+  const canViewLandedCost = hasAttribution("comptabilite.consulter_prix_revient", "consultative");
 
   const {
     register: registerReception,
@@ -98,6 +101,11 @@ export function PurchaseDetailPage() {
     : companyRelation?.vat_rate;
   const vatAmount = vatRate ? Math.round(taxableHT * vatRate) / 100 : 0;
   const totalTTC = totalHT + vatAmount;
+  const freightCost = purchase.freight_cost ?? 0;
+  const handlingCost = purchase.handling_cost ?? 0;
+  const totalOrderedQty = items.reduce((sum, item) => sum + item.quantity, 0);
+  const ancillaryPerUnit =
+    totalOrderedQty > 0 ? (freightCost + handlingCost) / totalOrderedQty : 0;
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
@@ -190,6 +198,8 @@ export function PurchaseDetailPage() {
         driverPhone: values.driverPhone,
         repackageCount: values.repackageCount ? Number(values.repackageCount) : undefined,
         observation: values.observation,
+        freightCost: values.freightCost ? Number(values.freightCost) : undefined,
+        handlingCost: values.handlingCost ? Number(values.handlingCost) : undefined,
       });
     } catch {
       setActionError("Action refusée (droits insuffisants, achat déjà traité, ou perte invalide).");
@@ -274,6 +284,9 @@ export function PurchaseDetailPage() {
               <th className="py-2">Quantité</th>
               <th className="py-2">Coût unitaire</th>
               <th className="py-2">Sous-total</th>
+              {purchase.status === "received" && canViewLandedCost && (
+                <th className="py-2">Prix de revient / unité</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -296,6 +309,14 @@ export function PurchaseDetailPage() {
                   <td className="py-2">
                     {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
                   </td>
+                  {purchase.status === "received" && canViewLandedCost && (
+                    <td className="py-2">
+                      {(item.unit_cost + ancillaryPerUnit).toLocaleString("fr-FR", {
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      FCFA
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -306,12 +327,14 @@ export function PurchaseDetailPage() {
                 Sous-total HT
               </td>
               <td className="pt-3 text-sm text-gray-800">{totalHT.toLocaleString("fr-FR")} FCFA</td>
+              {purchase.status === "received" && canViewLandedCost && <td className="pt-3" />}
             </tr>
             <tr>
               <td colSpan={3} className="text-right text-sm text-gray-600">
                 TVA ({vatRate ?? 0}%)
               </td>
               <td className="text-sm text-gray-800">{vatAmount.toLocaleString("fr-FR")} FCFA</td>
+              {purchase.status === "received" && canViewLandedCost && <td />}
             </tr>
             <tr>
               <td colSpan={3} className="text-right text-sm font-medium text-gray-700">
@@ -320,7 +343,18 @@ export function PurchaseDetailPage() {
               <td className="text-sm font-semibold text-gray-900">
                 {totalTTC.toLocaleString("fr-FR")} FCFA
               </td>
+              {purchase.status === "received" && canViewLandedCost && <td />}
             </tr>
+            {purchase.status === "received" && canViewLandedCost && (freightCost > 0 || handlingCost > 0) && (
+              <tr>
+                <td colSpan={4} className="pt-2 text-right text-xs text-gray-500">
+                  Frais accessoires (compte 608) : transport {freightCost.toLocaleString("fr-FR")}{" "}
+                  FCFA + manutention {handlingCost.toLocaleString("fr-FR")} FCFA — répartis au
+                  prorata de la quantité commandée ({totalOrderedQty})
+                </td>
+                <td className="pt-2" />
+              </tr>
+            )}
           </tfoot>
         </table>
       </Card>
@@ -466,7 +500,36 @@ export function PurchaseDetailPage() {
                   {...registerReception("repackageCount")}
                 />
               </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Frais de transport (FCFA)
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  placeholder="0"
+                  {...registerReception("freightCost")}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">
+                  Frais de manutention (FCFA)
+                </label>
+                <Input
+                  type="number"
+                  min={0}
+                  step="1"
+                  placeholder="0"
+                  {...registerReception("handlingCost")}
+                />
+              </div>
             </div>
+            <p className="text-xs text-gray-500">
+              Ces frais sont répartis au prorata de la quantité commandée sur chaque ligne pour
+              calculer le prix de revient du stock ; ils sont comptabilisés séparément (compte 608)
+              et n'affectent pas la dette envers le fournisseur.
+            </p>
 
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">

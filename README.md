@@ -657,6 +657,32 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     du bilan à cette date, sans plus/moins-value de cession calculée. Nouvelle
     attribution `comptabilite.gerer_immobilisations`.
 
+36. **Prix de revient automatique** (`0043_prix_de_revient.sql`, formulaire de réception
+    sur "Réceptions") : le coût unitaire capitalisé dans `stock_lots.unit_cost` à la
+    réception d'un achat n'est plus le seul prix d'achat, mais un prix de revient =
+    prix d'achat + quote-part des frais de transport/manutention saisis sur la
+    réception, répartis **au prorata de la quantité commandée** (et non reçue) sur
+    chaque ligne. Périmètre volontairement limité à **achat + transport +
+    manutention** — deux autres coûts explicitement exclus de cette valeur :
+    - **Les pertes constatées à la réception restent hors du prix de revient** : la
+      quote-part de frais correspondant à la quantité perdue n'est capitalisée nulle
+      part (le dénominateur de la répartition est la quantité commandée, pas la
+      quantité effectivement reçue) — la perte demeure exclusivement une réclamation
+      séparée contre le transporteur (facture d'avoir, point 20), jamais une charge
+      qui renchérit le stock survivant.
+    - **Le reconditionnement n'ajoute aucun coût** : la correction apportée à
+      `approve_stock_loss` (l'extrant reconditionné était auparavant valorisé au prix
+      de *vente* du produit, une incohérence) valorise désormais l'extrant au coût
+      moyen pondéré des lots d'entrée réellement consommés — ce coût est donc déjà
+      achat + transport + manutention hérité, sans qu'aucune charge de main-d'œuvre ou
+      d'opération de reconditionnement ne s'y ajoute.
+    Nouveau compte `608` (Frais accessoires d'achat), écrite en paiement comptant
+    (Débit 608 / Crédit 521), séparée de l'écriture ACHATS (601/4452/401) — même
+    simplification déjà assumée pour les immobilisations. Aucune TVA modélisée sur ces
+    frais. Le CUMP du bilan (`useFinancialStatements`) source désormais ce prix de
+    revient via `stock_lots.unit_cost` au lieu du prix d'achat brut de
+    `purchase_items`.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
@@ -688,6 +714,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   supervision cross-société).
 - **Taux de TVA sans écran de configuration** : `companies.vat_rate` se modifie
   directement en base (pas d'interface dédiée dans cette passe).
+- **Prix de revient** (point 36) : la répartition des frais de transport/manutention
+  est **au prorata de la quantité**, pas de la valeur — une réception mélangeant des
+  produits d'unités très différentes (ex. tonnes et cartons) répartit la même quote-
+  part par unité de quantité, sans pondération par valeur. Aucune TVA modélisée sur
+  ces frais. Périmètre volontairement limité à achat + transport + manutention : les
+  pertes et le reconditionnement n'y ajoutent jamais de coût (voir point 36).
 - **Partage de fichier PDF** : dépend du support navigateur de `navigator.share` avec
   fichiers — fiable sur mobile, inégal sur desktop (le bouton n'apparaît que si détecté,
   jamais de bouton cassé, mais pas de partage direct possible partout).

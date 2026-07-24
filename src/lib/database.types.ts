@@ -854,6 +854,8 @@ export type Database = {
           created_at: string
           driver_name: string | null
           driver_phone: string | null
+          freight_cost: number
+          handling_cost: number
           id: string
           observation: string | null
           receipt_number: number
@@ -870,6 +872,8 @@ export type Database = {
           created_at?: string
           driver_name?: string | null
           driver_phone?: string | null
+          freight_cost?: number
+          handling_cost?: number
           id?: string
           observation?: string | null
           receipt_number?: never
@@ -886,6 +890,8 @@ export type Database = {
           created_at?: string
           driver_name?: string | null
           driver_phone?: string | null
+          freight_cost?: number
+          handling_cost?: number
           id?: string
           observation?: string | null
           receipt_number?: never
@@ -1648,6 +1654,8 @@ export type Database = {
           created_at: string
           driver_name: string | null
           driver_phone: string | null
+          freight_cost: number
+          handling_cost: number
           id: string
           observation: string | null
           receipt_number: number
@@ -1736,6 +1744,8 @@ export type Database = {
           created_at: string
           driver_name: string | null
           driver_phone: string | null
+          freight_cost: number
+          handling_cost: number
           id: string
           observation: string | null
           receipt_number: number
@@ -1814,6 +1824,8 @@ export type Database = {
           lot_expiry_dates?: Json
           p_driver_name?: string
           p_driver_phone?: string
+          p_freight_cost?: number
+          p_handling_cost?: number
           p_observation?: string
           p_repackage_count?: number
           p_truck_plate?: string
@@ -1824,6 +1836,8 @@ export type Database = {
           created_at: string
           driver_name: string | null
           driver_phone: string | null
+          freight_cost: number
+          handling_cost: number
           id: string
           observation: string | null
           receipt_number: number
