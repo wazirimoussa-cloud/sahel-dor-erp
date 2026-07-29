@@ -1,4 +1,5 @@
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/auth/useAuth";
 import { useTransformation } from "@/features/transformations/useTransformations";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -6,7 +7,9 @@ import { Button } from "@/components/ui/Button";
 export function TransformationDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { hasAttribution } = useAuth();
   const { data: transformation, isLoading, error } = useTransformation(id);
+  const canViewLandedCost = hasAttribution("comptabilite.consulter_prix_revient", "consultative");
 
   if (isLoading) return <p className="text-sm text-gray-500">Chargement…</p>;
   if (error || !transformation) {
@@ -132,8 +135,12 @@ export function TransformationDetailPage() {
             <tr className="border-b border-gray-200 text-gray-500">
               <th className="py-2">Produit</th>
               <th className="py-2">Quantité</th>
-              <th className="py-2">Coût unitaire</th>
-              <th className="py-2">Sous-total</th>
+              {canViewLandedCost && (
+                <>
+                  <th className="py-2">Coût unitaire</th>
+                  <th className="py-2">Sous-total</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -143,23 +150,29 @@ export function TransformationDetailPage() {
                 <td className="py-2">
                   {item.quantity} {productInfo(item.products)?.unit ?? ""}
                 </td>
-                <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
-                <td className="py-2">
-                  {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
-                </td>
+                {canViewLandedCost && (
+                  <>
+                    <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">
+                      {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
-          <tfoot>
-            <tr>
-              <td colSpan={3} className="pt-3 text-right text-sm font-medium text-gray-700">
-                Total
-              </td>
-              <td className="pt-3 text-sm font-semibold text-gray-900">
-                {total.toLocaleString("fr-FR")} FCFA
-              </td>
-            </tr>
-          </tfoot>
+          {canViewLandedCost && (
+            <tfoot>
+              <tr>
+                <td colSpan={2} className="pt-3 text-right text-sm font-medium text-gray-700">
+                  Total
+                </td>
+                <td colSpan={2} className="pt-3 text-sm font-semibold text-gray-900">
+                  {total.toLocaleString("fr-FR")} FCFA
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </Card>
 

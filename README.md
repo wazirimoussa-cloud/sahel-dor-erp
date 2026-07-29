@@ -681,7 +681,31 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     simplification déjà assumée pour les immobilisations. Aucune TVA modélisée sur ces
     frais. Le CUMP du bilan (`useFinancialStatements`) source désormais ce prix de
     revient via `stock_lots.unit_cost` au lieu du prix d'achat brut de
-    `purchase_items`.
+    `purchase_items`. La **consultation** de ce prix de revient (colonne "Prix de
+    revient / unité" sur la page de réception, colonne "Coût unitaire" sur une
+    transformation, voir point 37) est gouvernée par une attribution dédiée et
+    délégable, `comptabilite.consulter_prix_revient` (`0044_attribution_prix_revient.sql`)
+    — distincte du droit de réceptionner un achat ou de créer une transformation ;
+    un profil qui ne la détient pas voit l'achat/la transformation normalement, sans
+    ces colonnes. Accordée par défaut au même niveau que `etats_financiers.consulter`
+    (même sensibilité : le bilan expose déjà une valeur agrégée du stock).
+
+37. **Prix de revient étendu aux Transformations** (`0045_transformation_prix_revient.sql`) :
+    le coût unitaire d'un extrant de transformation n'est plus le prix de vente du
+    produit par défaut, mais dérivé du coût réel des intrants effectivement consommés
+    (somme, pour chaque intrant, du coût pondéré des lots réellement sortis du stock
+    via `transaction_lot_allocations`/`stock_lots` — un intrant issu d'un achat hérite
+    donc de son prix de revient achat + transport + manutention). Quand une
+    transformation a **plusieurs extrants distincts** (ex. arachide → huile +
+    tourteau), le coût total des intrants est réparti entre eux **au prorata de leur
+    valeur marchande** (quantité × prix de vente courant) — pas de leur quantité,
+    volontairement, puisque des extrants dans des unités différentes (litres vs kg)
+    rendraient un prorata de quantité incohérent. Si la valeur marchande totale des
+    extrants est nulle (produits non tarifés), repli sur le prix de vente (0) comme
+    avant, faute de base de répartition. Le champ `unit_cost` autrefois accepté en
+    entrée sur un extrant (jamais exposé par le formulaire) est retiré : le calcul est
+    désormais entièrement automatique. Même gouvernance d'accès que le point 36
+    (`comptabilite.consulter_prix_revient`).
 
 ## Limites connues / pistes pour la suite
 
@@ -720,6 +744,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   part par unité de quantité, sans pondération par valeur. Aucune TVA modélisée sur
   ces frais. Périmètre volontairement limité à achat + transport + manutention : les
   pertes et le reconditionnement n'y ajoutent jamais de coût (voir point 36).
+- **Prix de revient des transformations** (point 37) : la répartition entre extrants
+  multiples utilise le **prix de vente courant** comme clé de valeur marchande — un
+  produit mal tarifé (prix à 0 ou obsolète) fausse sa part relative du coût total.
+  Si un intrant provient lui-même d'une transformation ou d'une production dont le
+  coût était nul ou approximatif (limite déjà connue, voir points 13-14), ce coût
+  imprécis se propage mécaniquement à l'extrant suivant.
 - **Partage de fichier PDF** : dépend du support navigateur de `navigator.share` avec
   fichiers — fiable sur mobile, inégal sur desktop (le bouton n'apparaît que si détecté,
   jamais de bouton cassé, mais pas de partage direct possible partout).

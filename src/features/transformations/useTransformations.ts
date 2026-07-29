@@ -9,7 +9,6 @@ export interface TransformationInputInput {
 export interface TransformationOutputInput {
   productId: string;
   quantity: number;
-  unitCost?: number;
   expiryDate?: string;
 }
 
@@ -65,7 +64,6 @@ export function useCreateTransformation() {
           outputs: params.outputs.map((item) => ({
             product_id: item.productId,
             quantity: item.quantity,
-            unit_cost: item.unitCost,
             expiry_date: item.expiryDate || null,
           })),
         },
