@@ -7,28 +7,7 @@ import { StockMovementForm } from "@/features/stock/StockMovementForm";
 import { TransferStockForm } from "@/features/stock/TransferStockForm";
 import { Card } from "@/components/ui/Card";
 import { isLowStock } from "@/lib/stockThreshold";
-
-const EXPIRY_SOON_DAYS = 30;
-
-function lotStatus(expiryDate: string | null): { label: string; className: string } | null {
-  if (!expiryDate) return null;
-  const today = new Date().toISOString().slice(0, 10);
-  if (expiryDate < today) {
-    return { label: "Expiré", className: "bg-red-100 text-red-700" };
-  }
-  const soon = new Date();
-  soon.setDate(soon.getDate() + EXPIRY_SOON_DAYS);
-  if (expiryDate <= soon.toISOString().slice(0, 10)) {
-    return { label: "Expire bientôt", className: "bg-amber-100 text-amber-700" };
-  }
-  return null;
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  IN: "Entrée",
-  OUT: "Sortie",
-  ADJUSTMENT: "Ajustement",
-};
+import { TRANSACTION_TYPE_LABELS, lotStatus } from "@/lib/stockDisplay";
 
 interface ProductStockGroup {
   productId: string;
@@ -89,6 +68,18 @@ export function StockPage() {
     (r) =>
       (productFilter === "all" || r.product.id === productFilter) &&
       (warehouseFilter === "all" || r.warehouse.id === warehouseFilter),
+  );
+
+  const filteredLots = (lots ?? []).filter(
+    (lot) =>
+      (productFilter === "all" || lot.product_id === productFilter) &&
+      (warehouseFilter === "all" || lot.warehouse_id === warehouseFilter),
+  );
+
+  const filteredTransactions = (transactions ?? []).filter(
+    (tx) =>
+      (productFilter === "all" || tx.product_id === productFilter) &&
+      (warehouseFilter === "all" || tx.warehouse_id === warehouseFilter),
   );
 
   const stockGroups = new Map<string, ProductStockGroup>();
@@ -232,6 +223,9 @@ export function StockPage() {
 
       <Card>
         <h2 className="mb-3 text-base font-semibold text-gray-800">Lots</h2>
+        <p className="mb-3 text-xs text-gray-500">
+          Filtré par les mêmes Produit / Magasin que la synthèse ci-dessus.
+        </p>
         {isLoadingLots && <p className="text-sm text-gray-500">Chargement…</p>}
         {lotsError && <p className="text-sm text-red-600">Impossible de charger les lots.</p>}
         {lots && (
@@ -248,7 +242,7 @@ export function StockPage() {
               </tr>
             </thead>
             <tbody>
-              {lots.map((lot) => {
+              {filteredLots.map((lot) => {
                 const product = lot.products as
                   { name: string; unit: string } | { name: string; unit: string }[] | null;
                 const productInfo = Array.isArray(product) ? product[0] : product;
@@ -279,10 +273,10 @@ export function StockPage() {
                   </tr>
                 );
               })}
-              {lots.length === 0 && (
+              {filteredLots.length === 0 && (
                 <tr>
                   <td colSpan={7} className="py-4 text-center text-gray-400">
-                    Aucun lot en stock.
+                    Aucun lot pour cette sélection.
                   </td>
                 </tr>
               )}
@@ -292,6 +286,11 @@ export function StockPage() {
       </Card>
 
       <Card>
+        <h2 className="mb-1 text-base font-semibold text-gray-800">Mouvements récents</h2>
+        <p className="mb-3 text-xs text-gray-500">
+          Filtré par les mêmes Produit / Magasin que la synthèse ci-dessus, parmi les 50
+          derniers mouvements enregistrés.
+        </p>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
         {error && <p className="text-sm text-red-600">Impossible de charger les mouvements.</p>}
         {transactions && (
@@ -307,7 +306,7 @@ export function StockPage() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map((tx) => {
+              {filteredTransactions.map((tx) => {
                 const product = tx.products as
                   { name: string; unit: string } | { name: string; unit: string }[] | null;
                 const productInfo = Array.isArray(product) ? product[0] : product;
@@ -320,7 +319,7 @@ export function StockPage() {
                     <td className="py-2">{new Date(tx.created_at).toLocaleString("fr-FR")}</td>
                     <td className="py-2">{productInfo?.name ?? "—"}</td>
                     <td className="py-2">{warehouseName ?? "—"}</td>
-                    <td className="py-2">{TYPE_LABELS[tx.type] ?? tx.type}</td>
+                    <td className="py-2">{TRANSACTION_TYPE_LABELS[tx.type] ?? tx.type}</td>
                     <td className="py-2">
                       {tx.quantity} {productInfo?.unit ?? ""}
                     </td>
@@ -328,10 +327,10 @@ export function StockPage() {
                   </tr>
                 );
               })}
-              {transactions.length === 0 && (
+              {filteredTransactions.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-4 text-center text-gray-400">
-                    Aucun mouvement enregistré.
+                    Aucun mouvement pour cette sélection.
                   </td>
                 </tr>
               )}

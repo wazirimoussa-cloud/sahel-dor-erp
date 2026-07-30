@@ -720,6 +720,25 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     `achats.receptionner` à la fois (séparation des tâches n°1). Calcul et
     comptabilisation (compte 608) inchangés par ailleurs.
 
+39. **Historique dynamique par entrepôt** (fiche `/warehouses/:id`, un clic sur
+    "Voir l'historique" depuis la liste des magasins) : recherche filtrable
+    (produit, type de mouvement, période) sur l'historique complet des mouvements
+    (`transactions`, requête **côté serveur**, pas de plafond client comme sur
+    `/stock`) et des lots (`stock_lots`) de ce magasin précis — y compris les lots
+    déjà entièrement consommés (`quantity_remaining = 0`, marqués "Épuisé"), pour
+    retrouver un lot passé et pas seulement le stock disponible aujourd'hui.
+    Complète la page `/stock` existante (vue agrégée multi-magasins, formulaires de
+    mouvement/transfert) sans la remplacer. Plafond de 300 lignes par recherche,
+    sans pagination — limite assumée, à affiner si le volume de mouvements grossit.
+    Les libellés de type (`TRANSACTION_TYPE_LABELS`) et le badge de péremption
+    (`lotStatus`) sont désormais centralisés dans `src/lib/stockDisplay.ts`,
+    réutilisés par `/stock` et cette nouvelle fiche. Les tableaux "Lots" et
+    "Mouvements récents" de `/stock`, jusqu'ici jamais filtrés, appliquent
+    désormais les mêmes filtres Produit/Magasin que la synthèse de stock juste
+    au-dessus (client-side, ces trois tables partageant déjà les mêmes options de
+    filtre sur cette page) — "Mouvements récents" reste borné aux 50 derniers
+    mouvements (limite déjà existante, inchangée).
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement

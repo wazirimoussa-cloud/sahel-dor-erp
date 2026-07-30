@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "@/auth/useAuth";
 import { useWarehouses } from "@/features/warehouses/useWarehouses";
 import { WarehouseForm } from "@/features/warehouses/WarehouseForm";
@@ -27,6 +28,7 @@ export function WarehousesPage() {
               <tr className="border-b border-gray-200 text-gray-500">
                 <th className="py-2">Nom</th>
                 <th className="py-2">Emplacement</th>
+                <th className="py-2" />
               </tr>
             </thead>
             <tbody>
@@ -34,11 +36,19 @@ export function WarehousesPage() {
                 <tr key={warehouse.id} className="border-b border-gray-100">
                   <td className="py-2">{warehouse.name}</td>
                   <td className="py-2">{warehouse.location ?? "—"}</td>
+                  <td className="py-2 text-right">
+                    <Link
+                      to={`/warehouses/${warehouse.id}`}
+                      className="text-brand-600 hover:underline"
+                    >
+                      Voir l'historique
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {warehouses.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="py-4 text-center text-gray-400">
+                  <td colSpan={3} className="py-4 text-center text-gray-400">
                     Aucun magasin pour le moment.
                   </td>
                 </tr>

@@ -8,7 +8,7 @@ export function useStockLots() {
       const { data, error } = await supabase
         .from("stock_lots")
         .select(
-          "id, lot_number, quantity_remaining, unit_cost, expiry_date, created_at, products(name, unit), warehouses(name)",
+          "id, lot_number, quantity_remaining, unit_cost, expiry_date, created_at, product_id, warehouse_id, products(name, unit), warehouses(name)",
         )
         .gt("quantity_remaining", 0)
         .order("expiry_date", { ascending: true, nullsFirst: false });

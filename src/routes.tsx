@@ -13,6 +13,7 @@ import { LogsPage } from "@/features/logs/LogsPage";
 import { UsersPage } from "@/features/users/UsersPage";
 import { AccountPage } from "@/features/account/AccountPage";
 import { WarehousesPage } from "@/features/warehouses/WarehousesPage";
+import { WarehouseDetailPage } from "@/features/warehouses/WarehouseDetailPage";
 import { SuppliersPage } from "@/features/suppliers/SuppliersPage";
 import { PurchasesPage } from "@/features/purchases/PurchasesPage";
 import { PurchaseDetailPage } from "@/features/purchases/PurchaseDetailPage";
@@ -121,6 +122,16 @@ export function AppRoutes() {
           <ProtectedRoute requiredModule="entrepots">
             <AppShell>
               <WarehousesPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/warehouses/:id"
+        element={
+          <ProtectedRoute requiredModule="entrepots">
+            <AppShell>
+              <WarehouseDetailPage />
             </AppShell>
           </ProtectedRoute>
         }

@@ -21,6 +21,22 @@ export function useWarehouses() {
   });
 }
 
+export function useWarehouse(warehouseId: string | undefined) {
+  return useQuery({
+    queryKey: ["warehouses", warehouseId],
+    enabled: Boolean(warehouseId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("warehouses")
+        .select("id, name, location")
+        .eq("id", warehouseId as string)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useCreateWarehouse() {
   const queryClient = useQueryClient();
   return useMutation({
