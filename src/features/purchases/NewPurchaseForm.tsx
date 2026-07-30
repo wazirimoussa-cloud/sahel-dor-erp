@@ -20,6 +20,8 @@ const purchaseSchema = z.object({
       }),
     )
     .min(1, "Ajoutez au moins une ligne"),
+  freightCost: z.coerce.number().min(0).optional(),
+  handlingCost: z.coerce.number().min(0).optional(),
 });
 
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
@@ -51,6 +53,8 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
         supplierId: values.supplierId,
         warehouseId: values.warehouseId,
         items: values.items,
+        freightCost: values.freightCost,
+        handlingCost: values.handlingCost,
       });
       reset({
         supplierId: values.supplierId,
@@ -135,6 +139,26 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
       ))}
 
       {errors.items?.root && <p className="text-xs text-red-600">{errors.items.root.message}</p>}
+
+      <div className="flex flex-wrap gap-3 border-t border-gray-100 pt-3">
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            Frais de transport (FCFA)
+          </label>
+          <Input type="number" min={0} step="1" placeholder="0" {...register("freightCost")} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            Frais de manutention (FCFA)
+          </label>
+          <Input type="number" min={0} step="1" placeholder="0" {...register("handlingCost")} />
+        </div>
+      </div>
+      <p className="text-xs text-gray-500">
+        Ces frais sont répartis au prorata de la quantité commandée pour calculer le prix de
+        revient du stock à la réception ; ils sont comptabilisés séparément (compte 608) et
+        n'affectent pas la dette envers le fournisseur.
+      </p>
 
       <div className="flex gap-3">
         <Button

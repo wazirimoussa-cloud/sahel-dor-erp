@@ -28,8 +28,6 @@ interface ReceptionFormValues {
   driverPhone: string;
   repackageCount: number;
   observation: string;
-  freightCost: number;
-  handlingCost: number;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -198,8 +196,6 @@ export function PurchaseDetailPage() {
         driverPhone: values.driverPhone,
         repackageCount: values.repackageCount ? Number(values.repackageCount) : undefined,
         observation: values.observation,
-        freightCost: values.freightCost ? Number(values.freightCost) : undefined,
-        handlingCost: values.handlingCost ? Number(values.handlingCost) : undefined,
       });
     } catch {
       setActionError("Action refusée (droits insuffisants, achat déjà traité, ou perte invalide).");
@@ -500,36 +496,7 @@ export function PurchaseDetailPage() {
                   {...registerReception("repackageCount")}
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Frais de transport (FCFA)
-                </label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="1"
-                  placeholder="0"
-                  {...registerReception("freightCost")}
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
-                  Frais de manutention (FCFA)
-                </label>
-                <Input
-                  type="number"
-                  min={0}
-                  step="1"
-                  placeholder="0"
-                  {...registerReception("handlingCost")}
-                />
-              </div>
             </div>
-            <p className="text-xs text-gray-500">
-              Ces frais sont répartis au prorata de la quantité commandée sur chaque ligne pour
-              calculer le prix de revient du stock ; ils sont comptabilisés séparément (compte 608)
-              et n'affectent pas la dette envers le fournisseur.
-            </p>
 
             <div>
               <label className="mb-1 block text-xs font-medium text-gray-600">

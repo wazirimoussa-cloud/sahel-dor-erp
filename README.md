@@ -657,12 +657,13 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     du bilan à cette date, sans plus/moins-value de cession calculée. Nouvelle
     attribution `comptabilite.gerer_immobilisations`.
 
-36. **Prix de revient automatique** (`0043_prix_de_revient.sql`, formulaire de réception
-    sur "Réceptions") : le coût unitaire capitalisé dans `stock_lots.unit_cost` à la
-    réception d'un achat n'est plus le seul prix d'achat, mais un prix de revient =
-    prix d'achat + quote-part des frais de transport/manutention saisis sur la
-    réception, répartis **au prorata de la quantité commandée** (et non reçue) sur
-    chaque ligne. Périmètre volontairement limité à **achat + transport +
+36. **Prix de revient automatique** (`0043_prix_de_revient.sql`, formulaire de création
+    d'achat) : le coût unitaire capitalisé dans `stock_lots.unit_cost` à la réception
+    d'un achat n'est plus le seul prix d'achat, mais un prix de revient =
+    prix d'achat + quote-part des frais de transport/manutention saisis à la
+    **création** de l'achat (voir point 38), répartis **au prorata de la quantité
+    commandée** (et non reçue) sur chaque ligne. Périmètre volontairement limité à
+    **achat + transport +
     manutention** — deux autres coûts explicitement exclus de cette valeur :
     - **Les pertes constatées à la réception restent hors du prix de revient** : la
       quote-part de frais correspondant à la quantité perdue n'est capitalisée nulle
@@ -706,6 +707,18 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     entrée sur un extrant (jamais exposé par le formulaire) est retiré : le calcul est
     désormais entièrement automatique. Même gouvernance d'accès que le point 36
     (`comptabilite.consulter_prix_revient`).
+
+38. **Frais de transport/manutention déplacés vers la création de l'achat**
+    (`0046_frais_a_la_creation.sql`) : initialement saisis à la réception (Magasinier),
+    ces deux montants sont désormais saisis par le **Gérant** au moment de créer l'achat
+    — il négocie déjà le prix avec le fournisseur, généralement en même temps que les
+    conditions de transport. `purchases.freight_cost`/`handling_cost` sont donc fixés
+    dès `create_purchase` (attribution `achats.creer`) ; `receive_purchase` (attribution
+    `achats.receptionner`) ne fait plus que les **lire** pour calculer le prix de
+    revient, il ne les reçoit plus en paramètre — cohérent avec le fait qu'un même
+    profil ne peut de toute façon jamais détenir `achats.creer` et
+    `achats.receptionner` à la fois (séparation des tâches n°1). Calcul et
+    comptabilisation (compte 608) inchangés par ailleurs.
 
 ## Limites connues / pistes pour la suite
 

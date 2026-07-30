@@ -48,6 +48,8 @@ export function useCreatePurchase() {
       supplierId: string;
       warehouseId: string;
       items: PurchaseItemInput[];
+      freightCost?: number;
+      handlingCost?: number;
     }) => {
       const { error } = await supabase.rpc("create_purchase", {
         payload: {
@@ -58,6 +60,8 @@ export function useCreatePurchase() {
             quantity: item.quantity,
             unit_cost: item.unitCost,
           })),
+          freight_cost: params.freightCost ?? 0,
+          handling_cost: params.handlingCost ?? 0,
         },
       });
       if (error) throw error;
@@ -92,8 +96,6 @@ export function useReceivePurchase() {
       driverPhone: string;
       repackageCount?: number;
       observation?: string;
-      freightCost?: number;
-      handlingCost?: number;
     }) => {
       const { error } = await supabase.rpc("receive_purchase", {
         purchase_id: params.purchaseId,
@@ -111,8 +113,6 @@ export function useReceivePurchase() {
         p_driver_phone: params.driverPhone,
         p_repackage_count: params.repackageCount,
         p_observation: params.observation || undefined,
-        p_freight_cost: params.freightCost ?? 0,
-        p_handling_cost: params.handlingCost ?? 0,
       });
       if (error) throw error;
     },
