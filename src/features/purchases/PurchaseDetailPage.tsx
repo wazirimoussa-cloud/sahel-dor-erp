@@ -366,7 +366,7 @@ export function PurchaseDetailPage() {
         )}
         {purchase.status === "received" && (
           <Button variant="secondary" onClick={() => void handleDownloadReceptionPdf()}>
-            Bon de réception (PDF)
+            Bon de sortie (PDF)
           </Button>
         )}
       </div>

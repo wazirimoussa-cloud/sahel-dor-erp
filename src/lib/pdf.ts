@@ -251,15 +251,15 @@ export interface ReceptionPdfInput {
   items: { productName: string; unit?: string; quantityLoaded: number; quantityUnloaded: number }[];
 }
 
-// Bon de réception (entreposage en magasin) : provenance, chauffeur/camion, quantités
-// chargée/déchargée/écart par produit, nombre de sacs à reconditionner, un point
-// d'observation libre, et trois blocs de signature (chauffeur / magasinier /
-// gestionnaire du magasin) pour l'exemplaire papier archivé au magasin. Imprimé en
-// paysage : plus large que les autres documents (deux colonnes d'en-tête, signatures
-// mieux réparties), cohérent avec un vrai bon de livraison papier.
+// Bon de sortie (marchandise sortant de la garde du transporteur, entreposée en
+// magasin) : provenance, chauffeur/camion, quantités chargée/déchargée/écart par
+// produit, nombre de sacs à reconditionner, un point d'observation libre, et deux
+// blocs de signature (chauffeur / magasinier) pour l'exemplaire papier archivé au
+// magasin. Imprimé en paysage : plus large que les autres documents (deux colonnes
+// d'en-tête, signatures mieux réparties), cohérent avec un vrai bon de livraison papier.
 export async function generateReceptionPdf(input: ReceptionPdfInput) {
   const { doc, autoTable } = await newDocument(
-    `Bon de réception n° ${input.receiptNumber}`,
+    `Bon de sortie n° ${input.receiptNumber}`,
     "landscape",
   );
 
@@ -308,16 +308,14 @@ export async function generateReceptionPdf(input: ReceptionPdfInput) {
 
   const signatureY = finalY + 30 + observationBlockHeight;
   doc.setFontSize(9);
-  doc.line(leftX, signatureY, 94, signatureY);
+  doc.line(leftX, signatureY, 140, signatureY);
   doc.text("Chauffeur", leftX, signatureY + 5);
-  doc.line(114, signatureY, 194, signatureY);
-  doc.text("Magasinier", 114, signatureY + 5);
-  doc.line(214, signatureY, 283, signatureY);
-  doc.text("Gestionnaire du magasin", 214, signatureY + 5);
+  doc.line(160, signatureY, 283, signatureY);
+  doc.text("Magasinier", 160, signatureY + 5);
 
   return {
     doc,
-    filename: `bon-reception-${input.receiptNumber}.pdf`,
+    filename: `bon-sortie-${input.receiptNumber}.pdf`,
   };
 }
 
