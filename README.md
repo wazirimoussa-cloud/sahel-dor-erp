@@ -739,6 +739,21 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     filtre sur cette page) — "Mouvements récents" reste borné aux 50 derniers
     mouvements (limite déjà existante, inchangée).
 
+40. **Bon de sortie à la réception d'un achat** (`generateReceptionPdf` dans
+    `src/lib/pdf.ts`, bouton "Bon de sortie (PDF)" sur la fiche d'un achat reçu) :
+    document imprimable en paysage, généré côté client (`jsPDF`), reprenant la
+    référence du bon de commande, la provenance, le chauffeur/camion, une ligne
+    par produit (quantité chargée / déchargée / écart), le nombre de sacs à
+    reconditionner et un point d'observation libre. Deux blocs de signature —
+    **Chauffeur** et **Magasinier** — pour l'exemplaire papier archivé au magasin.
+    `purchases` porte les champs correspondants (`receipt_number` identité,
+    `received_at`, `driver_name`, `truck_plate`, `driver_phone`,
+    `repackage_count`, `observation`), renseignés par le Magasinier lors de la
+    réception (`receive_purchase`). Le bouton est visible dès qu'un achat est au
+    statut "Reçu", sans attribution dédiée au-delà de l'accès au module achats —
+    contrairement au prix de revient (point 36), ce document ne montre aucun
+    montant sensible, seulement des quantités.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
