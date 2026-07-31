@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:link": "supabase link",
     "db:push": "supabase db push",
     "db:diff": "supabase db diff -f",

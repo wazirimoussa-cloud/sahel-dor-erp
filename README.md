@@ -75,6 +75,25 @@ npm run test
 npm run build
 ```
 
+`npm run test` (`tests/unit/`) ne touche jamais le réseau : logique pure et composants
+avec Supabase mocké. Ça ne couvre pas les fonctions PL/pgSQL et triggers en base
+(calcul du prix de revient, consommation FEFO, séparation des tâches) — c'est
+exactement là que vivent la plupart des règles métier de cette app.
+
+`npm run test:integration` (`tests/integration/`) comble ce trou : il exécute la vraie
+chaîne **achat → réception → vente → validation → paiement** contre Supabase (RLS +
+attributions réelles, zéro mock), en se connectant successivement comme Gérant,
+Magasinier, Superviseur et Comptable — les 4 comptes provisoires de Formation. Vérifie
+notamment le calcul du prix de revient (achat + quote-part frais), la consommation FEFO
+du stock, le double encaissement partiel/soldé, la génération des écritures
+comptables, et — en négatif — que le Gérant ne peut ni réceptionner son propre achat ni
+valider sa propre commande. Nécessite `TEST_GERANT_EMAIL`/`PASSWORD` et équivalents
+Magasinier/Superviseur/Comptable dans `.env.local` (voir `.env.example`) ; sans ces
+variables, la suite est **ignorée** (jamais en échec) pour ne pas bloquer `npm test`
+sans configuration. Cible toujours Formation, jamais Production — chaque exécution y
+laisse un fournisseur/client/produit tagué « Intégration » (append-only, voir
+[Limites connues](#limites-connues--pistes-pour-la-suite) : rien n'est supprimable).
+
 ## Déploiement de l'Edge Function (création d'utilisateurs)
 
 La création de comptes utilisateurs nécessite la clé `service_role` (jamais exposée au
