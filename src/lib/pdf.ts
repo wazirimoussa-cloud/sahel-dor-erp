@@ -4,6 +4,7 @@
 // appelante (jamais la forme brute Supabase objet-ou-tableau).
 
 import logoUrl from "@/assets/logo.png";
+import { supabase } from "@/lib/supabase";
 
 // Logo chargé une seule fois (data URL en cache) et posé en haut à droite de chaque
 // document généré — jsPDF ne sait pas dessiner depuis une URL réseau/relative, seulement
@@ -23,6 +24,47 @@ async function loadLogoDataUrl(): Promise<string> {
   return cachedLogoDataUrl;
 }
 
+interface CompanyLegalInfo {
+  nif: string | null;
+  rccm: string | null;
+  address: string | null;
+  capitalSocial: number | null;
+}
+
+// Mentions légales (NIF, RCCM, capital social, adresse) chargées une seule fois par
+// session et posées en haut à droite de chaque document — le certificat d'immatriculation
+// NIF impose de faire figurer ce numéro sur tous les documents professionnels.
+let cachedCompanyLegalInfo: CompanyLegalInfo | null = null;
+
+async function loadCompanyLegalInfo(): Promise<CompanyLegalInfo | null> {
+  if (cachedCompanyLegalInfo) return cachedCompanyLegalInfo;
+
+  const { data: authData } = await supabase.auth.getUser();
+  if (!authData.user) return null;
+
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("company_id")
+    .eq("id", authData.user.id)
+    .single();
+  if (!userRow?.company_id) return null;
+
+  const { data: company } = await supabase
+    .from("companies")
+    .select("nif, rccm, address, capital_social")
+    .eq("id", userRow.company_id)
+    .single();
+  if (!company) return null;
+
+  cachedCompanyLegalInfo = {
+    nif: company.nif,
+    rccm: company.rccm,
+    address: company.address,
+    capitalSocial: company.capital_social,
+  };
+  return cachedCompanyLegalInfo;
+}
+
 interface PdfLineItem {
   productName: string;
   quantity: number;
@@ -38,7 +80,11 @@ interface DocumentTotals {
 }
 
 function formatFcfa(amount: number): string {
-  return `${amount.toLocaleString("fr-FR")} FCFA`;
+  // toLocaleString("fr-FR") insere un espace insecable (U+202F ou U+00A0) comme
+  // separateur de milliers : ce caractere est hors de l'encodage WinAnsi utilise par
+  // jsPDF pour les polices standard, et corrompt silencieusement le texte qui le contient.
+  const grouped = amount.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ");
+  return `${grouped} FCFA`;
 }
 
 async function newDocument(title: string, orientation: "portrait" | "landscape" = "portrait") {
@@ -57,6 +103,37 @@ async function newDocument(title: string, orientation: "portrait" | "landscape" 
   } catch {
     // Le document reste utilisable sans logo si le chargement échoue pour une raison
     // quelconque (réseau, format...) — jamais bloquant pour générer le PDF.
+  }
+
+  try {
+    const legal = await loadCompanyLegalInfo();
+    if (legal) {
+      const rightEdge = doc.internal.pageSize.getWidth() - 14;
+      doc.setFontSize(7);
+      doc.setTextColor(120);
+      let legalY = 30;
+      if (legal.capitalSocial) {
+        doc.text(`SARL au capital de ${formatFcfa(legal.capitalSocial)}`, rightEdge, legalY, {
+          align: "right",
+        });
+        legalY += 3.5;
+      }
+      if (legal.rccm) {
+        doc.text(`RCCM : ${legal.rccm}`, rightEdge, legalY, { align: "right" });
+        legalY += 3.5;
+      }
+      if (legal.nif) {
+        doc.text(`NIF : ${legal.nif}`, rightEdge, legalY, { align: "right" });
+        legalY += 3.5;
+      }
+      if (legal.address) {
+        doc.text(legal.address, rightEdge, legalY, { align: "right" });
+      }
+      doc.setTextColor(0);
+    }
+  } catch {
+    // Comme pour le logo : un échec de chargement des mentions légales ne doit jamais
+    // bloquer la génération du document.
   }
 
   doc.setFontSize(16);

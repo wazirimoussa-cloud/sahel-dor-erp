@@ -165,34 +165,43 @@ export type Database = {
       }
       companies: {
         Row: {
+          address: string | null
           capital_social: number
           created_at: string
           id: string
           impot_societes_rate: number
           name: string
+          nif: string | null
           precompte_isb_rate: number
+          rccm: string | null
           taxe_immobiliere_rate: number
           taxe_professionnelle_rate: number
           vat_rate: number
         }
         Insert: {
+          address?: string | null
           capital_social?: number
           created_at?: string
           id?: string
           impot_societes_rate?: number
           name: string
+          nif?: string | null
           precompte_isb_rate?: number
+          rccm?: string | null
           taxe_immobiliere_rate?: number
           taxe_professionnelle_rate?: number
           vat_rate?: number
         }
         Update: {
+          address?: string | null
           capital_social?: number
           created_at?: string
           id?: string
           impot_societes_rate?: number
           name?: string
+          nif?: string | null
           precompte_isb_rate?: number
+          rccm?: string | null
           taxe_immobiliere_rate?: number
           taxe_professionnelle_rate?: number
           vat_rate?: number
@@ -1824,8 +1833,6 @@ export type Database = {
           lot_expiry_dates?: Json
           p_driver_name?: string
           p_driver_phone?: string
-          p_freight_cost?: number
-          p_handling_cost?: number
           p_observation?: string
           p_repackage_count?: number
           p_truck_plate?: string

@@ -754,6 +754,27 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     contrairement au prix de revient (point 36), ce document ne montre aucun
     montant sensible, seulement des quantités.
 
+41. **Mentions légales sur les documents générés** (`loadCompanyLegalInfo` /
+    `newDocument` dans `src/lib/pdf.ts`, appliqué à tous les PDF : bons de
+    commande, bons d'achat, bon de sortie, journal, déclaration de TVA, avoirs) :
+    en-tête reprenant, en haut à droite, la forme juridique et le capital social,
+    le RCCM et le NIF de la société — obligation légale explicite figurant sur le
+    certificat d'immatriculation NIF ("l'intéressé est tenu de faire figurer sur
+    tous les documents professionnels... ledit numéro sous peine de sanctions") —
+    ainsi que l'adresse du siège. Colonnes `nif`, `rccm`, `address` ajoutées à
+    `companies` (migration `0047_company_legal_info.sql`, déjà présente pour
+    `capital_social`), lues via une requête `users` → `companies` mise en cache
+    par génération de document. Bloc silencieux en cas d'échec (société sans ces
+    champs renseignés, ex. nouvelle entreprise créée après coup) : comme pour le
+    logo, une mention manquante n'empêche jamais la génération du PDF.
+    **Piège à retenir** : `Number.prototype.toLocaleString("fr-FR")` insère une
+    espace insécable (U+202F, pas une espace ASCII) comme séparateur de milliers ;
+    ce caractère est hors de l'encodage WinAnsi des polices standard de jsPDF et
+    corrompt silencieusement (encodage 2 octets par caractère, texte non
+    sélectionnable/non cherchable, potentiellement mal rendu) toute la ligne de
+    texte qui le contient — `formatFcfa` la remplace systématiquement par une
+    espace ASCII avant d'appeler `doc.text()`.
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
