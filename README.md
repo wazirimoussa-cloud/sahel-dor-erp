@@ -856,6 +856,36 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       `tests/integration/archivage.test.ts` couvre les deux correctifs (0049 et 0050)
       en garde de non-régression.
 
+43. **Écriture comptable Production, retrait de la vue admin cross-société, écran TVA**
+    (`0051_production_journal_entry.sql`-`0053_companies_admin_write_company_scope.sql`) :
+    - `create_production` génère désormais une écriture "PRODUCTION" (débit `36` —
+      Stocks de produits en cours et produits finis, crédit `73` — Production stockée),
+      levant la limite du point 13 pour ce cas précis. **`create_transformation` reste
+      volontairement neutre** (aucune écriture) — décision confirmée avec
+      l'utilisateur : une transformation reclasse un stock déjà valorisé à l'achat, ce
+      n'est pas un nouveau mouvement de valeur, contrairement à une production qui crée
+      de la valeur sans achat derrière.
+    - Retrait de la clause `current_role_name() = 'admin' OR ...` sur les 25 policies
+      `SELECT` qui en dépendaient encore (voir point 33) — confirmé avec l'utilisateur
+      que cette vue cross-société n'a plus de sens maintenant que Formation/Production
+      sont délibérément séparées partout ailleurs. Chaque profil ne voit plus que sa
+      propre société, sans exception.
+    - **Bug découvert au passage** (`0053`) : `companies_admin_write` (policy `for all`
+      posée en 0050, dont le `using` s'applique aussi au `select`) n'avait aucun filtre
+      de société — quiconque détient `comptabilite.modifier_capital_social` lisait donc
+      les deux sociétés à la fois. Resté invisible jusqu'à l'écran `/parametres-tva`
+      (premier code à lire `companies` sans filtre explicite), qui échouait avec "The
+      result contains 2 rows". Corrigé en ajoutant `id = current_company_id()`.
+    - Nouvel écran `/parametres-tva` (`VatSettingsPage.tsx`) pour modifier
+      `companies.vat_rate`, gardé par la même attribution — lève la limite "Taux de TVA
+      sans écran de configuration".
+    - `tests/integration/production-ledger.test.ts` couvre l'écriture générée (montants,
+      comptes) et la neutralité de la transformation. Les suites d'intégration tournent
+      désormais en séquentiel (`fileParallelism: false` dans
+      `vitest.integration.config.ts`) : en parallèle, un fichier comptant les écritures
+      d'une société pendant qu'un autre en insère rendait certaines assertions non
+      fiables (observé en pratique entre `production-ledger` et `purchase-to-payment`).
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
@@ -865,9 +895,11 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   (`React.lazy`) serait pertinent si l'app continue de grossir.
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
-- **Comptabilité** : périmètre volontairement réduit (voir points 13-14) — Production/
-  Transformation restent hors du grand livre. Ne pas utiliser en l'état pour des
-  déclarations fiscales ou un bilan officiel sans revue par un comptable.
+- **Comptabilité** : périmètre volontairement réduit (voir points 13-14, 43) —
+  Transformation reste hors du grand livre (choix assumé, pas un oubli : reclassement
+  de stock déjà valorisé, pas un nouveau mouvement de valeur). Ne pas utiliser en
+  l'état pour des déclarations fiscales ou un bilan officiel sans revue par un
+  comptable.
 - **Immobilisations** (point 35) : amortissement linéaire uniquement (pas de dégressif),
   cession sans plus/moins-value calculée, acquisition supposée payée comptant (pas de
   dette fournisseur distincte pour ce type d'achat). Le CUMP du stock reste un coût moyen
@@ -878,15 +910,6 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   de cibler un lot précis — la consommation FEFO automatique tend déjà à retirer le lot
   le plus proche de la péremption en premier, mais sans garantie absolue si plusieurs
   lots ont la même date.
-- **Attributions et vue cross-société** (point 33) : les policies de lecture qui donnent
-  à `admin` une vue cross-société (motif historique Phase 3) vérifient encore le rôle
-  littéral `admin`, pas l'attribution `utilisateurs.gerer` — un nouveau profil greffé sur
-  cette attribution sans jamais avoir eu le rôle `admin` gère les comptes normalement
-  mais n'hérite pas de cette vue cross-société sur les autres modules (produits,
-  commandes, etc.). Hors périmètre de la demande initiale (opérations métier, pas
-  supervision cross-société).
-- **Taux de TVA sans écran de configuration** : `companies.vat_rate` se modifie
-  directement en base (pas d'interface dédiée dans cette passe).
 - **Prix de revient** (point 36) : la répartition des frais de transport/manutention
   est **au prorata de la quantité**, pas de la valeur — une réception mélangeant des
   produits d'unités très différentes (ex. tonnes et cartons) répartit la même quote-
