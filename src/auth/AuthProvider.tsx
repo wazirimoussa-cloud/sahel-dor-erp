@@ -16,7 +16,7 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id, email, company_id, must_change_password, roles(name), user_attributions!user_attributions_user_id_fkey(level, attributions(module, action_key))",
+      "id, email, company_id, must_change_password, active, roles(name), user_attributions!user_attributions_user_id_fkey(level, attributions(module, action_key))",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -39,27 +39,56 @@ async function loadProfile(userId: string): Promise<Profile | null> {
     role: roleName ?? null,
     companyId: data.company_id,
     mustChangePassword: data.must_change_password,
+    active: data.active,
     attributions,
   };
 }
+
+const DEACTIVATED_MESSAGE =
+  "Ce compte a été désactivé. Contactez votre administrateur si vous pensez qu'il s'agit d'une erreur.";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [deactivatedMessage, setDeactivatedMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    let active = true;
+    let mounted = true;
 
     async function bootstrap(nextSession: Session | null) {
-      setSession(nextSession);
-      if (nextSession) {
-        const nextProfile = await loadProfile(nextSession.user.id);
-        if (active) setProfile(nextProfile);
-      } else {
-        setProfile(null);
+      if (!nextSession) {
+        if (mounted) {
+          setSession(null);
+          setProfile(null);
+          setLoading(false);
+        }
+        return;
       }
-      if (active) setLoading(false);
+
+      const nextProfile = await loadProfile(nextSession.user.id);
+
+      // Un compte archivé garde des identifiants valides (l'authentification Supabase
+      // réussit) mais ne doit jamais obtenir de session utilisable dans l'app -- on le
+      // déconnecte immédiatement plutôt que de le laisser voir des écrans vides faute
+      // de données accessibles en RLS (voir 0048_archivage.sql, current_company_id()).
+      if (nextProfile && !nextProfile.active) {
+        await supabase.auth.signOut();
+        if (mounted) {
+          setSession(null);
+          setProfile(null);
+          setDeactivatedMessage(DEACTIVATED_MESSAGE);
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (mounted) {
+        setSession(nextSession);
+        setProfile(nextProfile);
+        setDeactivatedMessage(null);
+        setLoading(false);
+      }
     }
 
     supabase.auth.getSession().then(({ data }) => bootstrap(data.session));
@@ -69,13 +98,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      active = false;
+      mounted = false;
       subscription.subscription.unsubscribe();
     };
   }, []);
 
   async function signOut() {
     await supabase.auth.signOut();
+  }
+
+  function clearDeactivatedMessage() {
+    setDeactivatedMessage(null);
   }
 
   function hasAttribution(actionKey: string, minLevel: AttributionLevel = "operationnelle") {
@@ -93,7 +126,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, profile, loading, signOut, hasAttribution, hasModuleAccess }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        profile,
+        loading,
+        deactivatedMessage,
+        clearDeactivatedMessage,
+        signOut,
+        hasAttribution,
+        hasModuleAccess,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

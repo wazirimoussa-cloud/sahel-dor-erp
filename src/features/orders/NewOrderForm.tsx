@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useProducts } from "@/features/products/useProducts";
-import { useWarehouses } from "@/features/warehouses/useWarehouses";
-import { useClients } from "@/features/clients/useClients";
+import { useActiveProducts } from "@/features/products/useProducts";
+import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveClients } from "@/features/clients/useClients";
 import { useCreateOrder } from "@/features/orders/useOrders";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -25,9 +25,9 @@ const orderSchema = z.object({
 type OrderFormValues = z.infer<typeof orderSchema>;
 
 export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
-  const { data: products } = useProducts();
-  const { data: warehouses } = useWarehouses();
-  const { data: clients } = useClients();
+  const { data: products } = useActiveProducts();
+  const { data: warehouses } = useActiveWarehouses();
+  const { data: clients } = useActiveClients();
   const createOrder = useCreateOrder();
   const [serverError, setServerError] = useState<string | null>(null);
 

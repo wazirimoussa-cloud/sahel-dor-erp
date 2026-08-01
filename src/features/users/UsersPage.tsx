@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { useUsers, useResetPassword } from "@/features/users/useUsers";
+import { useUsers, useResetPassword, useSetUserActive } from "@/features/users/useUsers";
 import { UserForm } from "@/features/users/UserForm";
 import { UserAttributionsPanel } from "@/features/users/UserAttributionsPanel";
 import { Card } from "@/components/ui/Card";
@@ -10,6 +10,7 @@ import type { RoleName } from "@/lib/database.types";
 export function UsersPage() {
   const { data: users, isLoading, error } = useUsers();
   const resetPassword = useResetPassword();
+  const setUserActive = useSetUserActive();
   const [actionError, setActionError] = useState<string | null>(null);
   const [managingUserId, setManagingUserId] = useState<string | null>(null);
 
@@ -23,6 +24,21 @@ export function UsersPage() {
       await resetPassword.mutateAsync(userId);
     } catch {
       setActionError("Réinitialisation refusée (droits insuffisants).");
+    }
+  }
+
+  async function handleToggleActive(userId: string, email: string, active: boolean) {
+    const confirmed = window.confirm(
+      active
+        ? `Réactiver ${email} ? Ce compte pourra de nouveau se connecter et agir dans l'application.`
+        : `Archiver ${email} ? Ce compte ne pourra plus se connecter ni agir dans l'application. L'historique déjà enregistré (actions, commandes, achats...) reste intact et consultable — archiver n'efface rien.`,
+    );
+    if (!confirmed) return;
+    setActionError(null);
+    try {
+      await setUserActive.mutateAsync({ userId, active });
+    } catch {
+      setActionError("Modification du statut refusée (droits insuffisants).");
     }
   }
 
@@ -48,6 +64,7 @@ export function UsersPage() {
                 <th className="py-2">Société</th>
                 <th className="py-2">Créé le</th>
                 <th className="py-2">Mot de passe</th>
+                <th className="py-2">Statut</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -82,6 +99,17 @@ export function UsersPage() {
                           </span>
                         )}
                       </td>
+                      <td className="py-2">
+                        {user.active ? (
+                          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                            Actif
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
+                            Archivé
+                          </span>
+                        )}
+                      </td>
                       <td className="py-2 text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -99,12 +127,19 @@ export function UsersPage() {
                           >
                             Réinitialiser le mot de passe
                           </Button>
+                          <Button
+                            variant="secondary"
+                            disabled={setUserActive.isPending}
+                            onClick={() => void handleToggleActive(user.id, user.email, !user.active)}
+                          >
+                            {user.active ? "Archiver" : "Réactiver"}
+                          </Button>
                         </div>
                       </td>
                     </tr>
                     {managingUserId === user.id && (
                       <tr className="border-b border-gray-100 bg-gray-50">
-                        <td colSpan={6} className="py-3">
+                        <td colSpan={7} className="py-3">
                           <UserAttributionsPanel
                             userId={user.id}
                             userEmail={user.email}
@@ -118,7 +153,7 @@ export function UsersPage() {
               })}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center text-gray-400">
+                  <td colSpan={7} className="py-4 text-center text-gray-400">
                     Aucun utilisateur pour le moment.
                   </td>
                 </tr>

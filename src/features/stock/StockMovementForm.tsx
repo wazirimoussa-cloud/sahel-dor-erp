@@ -3,8 +3,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
-import { useProducts } from "@/features/products/useProducts";
-import { useWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveProducts } from "@/features/products/useProducts";
+import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useCreateTransaction } from "@/features/stock/useTransactions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -30,8 +30,8 @@ const NOTE_LABELS: Record<MovementFormValues["type"], string> = {
 
 export function StockMovementForm() {
   const { session } = useAuth();
-  const { data: products } = useProducts();
-  const { data: warehouses } = useWarehouses();
+  const { data: products } = useActiveProducts();
+  const { data: warehouses } = useActiveWarehouses();
   const createTransaction = useCreateTransaction();
   const [serverError, setServerError] = useState<string | null>(null);
 

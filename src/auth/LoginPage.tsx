@@ -27,7 +27,7 @@ const FORGOT_PASSWORD_MESSAGE =
   "Si un compte administrateur existe avec cet email, un lien de réinitialisation vient d'être envoyé.";
 
 export function LoginPage() {
-  const { session, loading } = useAuth();
+  const { session, loading, deactivatedMessage, clearDeactivatedMessage } = useAuth();
   const location = useLocation();
   const [serverError, setServerError] = useState<string | null>(null);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -52,10 +52,14 @@ export function LoginPage() {
 
   async function onSubmit(values: LoginFormValues) {
     setServerError(null);
+    clearDeactivatedMessage();
     const { error } = await supabase.auth.signInWithPassword(values);
     if (error) {
       setServerError("Identifiants incorrects ou compte inexistant.");
     }
+    // Si le compte est archivé, AuthProvider.bootstrap détecte `active: false` une fois
+    // le profil chargé, déconnecte immédiatement et renseigne deactivatedMessage --
+    // affiché ci-dessous, aucune gestion d'erreur supplémentaire nécessaire ici.
   }
 
   async function onForgotPasswordSubmit(values: ForgotPasswordValues) {
@@ -76,6 +80,12 @@ export function LoginPage() {
           <img src={logo} alt="Sahel d'Or" className="mx-auto mb-4 h-24 w-24 rounded-lg object-cover" />
           <h1 className="mb-1 text-center text-xl font-semibold text-brand-700">Sahel d'Or</h1>
           <p className="mb-6 text-center text-sm text-gray-500">Connexion à l'espace de gestion</p>
+
+          {deactivatedMessage && (
+            <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+              {deactivatedMessage}
+            </p>
+          )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>

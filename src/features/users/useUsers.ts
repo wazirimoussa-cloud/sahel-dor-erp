@@ -8,10 +8,23 @@ export function useUsers() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, email, created_at, must_change_password, roles(name), companies(name)")
+        .select("id, email, created_at, must_change_password, active, roles(name), companies(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export function useSetUserActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, active }: { userId: string; active: boolean }) => {
+      const { error } = await supabase.from("users").update({ active }).eq("id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["users"] });
     },
   });
 }

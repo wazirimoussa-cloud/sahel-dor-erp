@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useProducts } from "@/features/products/useProducts";
-import { useWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveProducts } from "@/features/products/useProducts";
+import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useCreateTransformation } from "@/features/transformations/useTransformations";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -26,8 +26,8 @@ const transformationSchema = z.object({
 type TransformationFormValues = z.infer<typeof transformationSchema>;
 
 export function NewTransformationForm({ onCreated }: { onCreated?: () => void }) {
-  const { data: products } = useProducts();
-  const { data: warehouses } = useWarehouses();
+  const { data: products } = useActiveProducts();
+  const { data: warehouses } = useActiveWarehouses();
   const createTransformation = useCreateTransformation();
   const [serverError, setServerError] = useState<string | null>(null);
 

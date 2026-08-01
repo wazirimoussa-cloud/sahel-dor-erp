@@ -15,7 +15,18 @@ vi.mock("@/lib/supabase", () => ({
 
 function renderLoginPage() {
   return render(
-    <AuthContext.Provider value={{ session: null, profile: null, loading: false, signOut: vi.fn() }}>
+    <AuthContext.Provider
+      value={{
+        session: null,
+        profile: null,
+        loading: false,
+        deactivatedMessage: null,
+        clearDeactivatedMessage: vi.fn(),
+        signOut: vi.fn(),
+        hasAttribution: () => false,
+        hasModuleAccess: () => false,
+      }}
+    >
       <MemoryRouter>
         <LoginPage />
       </MemoryRouter>

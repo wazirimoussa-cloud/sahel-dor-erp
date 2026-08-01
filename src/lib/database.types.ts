@@ -124,6 +124,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          active: boolean
           address: string | null
           company_id: string
           contact_name: string | null
@@ -134,6 +135,7 @@ export type Database = {
           phone: string | null
         }
         Insert: {
+          active?: boolean
           address?: string | null
           company_id: string
           contact_name?: string | null
@@ -144,6 +146,7 @@ export type Database = {
           phone?: string | null
         }
         Update: {
+          active?: boolean
           address?: string | null
           company_id?: string
           contact_name?: string | null
@@ -711,6 +714,7 @@ export type Database = {
       }
       products: {
         Row: {
+          active: boolean
           company_id: string
           created_at: string
           id: string
@@ -721,6 +725,7 @@ export type Database = {
           vat_exempt: boolean
         }
         Insert: {
+          active?: boolean
           company_id: string
           created_at?: string
           id?: string
@@ -731,6 +736,7 @@ export type Database = {
           vat_exempt?: boolean
         }
         Update: {
+          active?: boolean
           company_id?: string
           created_at?: string
           id?: string
@@ -1135,6 +1141,7 @@ export type Database = {
       }
       suppliers: {
         Row: {
+          active: boolean
           address: string | null
           company_id: string
           contact_name: string | null
@@ -1145,6 +1152,7 @@ export type Database = {
           phone: string | null
         }
         Insert: {
+          active?: boolean
           address?: string | null
           company_id: string
           contact_name?: string | null
@@ -1155,6 +1163,7 @@ export type Database = {
           phone?: string | null
         }
         Update: {
+          active?: boolean
           address?: string | null
           company_id?: string
           contact_name?: string | null
@@ -1533,6 +1542,7 @@ export type Database = {
       }
       users: {
         Row: {
+          active: boolean
           company_id: string | null
           created_at: string
           email: string
@@ -1541,6 +1551,7 @@ export type Database = {
           role_id: number | null
         }
         Insert: {
+          active?: boolean
           company_id?: string | null
           created_at?: string
           email: string
@@ -1549,6 +1560,7 @@ export type Database = {
           role_id?: number | null
         }
         Update: {
+          active?: boolean
           company_id?: string | null
           created_at?: string
           email?: string
@@ -1575,6 +1587,7 @@ export type Database = {
       }
       warehouses: {
         Row: {
+          active: boolean
           company_id: string
           created_at: string
           id: string
@@ -1582,6 +1595,7 @@ export type Database = {
           name: string
         }
         Insert: {
+          active?: boolean
           company_id: string
           created_at?: string
           id?: string
@@ -1589,6 +1603,7 @@ export type Database = {
           name: string
         }
         Update: {
+          active?: boolean
           company_id?: string
           created_at?: string
           id?: string
@@ -1957,6 +1972,7 @@ export type Database = {
       update_product_price: {
         Args: { new_price: number; product_id: string; reason?: string }
         Returns: {
+          active: boolean
           company_id: string
           created_at: string
           id: string

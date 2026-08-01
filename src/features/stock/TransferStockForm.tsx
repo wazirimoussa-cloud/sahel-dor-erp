@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useProducts } from "@/features/products/useProducts";
-import { useWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveProducts } from "@/features/products/useProducts";
+import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useTransferStock } from "@/features/stock/useTransactions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -23,8 +23,8 @@ const transferSchema = z
 type TransferFormValues = z.infer<typeof transferSchema>;
 
 export function TransferStockForm() {
-  const { data: products } = useProducts();
-  const { data: warehouses } = useWarehouses();
+  const { data: products } = useActiveProducts();
+  const { data: warehouses } = useActiveWarehouses();
   const transferStock = useTransferStock();
   const [serverError, setServerError] = useState<string | null>(null);
 

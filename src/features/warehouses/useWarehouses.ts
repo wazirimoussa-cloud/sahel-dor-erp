@@ -13,7 +13,26 @@ export function useWarehouses() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("warehouses")
-        .select("id, name, location, company_id, created_at")
+        .select("id, name, location, company_id, created_at, active")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// Réservé aux listes de sélection pour une nouvelle opération (achat, commande,
+// mouvement, transfert...) : un magasin archivé reste visible dans /warehouses (via
+// useWarehouses) pour qu'on puisse le réactiver, mais ne doit plus pouvoir être choisi
+// pour une nouvelle opération.
+export function useActiveWarehouses() {
+  return useQuery({
+    queryKey: ["warehouses", "active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("warehouses")
+        .select("id, name, location")
+        .eq("active", true)
         .order("name", { ascending: true });
       if (error) throw error;
       return data;
@@ -46,6 +65,19 @@ export function useCreateWarehouse() {
         name: warehouse.name,
         location: warehouse.location || null,
       });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["warehouses"] });
+    },
+  });
+}
+
+export function useSetWarehouseActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ warehouseId, active }: { warehouseId: string; active: boolean }) => {
+      const { error } = await supabase.from("warehouses").update({ active }).eq("id", warehouseId);
       if (error) throw error;
     },
     onSuccess: () => {

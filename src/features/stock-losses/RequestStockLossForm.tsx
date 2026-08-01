@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useProducts } from "@/features/products/useProducts";
-import { useWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveProducts } from "@/features/products/useProducts";
+import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useRequestStockLoss } from "@/features/stock-losses/useStockLossRequests";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -30,8 +30,8 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export function RequestStockLossForm() {
-  const { data: products } = useProducts();
-  const { data: warehouses } = useWarehouses();
+  const { data: products } = useActiveProducts();
+  const { data: warehouses } = useActiveWarehouses();
   const requestLoss = useRequestStockLoss();
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);

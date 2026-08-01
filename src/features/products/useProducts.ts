@@ -16,10 +16,43 @@ export function useProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, stock, unit, vat_exempt, company_id, created_at")
+        .select("id, name, price, stock, unit, vat_exempt, company_id, created_at, active")
         .order("name", { ascending: true });
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+// Réservé aux listes de sélection pour une nouvelle opération (achat, commande,
+// mouvement, transfert, production, transformation, perte...) : un produit archivé
+// reste visible dans /products (via useProducts) pour qu'on puisse le réactiver ou
+// rechercher son historique, mais ne doit plus pouvoir être choisi pour une nouvelle
+// opération.
+export function useActiveProducts() {
+  return useQuery({
+    queryKey: ["products", "active"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, price, stock, unit, vat_exempt")
+        .eq("active", true)
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+export function useSetProductActive() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ productId, active }: { productId: string; active: boolean }) => {
+      const { error } = await supabase.from("products").update({ active }).eq("id", productId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["products"] });
     },
   });
 }

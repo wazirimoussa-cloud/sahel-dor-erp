@@ -7,6 +7,7 @@ import {
   useProducts,
   useUpdateProductPrice,
   usePriceHistory,
+  useSetProductActive,
 } from "@/features/products/useProducts";
 import { ProductForm } from "@/features/products/ProductForm";
 import { Card } from "@/components/ui/Card";
@@ -52,12 +53,29 @@ export function ProductsPage() {
   const { hasAttribution } = useAuth();
   const { data: products, isLoading, error } = useProducts();
   const updatePrice = useUpdateProductPrice();
+  const setProductActive = useSetProductActive();
   const canManage = hasAttribution("produits.gerer_catalogue");
   const canEditPrice = hasAttribution("produits.modifier_prix");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function handleToggleActive(productId: string, name: string, active: boolean) {
+    const confirmed = window.confirm(
+      active
+        ? `Réactiver ${name} ? Ce produit pourra de nouveau être choisi pour une nouvelle opération.`
+        : `Archiver ${name} ? Ce produit ne sera plus proposé pour une nouvelle opération (achat, commande, mouvement, transformation...). L'historique déjà enregistré reste intact et consultable.`,
+    );
+    if (!confirmed) return;
+    setActionError(null);
+    try {
+      await setProductActive.mutateAsync({ productId, active });
+    } catch {
+      setActionError("Modification du statut refusée (droits insuffisants).");
+    }
+  }
 
   const {
     register,
@@ -91,6 +109,8 @@ export function ProductsPage() {
         </Card>
       )}
 
+      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
         {error && <p className="text-sm text-red-600">Impossible de charger les produits.</p>}
@@ -101,6 +121,7 @@ export function ProductsPage() {
                 <th className="py-2">Nom</th>
                 <th className="py-2">Prix</th>
                 <th className="py-2">Stock</th>
+                <th className="py-2">Statut</th>
                 <th className="py-2" />
               </tr>
             </thead>
@@ -124,6 +145,17 @@ export function ProductsPage() {
                     >
                       {product.stock} {product.unit}
                     </td>
+                    <td className="py-2">
+                      {product.active ? (
+                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                          Actif
+                        </span>
+                      ) : (
+                        <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
+                          Archivé
+                        </span>
+                      )}
+                    </td>
                     <td className="py-2 text-right">
                       <div className="flex justify-end gap-3">
                         {canEditPrice && (
@@ -146,12 +178,24 @@ export function ProductsPage() {
                         >
                           Historique
                         </button>
+                        {canManage && (
+                          <button
+                            type="button"
+                            className="text-xs text-gray-500 hover:underline"
+                            disabled={setProductActive.isPending}
+                            onClick={() =>
+                              void handleToggleActive(product.id, product.name, !product.active)
+                            }
+                          >
+                            {product.active ? "Archiver" : "Réactiver"}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
                   {editingId === product.id && (
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <td colSpan={4} className="py-2">
+                      <td colSpan={5} className="py-2">
                         <form
                           onSubmit={handleSubmit((values) => onSubmitPrice(product.id, values))}
                           className="flex flex-wrap items-end gap-3"
@@ -185,7 +229,7 @@ export function ProductsPage() {
                   )}
                   {historyId === product.id && (
                     <tr className="border-b border-gray-100">
-                      <td colSpan={4} className="py-2">
+                      <td colSpan={5} className="py-2">
                         <PriceHistoryRows productId={product.id} />
                       </td>
                     </tr>
@@ -194,7 +238,7 @@ export function ProductsPage() {
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-400">
+                  <td colSpan={5} className="py-4 text-center text-gray-400">
                     Aucun produit pour le moment.
                   </td>
                 </tr>

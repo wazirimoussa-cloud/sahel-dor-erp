@@ -794,6 +794,44 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     texte qui le contient — `formatFcfa` la remplace systématiquement par une
     espace ASCII avant d'appeler `doc.text()`.
 
+42. **Archivage des comptes, magasins, produits, fournisseurs et clients**
+    (`0048_archivage.sql`) : alternative à la suppression, qui reste structurellement
+    impossible dès qu'un enregistrement a été référencé (voir "Limites connues" —
+    `logs`/`transactions`/`orders`/`purchases` sont append-only par conception, pour la
+    traçabilité). Une colonne `active` (par défaut `true`) est ajoutée aux 5 tables ;
+    un bouton "Archiver"/"Réactiver" est disponible sur chaque page de gestion
+    correspondante (`utilisateurs.gerer`, `entrepots.gerer`, `produits.gerer_catalogue`,
+    `fournisseurs.gerer`, `clients.gerer` — même attribution que la création). Archiver
+    ne supprime rien : l'historique déjà écrit reste intact et consultable. Deux effets
+    concrets :
+    - **Compte utilisateur** : `current_company_id()` et `current_role_name()`
+      (fonctions centrales dont dépendent la quasi-totalité des policies RLS et des
+      fonctions RPC) renvoient `null`/`null` pour un compte archivé, ce qui bloque déjà
+      toute action sans qu'il soit nécessaire de modifier une à une des dizaines de
+      policies. `AuthProvider` déconnecte en plus immédiatement un compte archivé dès
+      que son profil se charge après connexion (l'authentification Supabase réussit
+      quand même, l'app ne laisse jamais s'afficher un écran vide faute de droits) et
+      affiche un message clair sur `/login`. **Bug corrigé au passage**
+      (`0049_users_admin_write_attribution.sql`) : la policy `users_admin_write`
+      vérifiait encore le rôle littéral `admin`, jamais migré vers l'attribution
+      `utilisateurs.gerer` depuis `0032_attributions.sql` — `role_id` étant `null` pour
+      les 5 profils du modèle actuel (voir point 33 des limites connues), cette policy
+      était structurellement insatisfiable. Restée invisible jusqu'ici car aucun appel
+      client n'écrivait directement sur `users` (les réinitialisations de mot de passe
+      passent par l'Edge Function `reset-password`, qui contourne RLS avec la clé
+      `service_role`) — découvert en testant le bouton Archiver, premier appel
+      `from("users").update(...)` du code client.
+    - **Magasin/produit/fournisseur/client** : `create_purchase` et `create_order`
+      refusent désormais toute référence à un enregistrement archivé (défense en
+      profondeur, au-delà du simple filtrage des listes déroulantes de création côté
+      interface — `useActiveProducts`/`useActiveWarehouses`/`useActiveSuppliers`/
+      `useActiveClients` dans les hooks correspondants). Un achat/une commande déjà
+      créé(e) référençant un enregistrement depuis archivé reste réceptionnable/
+      validable normalement — l'archivage n'est jamais rétroactif. Les autres RPC
+      (mouvement de stock, transfert, production, transformation, perte de stock)
+      n'ont **pas** ce contrôle serveur : seul le filtrage des listes déroulantes s'y
+      applique, un choix de périmètre assumé (voir "Limites connues").
+
 ## Limites connues / pistes pour la suite
 
 - **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
@@ -847,14 +885,15 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   déclencher (commande, transaction de stock...), elles aussi immuables. `DELETE FROM
   auth.users` échoue alors avec une violation de contrainte de clé étrangère
   (`logs_user_id_fkey` ou équivalent sur `orders`/`transactions`/`purchases`). Aucune
-  fonctionnalité de suppression de compte n'existe donc dans l'app, y compris côté admin
-  — un compte qu'on ne veut plus voir utilisé doit être neutralisé autrement (ex. le
-  réassigner à un rôle sans droit d'écriture) plutôt que supprimé. Contournable
-  uniquement en désactivant temporairement `trg_logs_immutable` (et les triggers
-  équivalents sur les tables métier concernées) pour purger les entrées liées avant de
-  supprimer l'utilisateur — casse alors le principe de traçabilité permanente pour ces
-  entrées précises, à réserver à un besoin RGPD explicite plutôt qu'à un simple ménage de
-  comptes de test.
+  fonctionnalité de suppression de compte n'existe donc dans l'app, y compris côté admin.
+  **Depuis le point 42**, un compte qu'on ne veut plus voir utilisé se neutralise
+  proprement via le bouton "Archiver" (`users.active = false`) plutôt que par un
+  contournement destructeur : le compte ne peut plus se connecter ni agir, sans jamais
+  toucher à l'historique. Le contournement décrit ci-dessous (désactiver temporairement
+  `trg_logs_immutable` pour purger puis supprimer réellement) reste théoriquement
+  possible mais n'a plus lieu d'être pour un simple ménage de comptes de test — à
+  réserver à un besoin RGPD explicite (droit à l'effacement), qui casse alors le
+  principe de traçabilité permanente pour ces entrées précises.
 - **Un magasin (`warehouses`) n'est pas non plus supprimable dès qu'un mouvement de stock
   l'a référencé** — même mécanisme que pour les comptes utilisateurs. Dès qu'une ligne
   `product_stocks` existe pour ce magasin (créée automatiquement à la première
@@ -863,10 +902,13 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   `transactions_warehouse_id_fkey` si des mouvements existent directement). Constaté en
   pratique : un magasin de test créé pour vérifier les transferts entre magasins (point
   21) reste bloqué en base pour cette raison, malgré une tentative de suppression.
-  Contournable uniquement en désactivant temporairement `trg_transactions_immutable`
-  pour purger les mouvements liés avant de supprimer le magasin — même compromis que pour
-  les comptes (casse la traçabilité de ces entrées), à réserver à un cas réellement
-  justifié plutôt qu'à un simple ménage de données de test.
+  **Depuis le point 42**, la même logique d'archivage s'applique (`warehouses.active`,
+  également disponible sur `products`/`suppliers`/`clients`) : un enregistrement de test
+  créé par erreur se masque des futures sélections sans qu'il soit nécessaire de le
+  supprimer. Le contournement destructeur (désactiver temporairement
+  `trg_transactions_immutable` pour purger puis supprimer réellement) reste possible
+  mais, comme pour les comptes, casse la traçabilité et n'a plus lieu d'être pour un
+  simple ménage de données de test.
 - **Une commande ou un achat n'est plus supprimable dès qu'il a été validé/réceptionné**
   — même mécanisme, étendu par les points 22-23 : `order_payments` et `purchase_losses`
   sont eux aussi append-only (`fn_block_mutation()`), en plus de `transactions` et

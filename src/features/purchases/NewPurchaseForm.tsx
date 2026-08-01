@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useProducts } from "@/features/products/useProducts";
-import { useSuppliers } from "@/features/suppliers/useSuppliers";
-import { useWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveProducts } from "@/features/products/useProducts";
+import { useActiveSuppliers } from "@/features/suppliers/useSuppliers";
+import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useCreatePurchase } from "@/features/purchases/usePurchases";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -27,9 +27,9 @@ const purchaseSchema = z.object({
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
-  const { data: products } = useProducts();
-  const { data: suppliers } = useSuppliers();
-  const { data: warehouses } = useWarehouses();
+  const { data: products } = useActiveProducts();
+  const { data: suppliers } = useActiveSuppliers();
+  const { data: warehouses } = useActiveWarehouses();
   const createPurchase = useCreatePurchase();
   const [serverError, setServerError] = useState<string | null>(null);
 
