@@ -274,6 +274,7 @@ export type Database = {
           id: string
           journal_code: string
           order_id: string | null
+          production_id: string | null
           purchase_id: string | null
         }
         Insert: {
@@ -284,6 +285,7 @@ export type Database = {
           id?: string
           journal_code: string
           order_id?: string | null
+          production_id?: string | null
           purchase_id?: string | null
         }
         Update: {
@@ -294,6 +296,7 @@ export type Database = {
           id?: string
           journal_code?: string
           order_id?: string | null
+          production_id?: string | null
           purchase_id?: string | null
         }
         Relationships: [
@@ -309,6 +312,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_production_id_fkey"
+            columns: ["production_id"]
+            isOneToOne: false
+            referencedRelation: "productions"
             referencedColumns: ["id"]
           },
           {

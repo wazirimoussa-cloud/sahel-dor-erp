@@ -29,6 +29,7 @@ import { ChartOfAccountsPage } from "@/features/accounting/ChartOfAccountsPage";
 import { JournalPage } from "@/features/accounting/JournalPage";
 import { FinancialStatementsPage } from "@/features/financials/FinancialStatementsPage";
 import { VatDeclarationPage } from "@/features/financials/VatDeclarationPage";
+import { VatSettingsPage } from "@/features/accounting/VatSettingsPage";
 
 export function AppRoutes() {
   return (
@@ -282,6 +283,16 @@ export function AppRoutes() {
           <ProtectedRoute requiredModule="etats_financiers">
             <AppShell>
               <VatDeclarationPage />
+            </AppShell>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parametres-tva"
+        element={
+          <ProtectedRoute requiredModule="comptabilite">
+            <AppShell>
+              <VatSettingsPage />
             </AppShell>
           </ProtectedRoute>
         }
