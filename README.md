@@ -88,11 +88,25 @@ notamment le calcul du prix de revient (achat + quote-part frais), la consommati
 du stock, le double encaissement partiel/soldé, la génération des écritures
 comptables, et — en négatif — que le Gérant ne peut ni réceptionner son propre achat ni
 valider sa propre commande. Nécessite `TEST_GERANT_EMAIL`/`PASSWORD` et équivalents
-Magasinier/Superviseur/Comptable dans `.env.local` (voir `.env.example`) ; sans ces
-variables, la suite est **ignorée** (jamais en échec) pour ne pas bloquer `npm test`
-sans configuration. Cible toujours Formation, jamais Production — chaque exécution y
-laisse un fournisseur/client/produit tagué « Intégration » (append-only, voir
-[Limites connues](#limites-connues--pistes-pour-la-suite) : rien n'est supprimable).
+Magasinier/Superviseur/Comptable/**Administrateur** dans `.env.local` (voir
+`.env.example`) ; sans ces variables, la suite est **ignorée** (jamais en échec) pour ne
+pas bloquer `npm test` sans configuration. Cible toujours Formation, jamais Production —
+chaque exécution y laisse un fournisseur/client/produit tagué « Intégration »
+(append-only, voir [Limites connues](#limites-connues--pistes-pour-la-suite) : rien
+n'est supprimable).
+
+`tests/integration/archivage.test.ts` couvre le point 42 (archivage) : un
+produit/fournisseur/client/magasin archivé devient indisponible pour un nouvel
+achat/une nouvelle commande puis redisponible après réactivation, et un compte
+utilisateur archivé perd tout accès RLS/RPC. Sert aussi de garde de non-régression pour
+les policies `users_admin_write` (0049) et `companies_admin_write` (0050), corrigées
+pendant cette même phase — sans ces tests, rien n'empêcherait une future migration de
+réintroduire le même défaut (vérification du rôle littéral `admin` plutôt que d'une
+attribution) sans qu'aucun test ne le détecte. Crée un compte jetable via l'Edge
+Function `create-user` (déjà déployée pour la fonctionnalité "Créer l'utilisateur" —
+voir "Déploiement de l'Edge Function" ci-dessous, rien de supplémentaire à configurer
+pour ce test) plutôt que de dépendre d'un compte existant dont le mot de passe pourrait
+avoir changé entre deux sessions de travail.
 
 ## Déploiement de l'Edge Function (création d'utilisateurs)
 
@@ -831,6 +845,16 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       (mouvement de stock, transfert, production, transformation, perte de stock)
       n'ont **pas** ce contrôle serveur : seul le filtrage des listes déroulantes s'y
       applique, un choix de périmètre assumé (voir "Limites connues").
+    - **Corrigé par anticipation** (`0050_companies_admin_write_attribution.sql`) :
+      même défaut que `users_admin_write` sur la policy `companies_admin_write`
+      (rôle littéral `admin`, aucun filet de secours contrairement aux ~25 autres
+      policies qui gardent un `OR company_id = current_company_id()`). Repérée en
+      auditant toutes les policies utilisant encore `current_role_name()` pendant
+      cette phase — inutilisée par le code actuel (aucun formulaire ne modifie
+      `companies`), donc pas un bug actif, mais corrigée avant qu'un écran "Modifier
+      le capital social"/"Taux de TVA" ne l'active et tombe dans le même piège.
+      `tests/integration/archivage.test.ts` couvre les deux correctifs (0049 et 0050)
+      en garde de non-régression.
 
 ## Limites connues / pistes pour la suite
 
