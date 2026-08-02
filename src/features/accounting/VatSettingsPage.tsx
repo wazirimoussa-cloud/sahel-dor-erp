@@ -14,7 +14,6 @@ const rateField = z.coerce.number().min(0, "Le taux doit être positif").max(100
 const fiscalRatesSchema = z.object({
   vatRate: rateField,
   impotSocietesRate: rateField,
-  taxeProfessionnelleRate: rateField,
   precompteIsbRate: rateField,
   taxeImmobiliereRate: rateField,
 });
@@ -25,10 +24,7 @@ type CompanyRow = Tables<"companies">;
 
 const RATE_FIELDS: {
   name: keyof FiscalRatesFormValues;
-  column: keyof Pick<
-    CompanyRow,
-    "vat_rate" | "impot_societes_rate" | "taxe_professionnelle_rate" | "precompte_isb_rate" | "taxe_immobiliere_rate"
-  >;
+  column: keyof Pick<CompanyRow, "vat_rate" | "impot_societes_rate" | "precompte_isb_rate" | "taxe_immobiliere_rate">;
   label: string;
   help: string;
 }[] = [
@@ -42,25 +38,19 @@ const RATE_FIELDS: {
     name: "impotSocietesRate",
     column: "impot_societes_rate",
     label: "Impôt sur les Sociétés — IS (%)",
-    help: "Taux annuel sur le bénéfice. Compte 695, aucun calcul automatique.",
-  },
-  {
-    name: "taxeProfessionnelleRate",
-    column: "taxe_professionnelle_rate",
-    label: "Taxe professionnelle — patente (%)",
-    help: "Compte 646, aucun calcul automatique.",
+    help: "30% du bénéfice net imposable, sans abattement (Art. 27 CGI). Compte 695, aucun calcul automatique.",
   },
   {
     name: "precompteIsbRate",
     column: "precompte_isb_rate",
-    label: "Précompte ISB/IBA (%)",
-    help: "Le taux dépend du statut du fournisseur (immatriculé ou non). Compte 4494, aucun calcul automatique.",
+    label: "Précompte ISB (%)",
+    help: "2% marché intérieur (opérateur immatriculé) par défaut ; l'Art. 40 CGI prévoit aussi 4% (douane/port) et 7% (opérateur non immatriculé) — à ajuster au cas par cas. Compte 4494, aucun calcul automatique.",
   },
   {
     name: "taxeImmobiliereRate",
     column: "taxe_immobiliere_rate",
     label: "Taxe immobilière (%)",
-    help: "Le taux dépend de la catégorie du bien. Compte 647, aucun calcul automatique.",
+    help: "1% de la valeur des immobilisations pour une personne morale (Art. 155 CGI). Compte 647, aucun calcul automatique.",
   },
 ];
 
@@ -84,7 +74,6 @@ export function VatSettingsPage() {
       reset({
         vatRate: company.vat_rate,
         impotSocietesRate: company.impot_societes_rate,
-        taxeProfessionnelleRate: company.taxe_professionnelle_rate,
         precompteIsbRate: company.precompte_isb_rate,
         taxeImmobiliereRate: company.taxe_immobiliere_rate,
       });

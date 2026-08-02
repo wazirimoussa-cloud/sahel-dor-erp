@@ -898,18 +898,35 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       `create_fixed_asset`/`dispose_fixed_asset`.
     - `/parametres-tva` devient **"Paramètres fiscaux"** (`VatSettingsPage.tsx`) : en
       plus de la TVA, expose désormais en lecture/écriture (même garde
-      `comptabilite.modifier_capital_social`) les 4 taux préparés aux points 28/31 —
-      `impot_societes_rate`, `taxe_professionnelle_rate`, `precompte_isb_rate`,
-      `taxe_immobiliere_rate`. `0054_seed_impot_societes_rate.sql` fixe l'IS à **30%**
-      pour les deux sociétés — seul des 4 taux à ne dépendre d'aucune condition propre
-      à Sahel d'Or (SARL commerciale), transmis par l'utilisateur à partir de ses
-      recherches préalables, sous réserve de vérification directe dans le CGI à jour.
-      Le précompte ISB/IBA (2% fournisseur immatriculé / 7% sinon) et la taxe
-      immobilière (1,5%/5%/10% selon la catégorie du bien) dépendent de faits propres
-      à la société que l'app ne modélise pas encore (statut fiscal des fournisseurs,
-      catégorie du bien) — laissés à 0, à saisir directement dans l'écran une fois
-      connus. La taxe professionnelle (patente) n'a encore aucun taux, ni candidat.
-      **Toujours aucun calcul automatique** sur ces 4 taux (hors TVA) : ce sont des
+      `comptabilite.modifier_capital_social`) l'IS, le Précompte ISB et la Taxe
+      immobilière (`impot_societes_rate`, `precompte_isb_rate`, `taxe_immobiliere_rate`).
+      Valeurs vérifiées directement dans le texte à jour du Code Général des Impôts
+      (Niger) fourni par l'utilisateur — corrigeant les estimations provisoires posées
+      plus haut dans cette même entrée avant vérification :
+      - **IS = 30%** (`0054_seed_impot_societes_rate.sql`) : confirmé conforme,
+        `Art. 27` — "le taux de l'impôt sur les bénéfices est fixé à 30%, sans
+        abattement". Sans condition propre à Sahel d'Or, seed appliqué directement.
+      - **Précompte ISB = 2%** (`0056_seed_precompte_isb_rate.sql`) : `Art. 40` prévoit
+        en réalité 4 taux selon l'opération et le statut de l'opérateur — 2% (marché
+        intérieur, opérateur immatriculé), 2% (réexportation/transit, immatriculé),
+        4% (douane/port, immatriculé), 7% (opérateur non immatriculé). 2% retenu comme
+        valeur par défaut (activité de gros sur le marché intérieur), à ajuster au cas
+        par cas dans l'écran si une opération relève d'un autre tarif.
+      - **Taxe immobilière = 1%** (`0055_seed_taxe_immobiliere_rate.sql`) : `Art. 155`
+        — 1% de la valeur des immobilisations pour une **personne morale**, sans
+        condition. Les 10%/5% initialement retenus (1,5%/5%/10% dans la version
+        provisoire) ne s'appliquent en réalité qu'aux personnes physiques — non
+        pertinent pour une SARL comme Sahel d'Or.
+      - **Taxe professionnelle (patente) retirée de l'écran** : `Art. 174-176`
+        révèlent que ce n'est pas un taux unique mais un droit fixe (1‰ du chiffre
+        d'affaires de l'année précédente, minimum 150 000 FCFA) **+** un droit
+        proportionnel (10% de la valeur locative des locaux professionnels) — un champ
+        `taxe_professionnelle_rate` à taux unique ne peut pas représenter ce calcul.
+        La colonne reste en base (créée en `0030`, jamais supprimée) mais n'est plus
+        lue/écrite par `useCompanySettings.ts` ni affichée dans l'écran, faute d'un
+        modèle à deux composantes — et l'app ne suit de toute façon ni le chiffre
+        d'affaires ni la valeur locative nécessaires à son calcul.
+      **Toujours aucun calcul automatique** sur les 3 taux hors TVA : ce sont des
       références de calcul manuel tant que le mécanisme exact (assiette, périodicité,
       compte de contrepartie) n'est pas confirmé — mêmes réserves qu'aux points 28/31.
     - `magasinier.formation` aligné sur `saheldor2026-testAB`, comme les 4 autres

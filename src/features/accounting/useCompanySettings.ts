@@ -20,7 +20,6 @@ export function useCompanySettings() {
 export interface FiscalRates {
   vatRate: number;
   impotSocietesRate: number;
-  taxeProfessionnelleRate: number;
   precompteIsbRate: number;
   taxeImmobiliereRate: number;
 }
@@ -34,7 +33,6 @@ export function useUpdateFiscalRates() {
         .update({
           vat_rate: rates.vatRate,
           impot_societes_rate: rates.impotSocietesRate,
-          taxe_professionnelle_rate: rates.taxeProfessionnelleRate,
           precompte_isb_rate: rates.precompteIsbRate,
           taxe_immobiliere_rate: rates.taxeImmobiliereRate,
         })
