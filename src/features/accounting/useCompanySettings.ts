@@ -8,7 +8,7 @@ export function useCompanySettings() {
       const { data, error } = await supabase
         .from("companies")
         .select(
-          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative",
+          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative, irvm_dividendes_rate, irvm_plus_values_cession_rate, irvm_obligations_rate",
         )
         .single();
       if (error) throw error;
@@ -27,6 +27,9 @@ export interface FiscalRates {
   taxeProfessionnelleDroitProportionnelRate: number;
   taxeProfessionnelleCaAnnuel: number;
   taxeProfessionnelleValeurLocative: number;
+  irvmDividendesRate: number;
+  irvmPlusValuesCessionRate: number;
+  irvmObligationsRate: number;
 }
 
 export function useUpdateFiscalRates() {
@@ -45,6 +48,9 @@ export function useUpdateFiscalRates() {
           taxe_professionnelle_droit_proportionnel_rate: rates.taxeProfessionnelleDroitProportionnelRate,
           taxe_professionnelle_ca_annuel: rates.taxeProfessionnelleCaAnnuel,
           taxe_professionnelle_valeur_locative: rates.taxeProfessionnelleValeurLocative,
+          irvm_dividendes_rate: rates.irvmDividendesRate,
+          irvm_plus_values_cession_rate: rates.irvmPlusValuesCessionRate,
+          irvm_obligations_rate: rates.irvmObligationsRate,
         })
         .eq("id", companyId);
       if (error) throw error;

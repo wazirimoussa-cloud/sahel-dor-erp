@@ -173,6 +173,9 @@ export type Database = {
           created_at: string
           id: string
           impot_societes_rate: number
+          irvm_dividendes_rate: number
+          irvm_obligations_rate: number
+          irvm_plus_values_cession_rate: number
           name: string
           nif: string | null
           precompte_isb_rate: number
@@ -192,6 +195,9 @@ export type Database = {
           created_at?: string
           id?: string
           impot_societes_rate?: number
+          irvm_dividendes_rate?: number
+          irvm_obligations_rate?: number
+          irvm_plus_values_cession_rate?: number
           name: string
           nif?: string | null
           precompte_isb_rate?: number
@@ -211,6 +217,9 @@ export type Database = {
           created_at?: string
           id?: string
           impot_societes_rate?: number
+          irvm_dividendes_rate?: number
+          irvm_obligations_rate?: number
+          irvm_plus_values_cession_rate?: number
           name?: string
           nif?: string | null
           precompte_isb_rate?: number

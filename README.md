@@ -949,6 +949,38 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     locative 2M FCFA → 500 000 FCFA, cohérent avec le calcul manuel), puis remis
     à 0 pour ne pas laisser de donnée de test dans les paramètres.
 
+46. **Reste de l'inventaire fiscal (point 31) : vérification et clôture** — l'utilisateur
+    a fourni le texte à jour du CGI (Niger) ; les 6 impositions encore écartées ont été
+    revérifiées une par une plutôt que de rester une simple liste :
+    - **ITS** (`Art. 50-68`) : confirmé — barème progressif à 9 tranches mensuelles
+      (1% à 35%, `Art. 66`) **+** abattements selon charges de famille (0% à 30%,
+      `Art. 65`). Un vrai calcul suppose un module paie (employés, salaire mensuel,
+      nombre de charges) que l'app ne modélise pas — **décision confirmée avec
+      l'utilisateur de laisser RH hors périmètre**, ITS reste donc hors de portée.
+    - **Taxe sur paiements en espèces** : **introuvable dans le texte du CGI**, sous ce
+      nom ou une variante proche. L'entrée initiale (issue d'une recherche antérieure
+      non vérifiée contre le texte réel) n'a pas pu être confirmée — à retirer de
+      l'inventaire tant qu'une source ne la confirme pas.
+    - **Droits d'enregistrement** (`Livre III`) : confirmé, mais c'est un grand tarif
+      variable (fixe, proportionnel ou progressif selon la nature de l'acte — vente,
+      donation, jugement...), pas un taux unique représentable dans l'écran. Reste
+      hors périmètre, comme prévu.
+    - **IRVM** (`Art. 70-78` — le texte utilise ce nom, pas « IRCM ») : confirmé et
+      modélisable, contrairement au reste de la liste — taux simples (`Art. 74`) :
+      10% dividendes (7% si société cotée CREPMF/UEMOA), 7% plus-values de cession
+      d'actions/parts, 6% revenus d'obligations. **Ajouté à l'écran** (migration
+      `0059_irvm_rates.sql`, 3 nouveaux champs `companies.irvm_*`, section dédiée
+      dans `VatSettingsPage.tsx`) — reste un événement rare pour une SARL non cotée
+      (distribution de dividendes, cession de parts), mais contrairement à l'ITS ou
+      aux droits d'enregistrement, ce sont de vrais pourcentages sans mécanisme à
+      construire, donc cohérent avec le reste de l'écran.
+    - **Taxe sur la publicité** (`Livre III`) : c'est en réalité la « taxe sur la
+      publicité commerciale extérieure », une taxe **communale** (comme la taxe de
+      voirie ou la taxe municipale), à tarif par panneau/jour, pas un pourcentage.
+      Reste hors périmètre.
+    - **Droits fonciers** : procédure d'immatriculation foncière, événement ponctuel
+      (achat de terrain), pas un taux récurrent. Reste hors périmètre.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

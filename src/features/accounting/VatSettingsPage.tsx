@@ -23,6 +23,9 @@ const fiscalRatesSchema = z.object({
   taxeProfessionnelleDroitProportionnelRate: percentField(),
   taxeProfessionnelleCaAnnuel: amountField,
   taxeProfessionnelleValeurLocative: amountField,
+  irvmDividendesRate: percentField(),
+  irvmPlusValuesCessionRate: percentField(),
+  irvmObligationsRate: percentField(),
 });
 
 function computeTaxeProfessionnelle(values: {
@@ -139,6 +142,39 @@ const TAXE_PROFESSIONNELLE_DATA_FIELDS: {
   },
 ];
 
+const IRVM_FIELDS: {
+  name: keyof FiscalRatesFormValues;
+  column: keyof Pick<
+    CompanyRow,
+    "irvm_dividendes_rate" | "irvm_plus_values_cession_rate" | "irvm_obligations_rate"
+  >;
+  label: string;
+  suffix: string;
+  help: string;
+}[] = [
+  {
+    name: "irvmDividendesRate",
+    column: "irvm_dividendes_rate",
+    label: "Dividendes",
+    suffix: "%",
+    help: "10% (7% seulement si la société est cotée sur une bourse agréée CREPMF/UEMOA — non pertinent pour une SARL non cotée). Art. 74 CGI.",
+  },
+  {
+    name: "irvmPlusValuesCessionRate",
+    column: "irvm_plus_values_cession_rate",
+    label: "Plus-values de cession de parts",
+    suffix: "%",
+    help: "7% sur les plus-values de cession d'actions et parts sociales (Art. 74 CGI).",
+  },
+  {
+    name: "irvmObligationsRate",
+    column: "irvm_obligations_rate",
+    label: "Revenus d'obligations",
+    suffix: "%",
+    help: "6% sur les revenus d'obligations (Art. 74 CGI).",
+  },
+];
+
 export function VatSettingsPage() {
   const { hasAttribution } = useAuth();
   const { data: company, isLoading, error } = useCompanySettings();
@@ -170,6 +206,9 @@ export function VatSettingsPage() {
         taxeProfessionnelleDroitProportionnelRate: company.taxe_professionnelle_droit_proportionnel_rate,
         taxeProfessionnelleCaAnnuel: company.taxe_professionnelle_ca_annuel,
         taxeProfessionnelleValeurLocative: company.taxe_professionnelle_valeur_locative,
+        irvmDividendesRate: company.irvm_dividendes_rate,
+        irvmPlusValuesCessionRate: company.irvm_plus_values_cession_rate,
+        irvmObligationsRate: company.irvm_obligations_rate,
       });
     }
   }, [company, reset]);
@@ -254,6 +293,26 @@ export function VatSettingsPage() {
               </p>
             </div>
           </Card>
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">
+              Impôt sur le Revenu des Valeurs Mobilières (IRVM)
+            </h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Ne s'applique qu'en cas de distribution de dividendes ou de cession de parts —
+              événement rare pour une SARL non cotée (Art. 70-78 CGI).
+            </p>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {IRVM_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
+                  <dd className="text-lg font-semibold text-forest-900">
+                    {company[field.column]}
+                    {field.suffix}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
         </>
       )}
 
@@ -316,6 +375,30 @@ export function VatSettingsPage() {
               <p className="text-lg font-semibold text-forest-900">
                 {Number.isFinite(estimation.total) ? estimation.total.toLocaleString("fr-FR") : "—"} FCFA
               </p>
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">
+              Impôt sur le Revenu des Valeurs Mobilières (IRVM)
+            </h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Ne s'applique qu'en cas de distribution de dividendes ou de cession de parts —
+              événement rare pour une SARL non cotée (Art. 70-78 CGI).
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {IRVM_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    {field.label} ({field.suffix})
+                  </label>
+                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  {errors[field.name] && (
+                    <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
+                  )}
+                </div>
+              ))}
             </div>
           </Card>
 
