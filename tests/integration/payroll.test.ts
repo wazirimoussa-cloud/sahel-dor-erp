@@ -248,4 +248,63 @@ describe.skipIf(!hasCredentials)("module paie (Formation, réel)", () => {
       expect(secondRepaymentErr).not.toBeNull();
     },
   );
+
+  it("un enregistrement de congé/absence se crée, se liste et se supprime (aucun impact comptable)", async () => {
+    const employeeId = await createEmployee("E");
+
+    const { data: leave, error: leaveErr } = await comptable
+      .from("leave_records")
+      .insert({
+        company_id: companyId,
+        employee_id: employeeId,
+        type: "conge_paye",
+        start_date: "2026-08-10",
+        end_date: "2026-08-14",
+        reason: `${tag} congé`,
+        user_id: (await comptable.auth.getUser()).data.user!.id,
+      })
+      .select("id")
+      .single();
+    expect(leaveErr).toBeNull();
+
+    const { data: found, error: findErr } = await comptable
+      .from("leave_records")
+      .select("id, type, start_date, end_date")
+      .eq("id", leave!.id)
+      .single();
+    expect(findErr).toBeNull();
+    expect(found!.type).toBe("conge_paye");
+
+    // Aucune écriture comptable ne doit être générée par un enregistrement de congé.
+    const { data: entries } = await comptable
+      .from("journal_entries")
+      .select("id")
+      .eq("company_id", companyId)
+      .ilike("description", `%${tag} E%`);
+    expect(entries?.length ?? 0).toBe(0);
+
+    // Contrairement à payslips/salary_advances, un congé reste modifiable/supprimable.
+    const { error: deleteErr } = await comptable.from("leave_records").delete().eq("id", leave!.id);
+    expect(deleteErr).toBeNull();
+
+    const { data: afterDelete } = await comptable
+      .from("leave_records")
+      .select("id")
+      .eq("id", leave!.id);
+    expect(afterDelete ?? []).toHaveLength(0);
+  });
+
+  it("un profil sans paie.gerer ne peut pas créer d'enregistrement de congé/absence", async () => {
+    const employeeId = await createEmployee("F");
+
+    const { error } = await gerant.from("leave_records").insert({
+      company_id: companyId,
+      employee_id: employeeId,
+      type: "maladie",
+      start_date: "2026-08-01",
+      end_date: "2026-08-02",
+      user_id: (await gerant.auth.getUser()).data.user!.id,
+    });
+    expect(error).not.toBeNull();
+  });
 });

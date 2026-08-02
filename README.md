@@ -1060,9 +1060,9 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       comme fiable, sur une donnée qui impacte directement ce qui est versé aux
       employés et à l'État.
     - **Hors périmètre v1**, volontairement, même philosophie que le reste de
-      l'app : avances sur salaire (**voir point 51**, ajouté juste après), pas de
-      congés/absences, pas de versionnage de salaire (`base_salary` est une valeur
-      courante simple, comme `products.price`).
+      l'app : avances sur salaire (**voir point 51**) et congés/absences (**voir
+      point 52**), ajoutés juste après ; pas de versionnage de salaire
+      (`base_salary` est une valeur courante simple, comme `products.price`).
     - `tests/integration/payroll.test.ts` : bulletin avec retenues (écriture à 4
       lignes équilibrée), bulletin sans retenue (2 lignes seulement — vérifie les
       blocs conditionnels de `create_payslip`), et garde de non-régression RBAC (un
@@ -1101,6 +1101,30 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       équilibrée), remboursement sur un bulletin (net réduit, 3 lignes — pas de
       431/447 dans ce scénario), et garde de non-régression (une avance déjà
       remboursée ne peut pas l'être une seconde fois).
+
+52. **Congés / absences — registre simple** (`0065_conges_absences.sql`) : dernier
+    point volontairement laissé hors périmètre du module paie v1. Contrairement aux
+    taux fiscaux (CGI fourni et vérifié), il n'existe **aucun texte de référence**
+    pour les règles d'acquisition de congés payés (Code du Travail) — un suivi de
+    solde acquis/pris aurait exigé d'inventer ces règles sur une donnée qui affecte
+    les droits réels des employés, décision confirmée avec l'utilisateur de rester
+    sur un simple registre.
+    - **`leave_records`** : employé, type (`conge_paye`/`maladie`/
+      `absence_non_justifiee`/`autre`, enum Postgres), dates de début/fin
+      (contrainte `end_date >= start_date`), motif optionnel. **Aucun calcul de
+      solde, aucun lien automatique avec la paie** — si une absence doit réduire un
+      salaire, le comptable ajuste manuellement le salaire brut du bulletin
+      concerné, comme pour toutes les autres retenues du module.
+    - Contrairement à `payslips`/`salary_advances`, un congé n'a **aucun impact
+      comptable** (aucune écriture générée) : il reste directement modifiable et
+      supprimable via RLS (même patron que `employees`), pas un fait financier
+      immuable — une correction de date ne casse aucune traçabilité comptable
+      puisqu'il n'y en a pas.
+    - Section "Congés / absences" ajoutée à l'écran `/paie` : formulaire (gardé par
+      `paie.gerer`) et liste avec bouton "Supprimer".
+    - `tests/integration/payroll.test.ts` étendu : création/lecture/suppression,
+      vérification qu'aucune écriture comptable n'est générée, et garde RBAC (un
+      profil sans `paie.gerer` ne peut pas créer d'enregistrement).
 
 ## Limites connues / pistes pour la suite
 
@@ -1179,12 +1203,13 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   supprimable.
 - **Module Ressources Humaines** : mentionné dans une version affinée du cahier des
   charges fournie par l'utilisateur ("gestion des stocks, achats/ventes, production,
-  finances et ressources humaines"). **Depuis le point 50**, un premier module paie
-  minimal existe (`/employes`, `/paie`) — employés, bulletins de paie, écriture
-  comptable générée. Reste hors périmètre : calcul automatique de l'ITS/pension
-  (saisis manuellement, décision confirmée — voir point 50), avances sur salaire,
-  congés/absences, versionnage de salaire, et tout le reste d'un vrai module RH
-  (recrutement, évaluation, contrats).
+  finances et ressources humaines"). **Depuis les points 50-52**, un module paie
+  minimal existe (`/employes`, `/paie`) — employés, bulletins de paie avec écriture
+  comptable générée, avances sur salaire, registre de congés/absences. Reste hors
+  périmètre : calcul automatique de l'ITS/pension (saisis manuellement, décision
+  confirmée — voir point 50), solde de congés acquis/pris (registre simple
+  uniquement, voir point 52 — aucun texte du Code du Travail fourni), versionnage de
+  salaire, et tout le reste d'un vrai module RH (recrutement, évaluation, contrats).
 - **Un produit créé via le formulaire "Produits" n'obtient toujours pas de ligne
   `product_stocks`** (`useCreateProduct`, insert direct dans `products`, sans passer par
   une transaction) : c'est le bug corrigé rétroactivement en Phase 14 (points 24, `0022`)

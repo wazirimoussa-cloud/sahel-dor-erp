@@ -462,6 +462,64 @@ export type Database = {
           },
         ]
       }
+      leave_records: {
+        Row: {
+          company_id: string
+          created_at: string
+          employee_id: string
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+          type: Database["public"]["Enums"]["leave_type"]
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          employee_id: string
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+          type: Database["public"]["Enums"]["leave_type"]
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+          type?: Database["public"]["Enums"]["leave_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_records_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_records_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logs: {
         Row: {
           action: string
@@ -2278,6 +2336,7 @@ export type Database = {
       }
     }
     Enums: {
+      leave_type: "conge_paye" | "maladie" | "absence_non_justifiee" | "autre"
       order_status: "pending" | "validated" | "cancelled"
       payment_status: "unpaid" | "partial" | "paid"
       purchase_status: "pending" | "received" | "cancelled"
@@ -2412,6 +2471,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      leave_type: ["conge_paye", "maladie", "absence_non_justifiee", "autre"],
       order_status: ["pending", "validated", "cancelled"],
       payment_status: ["unpaid", "partial", "paid"],
       purchase_status: ["pending", "received", "cancelled"],
