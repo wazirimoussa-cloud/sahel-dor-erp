@@ -1030,6 +1030,47 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     salarié : un vrai calcul suppose un module paie (employés, salaire mensuel,
     nombre de charges) qui reste un chantier à part, pas un taux fiscal de plus.
 
+50. **Module paie v1 — employés et bulletins de paie** (`0063_module_paie.sql`,
+    pages `/employes` et `/paie`) : premier vrai chantier RH de l'app, après que le
+    point 49 a posé le barème ITS de référence sans aucun suivi de salarié. Nouveau
+    module d'attribution `paie` (`paie.gerer`, `paie.consulter`) — une seule
+    attribution de gestion en v1, pas de séparation des tâches type achats/ventes
+    (équipe RH/paie réduite, comptable/admin).
+    - **`employees`** : fiche simple (nom, poste, salaire de base, charges de
+      famille), écriture directe via RLS (comme `chart_of_accounts`, pas de RPC —
+      créer un employé ne génère aucune écriture comptable). `active` réutilise le
+      patron d'archivage déjà en place (produits, entrepôts, fournisseurs...) : un
+      employé qui part se désactive, jamais supprimé (traçabilité des bulletins déjà
+      émis, même raison que pour les comptes utilisateurs).
+    - **`payslips`** (bulletins de paie) : **append-only**, comme toutes les autres
+      écritures financières de l'app (achats, ventes, productions) — pas de
+      modification/suppression une fois créé, une correction se fait par un nouveau
+      bulletin. Créés exclusivement via `create_payslip()` (patron exact de
+      `create_production`), qui calcule `net_pay = brut - pension - ITS` et génère
+      une écriture `'PAIE'` équilibrée : débit `661` (charges de personnel), crédit
+      `421` (net à payer), crédit `431` (retenue pension, si > 0), crédit `447`
+      (retenue ITS, si > 0).
+    - **Décision confirmée avec l'utilisateur, cœur de la portée v1** : les retenues
+      pension et ITS sont **saisies manuellement** par le comptable (aidé du barème
+      du point 49), pas calculées automatiquement. Le CGI ne garantit pas l'ordre
+      exact d'application des déductions (pension plafonnée à 6% Art. 60, abattement
+      10% frais professionnels, abattement charges de famille, puis barème
+      progressif), et le taux réel de cotisation pension/CNSS relève d'un texte hors
+      CGI — un calcul automatique aurait pu produire un montant faux mais présenté
+      comme fiable, sur une donnée qui impacte directement ce qui est versé aux
+      employés et à l'État.
+    - **Hors périmètre v1**, volontairement, même philosophie que le reste de
+      l'app : pas d'avances sur salaire, pas de congés/absences, pas de versionnage
+      de salaire (`base_salary` est une valeur courante simple, comme
+      `products.price`).
+    - `tests/integration/payroll.test.ts` : bulletin avec retenues (écriture à 4
+      lignes équilibrée), bulletin sans retenue (2 lignes seulement — vérifie les
+      blocs conditionnels de `create_payslip`), et garde de non-régression RBAC (un
+      profil sans `paie.gerer` ne peut pas créer de bulletin). `paie.gerer` accordé à
+      `comptable.formation` pour les tests — décision cohérente avec ses autres
+      attributions financières déjà en place (`comptabilite.gerer_plan_comptable`,
+      `gerer_immobilisations`, `modifier_capital_social`).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
@@ -1107,8 +1148,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   supprimable.
 - **Module Ressources Humaines** : mentionné dans une version affinée du cahier des
   charges fournie par l'utilisateur ("gestion des stocks, achats/ventes, production,
-  finances et ressources humaines") mais explicitement hors périmètre pour l'instant —
-  aucune fiche employé, aucun suivi RH ou paie dans l'app.
+  finances et ressources humaines"). **Depuis le point 50**, un premier module paie
+  minimal existe (`/employes`, `/paie`) — employés, bulletins de paie, écriture
+  comptable générée. Reste hors périmètre : calcul automatique de l'ITS/pension
+  (saisis manuellement, décision confirmée — voir point 50), avances sur salaire,
+  congés/absences, versionnage de salaire, et tout le reste d'un vrai module RH
+  (recrutement, évaluation, contrats).
 - **Un produit créé via le formulaire "Produits" n'obtient toujours pas de ligne
   `product_stocks`** (`useCreateProduct`, insert direct dans `products`, sans passer par
   une transaction) : c'est le bug corrigé rétroactivement en Phase 14 (points 24, `0022`)

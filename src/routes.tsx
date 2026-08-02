@@ -92,6 +92,10 @@ const VatDeclarationPage = lazy(() =>
 const VatSettingsPage = lazy(() =>
   import("@/features/accounting/VatSettingsPage").then((m) => ({ default: m.VatSettingsPage })),
 );
+const EmployeesPage = lazy(() =>
+  import("@/features/payroll/EmployeesPage").then((m) => ({ default: m.EmployeesPage })),
+);
+const PayePage = lazy(() => import("@/features/payroll/PayePage").then((m) => ({ default: m.PayePage })));
 
 function RouteFallback() {
   return <div className="flex h-screen items-center justify-center text-gray-500">Chargement…</div>;
@@ -360,6 +364,26 @@ export function AppRoutes() {
             <ProtectedRoute requiredModule="comptabilite">
               <AppShell>
                 <VatSettingsPage />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employes"
+          element={
+            <ProtectedRoute requiredModule="paie">
+              <AppShell>
+                <EmployeesPage />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/paie"
+          element={
+            <ProtectedRoute requiredModule="paie">
+              <AppShell>
+                <PayePage />
               </AppShell>
             </ProtectedRoute>
           }

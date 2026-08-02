@@ -250,6 +250,47 @@ export type Database = {
         }
         Relationships: []
       }
+      employees: {
+        Row: {
+          active: boolean
+          base_salary: number
+          company_id: string
+          created_at: string
+          family_dependents: number
+          full_name: string
+          id: string
+          position: string | null
+        }
+        Insert: {
+          active?: boolean
+          base_salary?: number
+          company_id: string
+          created_at?: string
+          family_dependents?: number
+          full_name: string
+          id?: string
+          position?: string | null
+        }
+        Update: {
+          active?: boolean
+          base_salary?: number
+          company_id?: string
+          created_at?: string
+          family_dependents?: number
+          full_name?: string
+          id?: string
+          position?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixed_assets: {
         Row: {
           acquisition_cost: number
@@ -313,6 +354,7 @@ export type Database = {
           id: string
           journal_code: string
           order_id: string | null
+          payslip_id: string | null
           production_id: string | null
           purchase_id: string | null
         }
@@ -324,6 +366,7 @@ export type Database = {
           id?: string
           journal_code: string
           order_id?: string | null
+          payslip_id?: string | null
           production_id?: string | null
           purchase_id?: string | null
         }
@@ -335,6 +378,7 @@ export type Database = {
           id?: string
           journal_code?: string
           order_id?: string | null
+          payslip_id?: string | null
           production_id?: string | null
           purchase_id?: string | null
         }
@@ -351,6 +395,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_payslip_id_fkey"
+            columns: ["payslip_id"]
+            isOneToOne: false
+            referencedRelation: "payslips"
             referencedColumns: ["id"]
           },
           {
@@ -588,6 +639,67 @@ export type Database = {
             columns: ["warehouse_id"]
             isOneToOne: false
             referencedRelation: "warehouses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payslips: {
+        Row: {
+          company_id: string
+          created_at: string
+          employee_id: string
+          gross_salary: number
+          id: string
+          its_withholding: number
+          net_pay: number
+          pension_withholding: number
+          period: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          employee_id: string
+          gross_salary: number
+          id?: string
+          its_withholding?: number
+          net_pay: number
+          pension_withholding?: number
+          period: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          gross_salary?: number
+          id?: string
+          its_withholding?: number
+          net_pay?: number
+          pension_withholding?: number
+          period?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1790,6 +1902,27 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_payslip: {
+        Args: { payload: Json }
+        Returns: {
+          company_id: string
+          created_at: string
+          employee_id: string
+          gross_salary: number
+          id: string
+          its_withholding: number
+          net_pay: number
+          pension_withholding: number
+          period: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payslips"
           isOneToOne: true
           isSetofReturn: false
         }
