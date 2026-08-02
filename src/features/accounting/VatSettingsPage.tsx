@@ -28,6 +28,8 @@ const fiscalRatesSchema = z.object({
   irvmObligationsRate: percentField(),
   droitsEnregistrementActesSociete: amountField,
   droitsEnregistrementFondsCommerceRate: percentField(),
+  taxePublicitePanneauPapierRate: amountField,
+  taxePublicitePanneauAutreRate: amountField,
 });
 
 function computeTaxeProfessionnelle(values: {
@@ -200,6 +202,29 @@ const DROITS_ENREGISTREMENT_FIELDS: {
   },
 ];
 
+const TAXE_PUBLICITE_FIELDS: {
+  name: keyof FiscalRatesFormValues;
+  column: keyof Pick<CompanyRow, "taxe_publicite_panneau_papier_rate" | "taxe_publicite_panneau_autre_rate">;
+  label: string;
+  suffix: string;
+  help: string;
+}[] = [
+  {
+    name: "taxePublicitePanneauPapierRate",
+    column: "taxe_publicite_panneau_papier_rate",
+    label: "Panneau — papier ordinaire",
+    suffix: "FCFA / m² / an",
+    help: "Papier non protégé (Art. 24 CGI, taxe communale — pas d'écriture comptable automatique).",
+  },
+  {
+    name: "taxePublicitePanneauAutreRate",
+    column: "taxe_publicite_panneau_autre_rate",
+    label: "Panneau — autre matériau",
+    suffix: "FCFA / m² / an",
+    help: "Toile, bois, porcelaine, banderole, véhicule publicitaire (Art. 24 CGI).",
+  },
+];
+
 export function VatSettingsPage() {
   const { hasAttribution } = useAuth();
   const { data: company, isLoading, error } = useCompanySettings();
@@ -236,6 +261,8 @@ export function VatSettingsPage() {
         irvmObligationsRate: company.irvm_obligations_rate,
         droitsEnregistrementActesSociete: company.droits_enregistrement_actes_societe,
         droitsEnregistrementFondsCommerceRate: company.droits_enregistrement_fonds_commerce_rate,
+        taxePublicitePanneauPapierRate: company.taxe_publicite_panneau_papier_rate,
+        taxePublicitePanneauAutreRate: company.taxe_publicite_panneau_autre_rate,
       });
     }
   }, [company, reset]);
@@ -358,6 +385,24 @@ export function VatSettingsPage() {
               ))}
             </dl>
           </Card>
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">Taxe sur la publicité commerciale extérieure</h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Taxe communale à 5 tarifs selon le support (prospectus, panneaux, annonces
+              lumineuses, projections, haut-parleurs) — seul le cas le plus courant pour
+              un commerce, le panneau/enseigne extérieure, est repris ici (Art. 23-24 CGI).
+            </p>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {TAXE_PUBLICITE_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
+                  <dd className="text-lg font-semibold text-forest-900">
+                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
         </>
       )}
 
@@ -456,6 +501,30 @@ export function VatSettingsPage() {
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {DROITS_ENREGISTREMENT_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    {field.label} ({field.suffix})
+                  </label>
+                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  {errors[field.name] && (
+                    <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">Taxe sur la publicité commerciale extérieure</h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Taxe communale à 5 tarifs selon le support (prospectus, panneaux, annonces
+              lumineuses, projections, haut-parleurs) — seul le cas le plus courant pour
+              un commerce, le panneau/enseigne extérieure, est repris ici (Art. 23-24 CGI).
+              L'app ne suit pas la surface réelle des panneaux (à multiplier manuellement).
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {TAXE_PUBLICITE_FIELDS.map((field) => (
                 <div key={field.name}>
                   <label className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})

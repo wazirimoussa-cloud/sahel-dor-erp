@@ -985,10 +985,25 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       avec le reste de l'écran.
     - **Taxe sur la publicité** (`Livre III`) : c'est en réalité la « taxe sur la
       publicité commerciale extérieure », une taxe **communale** (comme la taxe de
-      voirie ou la taxe municipale), à tarif par panneau/jour, pas un pourcentage.
-      Reste hors périmètre.
+      voirie ou la taxe municipale), avec un tarif détaillé par support (`Art. 24`).
+      **Repris partiellement** (voir point 47) — le reste (successions, immeubles,
+      jugements de droits d'enregistrement) reste hors périmètre.
     - **Droits fonciers** : procédure d'immatriculation foncière, événement ponctuel
       (achat de terrain), pas un taux récurrent. Reste hors périmètre.
+
+47. **Taxe sur la publicité commerciale extérieure — panneau/enseigne**
+    (`0061_taxe_publicite_panneau.sql`) : la taxe couvre en réalité 5 supports très
+    différents (prospectus, panneaux, annonces lumineuses, projections en salle,
+    haut-parleurs), chacun avec sa propre unité de tarification (par 100 unités
+    distribuées, par m²/an, par opération, par jour...). Seul le cas le plus
+    universel pour un commerce physique est repris, décision confirmée avec
+    l'utilisateur : **panneau/enseigne extérieure**, avec ses 2 variantes de
+    matériau (`Art. 24`) — 10 000 FCFA/m²/an (papier ordinaire non protégé) ou
+    15 000 FCFA/m²/an (toile, bois, porcelaine, banderole, véhicule publicitaire).
+    Les autres supports (tracts, haut-parleurs, annonces lumineuses, projections)
+    restent hors périmètre, trop situationnels. Comme pour le reste de l'écran :
+    référence de calcul manuel, aucune écriture comptable automatique, et l'app ne
+    suit pas la surface réelle des panneaux (à multiplier manuellement).
 
 ## Limites connues / pistes pour la suite
 

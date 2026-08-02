@@ -189,6 +189,8 @@ export type Database = {
           taxe_professionnelle_plancher: number
           taxe_professionnelle_rate: number
           taxe_professionnelle_valeur_locative: number
+          taxe_publicite_panneau_autre_rate: number
+          taxe_publicite_panneau_papier_rate: number
           vat_rate: number
         }
         Insert: {
@@ -213,6 +215,8 @@ export type Database = {
           taxe_professionnelle_plancher?: number
           taxe_professionnelle_rate?: number
           taxe_professionnelle_valeur_locative?: number
+          taxe_publicite_panneau_autre_rate?: number
+          taxe_publicite_panneau_papier_rate?: number
           vat_rate?: number
         }
         Update: {
@@ -237,6 +241,8 @@ export type Database = {
           taxe_professionnelle_plancher?: number
           taxe_professionnelle_rate?: number
           taxe_professionnelle_valeur_locative?: number
+          taxe_publicite_panneau_autre_rate?: number
+          taxe_publicite_panneau_papier_rate?: number
           vat_rate?: number
         }
         Relationships: []

@@ -8,7 +8,7 @@ export function useCompanySettings() {
       const { data, error } = await supabase
         .from("companies")
         .select(
-          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative, irvm_dividendes_rate, irvm_plus_values_cession_rate, irvm_obligations_rate, droits_enregistrement_actes_societe, droits_enregistrement_fonds_commerce_rate",
+          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative, irvm_dividendes_rate, irvm_plus_values_cession_rate, irvm_obligations_rate, droits_enregistrement_actes_societe, droits_enregistrement_fonds_commerce_rate, taxe_publicite_panneau_papier_rate, taxe_publicite_panneau_autre_rate",
         )
         .single();
       if (error) throw error;
@@ -32,6 +32,8 @@ export interface FiscalRates {
   irvmObligationsRate: number;
   droitsEnregistrementActesSociete: number;
   droitsEnregistrementFondsCommerceRate: number;
+  taxePublicitePanneauPapierRate: number;
+  taxePublicitePanneauAutreRate: number;
 }
 
 export function useUpdateFiscalRates() {
@@ -55,6 +57,8 @@ export function useUpdateFiscalRates() {
           irvm_obligations_rate: rates.irvmObligationsRate,
           droits_enregistrement_actes_societe: rates.droitsEnregistrementActesSociete,
           droits_enregistrement_fonds_commerce_rate: rates.droitsEnregistrementFondsCommerceRate,
+          taxe_publicite_panneau_papier_rate: rates.taxePublicitePanneauPapierRate,
+          taxe_publicite_panneau_autre_rate: rates.taxePublicitePanneauAutreRate,
         })
         .eq("id", companyId);
       if (error) throw error;
