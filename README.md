@@ -917,16 +917,19 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
         condition. Les 10%/5% initialement retenus (1,5%/5%/10% dans la version
         provisoire) ne s'appliquent en réalité qu'aux personnes physiques — non
         pertinent pour une SARL comme Sahel d'Or.
-      - **Taxe professionnelle (patente) retirée de l'écran** : `Art. 174-176`
-        révèlent que ce n'est pas un taux unique mais un droit fixe (1‰ du chiffre
-        d'affaires de l'année précédente, minimum 150 000 FCFA) **+** un droit
-        proportionnel (10% de la valeur locative des locaux professionnels) — un champ
-        `taxe_professionnelle_rate` à taux unique ne peut pas représenter ce calcul.
-        La colonne reste en base (créée en `0030`, jamais supprimée) mais n'est plus
-        lue/écrite par `useCompanySettings.ts` ni affichée dans l'écran, faute d'un
-        modèle à deux composantes — et l'app ne suit de toute façon ni le chiffre
-        d'affaires ni la valeur locative nécessaires à son calcul.
-      **Toujours aucun calcul automatique** sur les 3 taux hors TVA : ce sont des
+      - **Taxe professionnelle (patente)** (`0057_taxe_professionnelle_structure.sql`) :
+        `Art. 174-176` révèlent que ce n'est pas un taux unique mais un droit fixe
+        **+** un droit proportionnel — la colonne `taxe_professionnelle_rate`
+        (créée en `0030`) ne pouvait pas le représenter, elle reste en base mais
+        n'est plus lue/écrite. 3 nouvelles colonnes portent les constantes légales,
+        sans condition propre à Sahel d'Or, seedées directement : droit fixe = **1‰**
+        du chiffre d'affaires de l'année précédente (`Art. 175`), plancher du droit
+        fixe = **150 000 FCFA** (`Art. 175`), droit proportionnel = **10%** de la
+        valeur locative des locaux professionnels (`Art. 176`). Section dédiée dans
+        l'écran, même garde d'attribution — l'app ne suit toujours ni le chiffre
+        d'affaires annuel ni la valeur locative des locaux, donc pas de montant réel
+        calculé, seulement les 3 constantes de référence.
+      **Toujours aucun calcul automatique** sur les taux hors TVA : ce sont des
       références de calcul manuel tant que le mécanisme exact (assiette, périodicité,
       compte de contrepartie) n'est pas confirmé — mêmes réserves qu'aux points 28/31.
     - `magasinier.formation` aligné sur `saheldor2026-testAB`, comme les 4 autres
