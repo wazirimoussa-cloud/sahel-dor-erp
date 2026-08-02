@@ -182,6 +182,7 @@ export type Database = {
           nif: string | null
           precompte_isb_rate: number
           rccm: string | null
+          redevance_domaine_public_rate: number
           taxe_immobiliere_rate: number
           taxe_professionnelle_ca_annuel: number
           taxe_professionnelle_droit_fixe_pour_mille: number
@@ -208,6 +209,7 @@ export type Database = {
           nif?: string | null
           precompte_isb_rate?: number
           rccm?: string | null
+          redevance_domaine_public_rate?: number
           taxe_immobiliere_rate?: number
           taxe_professionnelle_ca_annuel?: number
           taxe_professionnelle_droit_fixe_pour_mille?: number
@@ -234,6 +236,7 @@ export type Database = {
           nif?: string | null
           precompte_isb_rate?: number
           rccm?: string | null
+          redevance_domaine_public_rate?: number
           taxe_immobiliere_rate?: number
           taxe_professionnelle_ca_annuel?: number
           taxe_professionnelle_droit_fixe_pour_mille?: number

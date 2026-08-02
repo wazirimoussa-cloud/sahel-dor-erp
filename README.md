@@ -989,7 +989,8 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       **Repris partiellement** (voir point 47) — le reste (successions, immeubles,
       jugements de droits d'enregistrement) reste hors périmètre.
     - **Droits fonciers** : procédure d'immatriculation foncière, événement ponctuel
-      (achat de terrain), pas un taux récurrent. Reste hors périmètre.
+      (achat de terrain), surtout une grille de prix d'acquisition domaniale. **Repris
+      partiellement** (voir point 48).
 
 47. **Taxe sur la publicité commerciale extérieure — panneau/enseigne**
     (`0061_taxe_publicite_panneau.sql`) : la taxe couvre en réalité 5 supports très
@@ -1004,6 +1005,19 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     restent hors périmètre, trop situationnels. Comme pour le reste de l'écran :
     référence de calcul manuel, aucune écriture comptable automatique, et l'app ne
     suit pas la surface réelle des panneaux (à multiplier manuellement).
+
+48. **Droits fonciers — redevance d'occupation du domaine public**
+    (`0062_redevance_domaine_public.sql`) : le « Livre foncier » du CGI est surtout
+    une grille de prix d'acquisition de terrain domanial (`Art. 912`, dizaines de
+    villes/zones, de 100 à 2 000+ FCFA/m² selon la commune et l'usage) et une
+    exception historique (`Art. 913`, concessions attribuées avant 1993) — trop
+    conditionnel/complexe pour un champ de référence. Un seul point est propre et
+    non conditionnel, décision confirmée avec l'utilisateur (Sahel d'Or occupe un
+    terrain du domaine public pour son activité) : la **redevance annuelle pour
+    occupation du domaine public à usage commercial** (`Art. 914`), 5 000 FCFA/m²/an.
+    Comme pour le reste de l'écran : référence de calcul manuel, aucune écriture
+    comptable automatique, et l'app ne suit pas la surface réellement occupée (à
+    multiplier manuellement).
 
 ## Limites connues / pistes pour la suite
 

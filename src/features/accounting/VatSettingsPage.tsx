@@ -30,6 +30,7 @@ const fiscalRatesSchema = z.object({
   droitsEnregistrementFondsCommerceRate: percentField(),
   taxePublicitePanneauPapierRate: amountField,
   taxePublicitePanneauAutreRate: amountField,
+  redevanceDomainePublicRate: amountField,
 });
 
 function computeTaxeProfessionnelle(values: {
@@ -225,6 +226,22 @@ const TAXE_PUBLICITE_FIELDS: {
   },
 ];
 
+const DROITS_FONCIERS_FIELDS: {
+  name: keyof FiscalRatesFormValues;
+  column: keyof Pick<CompanyRow, "redevance_domaine_public_rate">;
+  label: string;
+  suffix: string;
+  help: string;
+}[] = [
+  {
+    name: "redevanceDomainePublicRate",
+    column: "redevance_domaine_public_rate",
+    label: "Occupation du domaine public — usage commercial",
+    suffix: "FCFA / m² / an",
+    help: "Redevance annuelle pour occupation d'un terrain du domaine public à usage commercial (Art. 914 CGI).",
+  },
+];
+
 export function VatSettingsPage() {
   const { hasAttribution } = useAuth();
   const { data: company, isLoading, error } = useCompanySettings();
@@ -263,6 +280,7 @@ export function VatSettingsPage() {
         droitsEnregistrementFondsCommerceRate: company.droits_enregistrement_fonds_commerce_rate,
         taxePublicitePanneauPapierRate: company.taxe_publicite_panneau_papier_rate,
         taxePublicitePanneauAutreRate: company.taxe_publicite_panneau_autre_rate,
+        redevanceDomainePublicRate: company.redevance_domaine_public_rate,
       });
     }
   }, [company, reset]);
@@ -403,6 +421,24 @@ export function VatSettingsPage() {
               ))}
             </dl>
           </Card>
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">Droits fonciers</h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Surtout une grille de prix d'acquisition de terrain domanial (dizaines de
+              villes/zones) hors sujet ici — seul le cas pertinent pour Sahel d'Or est
+              repris (Livre foncier CGI).
+            </p>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {DROITS_FONCIERS_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
+                  <dd className="text-lg font-semibold text-forest-900">
+                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
         </>
       )}
 
@@ -525,6 +561,30 @@ export function VatSettingsPage() {
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {TAXE_PUBLICITE_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    {field.label} ({field.suffix})
+                  </label>
+                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  {errors[field.name] && (
+                    <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">Droits fonciers</h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Surtout une grille de prix d'acquisition de terrain domanial (dizaines de
+              villes/zones, Art. 912) hors sujet ici — seul le cas pertinent pour Sahel
+              d'Or est repris (Livre foncier CGI). L'app ne suit pas la surface réellement
+              occupée (à multiplier manuellement).
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {DROITS_FONCIERS_FIELDS.map((field) => (
                 <div key={field.name}>
                   <label className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
