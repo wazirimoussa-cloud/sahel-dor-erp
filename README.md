@@ -886,13 +886,37 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       d'une société pendant qu'un autre en insère rendait certaines assertions non
       fiables (observé en pratique entre `production-ledger` et `purchase-to-payment`).
 
+44. **Code-splitting, tests de stock/immobilisations, écran "Paramètres fiscaux"** :
+    - `src/routes.tsx` charge désormais les 24 pages via `React.lazy` (un seul
+      `<Suspense>` autour de `<Routes>`) au lieu d'imports statiques — le chunk
+      principal passe de ~1116 kB à ~549 kB. `LoginPage`/`ResetPasswordPage`/
+      `ForcePasswordChangePage` restent statiques (nécessaires avant authentification).
+    - `tests/integration/stock-and-assets.test.ts` couvre les RPC encore non testées :
+      mouvement manuel (insert direct, comme `useCreateTransaction`), `transfer_stock`,
+      `request_stock_loss`/`approve_stock_loss`/`reject_stock_loss` (perte sèche,
+      reconditionnement, rejet, et la garde de séparation des tâches sur l'approbation),
+      `create_fixed_asset`/`dispose_fixed_asset`.
+    - `/parametres-tva` devient **"Paramètres fiscaux"** (`VatSettingsPage.tsx`) : en
+      plus de la TVA, expose désormais en lecture/écriture (même garde
+      `comptabilite.modifier_capital_social`) les 4 taux préparés aux points 28/31 —
+      `impot_societes_rate`, `taxe_professionnelle_rate`, `precompte_isb_rate`,
+      `taxe_immobiliere_rate`. `0054_seed_impot_societes_rate.sql` fixe l'IS à **30%**
+      pour les deux sociétés — seul des 4 taux à ne dépendre d'aucune condition propre
+      à Sahel d'Or (SARL commerciale), transmis par l'utilisateur à partir de ses
+      recherches préalables, sous réserve de vérification directe dans le CGI à jour.
+      Le précompte ISB/IBA (2% fournisseur immatriculé / 7% sinon) et la taxe
+      immobilière (1,5%/5%/10% selon la catégorie du bien) dépendent de faits propres
+      à la société que l'app ne modélise pas encore (statut fiscal des fournisseurs,
+      catégorie du bien) — laissés à 0, à saisir directement dans l'écran une fois
+      connus. La taxe professionnelle (patente) n'a encore aucun taux, ni candidat.
+      **Toujours aucun calcul automatique** sur ces 4 taux (hors TVA) : ce sont des
+      références de calcul manuel tant que le mécanisme exact (assiette, périodicité,
+      compte de contrepartie) n'est pas confirmé — mêmes réserves qu'aux points 28/31.
+    - `magasinier.formation` aligné sur `saheldor2026-testAB`, comme les 4 autres
+      profils Formation.
+
 ## Limites connues / pistes pour la suite
 
-- **Bundle frontend** : ~600 kB non compressé pour le chunk principal (avertissement
-  Vite au build) — `jsPDF`/`jspdf-autotable` n'y contribuent pas (chargées en `import()`
-  dynamique, dans des chunks séparés téléchargés seulement au clic sur un bouton PDF),
-  mais le chunk principal lui-même dépasse déjà le seuil. Un code-splitting par route
-  (`React.lazy`) serait pertinent si l'app continue de grossir.
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
 - **Comptabilité** : périmètre volontairement réduit (voir points 13-14, 43) —

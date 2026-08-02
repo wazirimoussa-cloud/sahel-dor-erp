@@ -78,7 +78,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/journal-comptable", label: "Journal comptable", icon: NotebookText, module: "journal_comptable" },
   { to: "/etats-financiers", label: "États financiers", icon: LineChart, module: "etats_financiers" },
   { to: "/declaration-tva", label: "Déclaration TVA", icon: Receipt, module: "etats_financiers" },
-  { to: "/parametres-tva", label: "Paramètres TVA", icon: Percent, module: "comptabilite" },
+  { to: "/parametres-tva", label: "Paramètres fiscaux", icon: Percent, module: "comptabilite" },
   { to: "/logs", label: "Journal d'audit", icon: History, module: "journal_audit" },
   { to: "/users", label: "Utilisateurs", icon: UserCog, module: "utilisateurs" },
   { to: "/account", label: "Mon compte", icon: UserCircle },
