@@ -961,19 +961,28 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       nom ou une variante proche. L'entrée initiale (issue d'une recherche antérieure
       non vérifiée contre le texte réel) n'a pas pu être confirmée — à retirer de
       l'inventaire tant qu'une source ne la confirme pas.
-    - **Droits d'enregistrement** (`Livre III`) : confirmé, mais c'est un grand tarif
-      variable (fixe, proportionnel ou progressif selon la nature de l'acte — vente,
-      donation, jugement...), pas un taux unique représentable dans l'écran. Reste
-      hors périmètre, comme prévu.
+    - **Droits d'enregistrement** (`Livre III`, ~59 articles) : confirmé, et c'est
+      bien un grand tarif variable (fixe, proportionnel ou progressif selon la
+      nature de l'acte — succession, immeuble, jugement, contrat de mariage,
+      aéronef...), largement hors sujet pour une SARL commerciale. **Repris
+      partiellement** (migration `0060_droits_enregistrement.sql`, décision
+      confirmée avec l'utilisateur) : seuls les 2 cas pertinents pour le
+      fonctionnement de Sahel d'Or, en évitant de répliquer tout le tarif —
+      **actes de société** (`Art. 489` : constitution, augmentation de capital,
+      fusion, cession d'actions/parts — droit **fixe** de 6 000 FCFA, quel que
+      soit le montant de l'acte) et **cession de fonds de commerce** (10%, si
+      rachat/revente d'un commerce complet plutôt qu'une opération d'achat-revente
+      de stock classique). Le reste du tarif (successions, immeubles, jugements,
+      contrats de mariage, aéronefs...) reste hors périmètre.
     - **IRVM** (`Art. 70-78` — le texte utilise ce nom, pas « IRCM ») : confirmé et
-      modélisable, contrairement au reste de la liste — taux simples (`Art. 74`) :
-      10% dividendes (7% si société cotée CREPMF/UEMOA), 7% plus-values de cession
-      d'actions/parts, 6% revenus d'obligations. **Ajouté à l'écran** (migration
-      `0059_irvm_rates.sql`, 3 nouveaux champs `companies.irvm_*`, section dédiée
-      dans `VatSettingsPage.tsx`) — reste un événement rare pour une SARL non cotée
-      (distribution de dividendes, cession de parts), mais contrairement à l'ITS ou
-      aux droits d'enregistrement, ce sont de vrais pourcentages sans mécanisme à
-      construire, donc cohérent avec le reste de l'écran.
+      modélisable — taux simples (`Art. 74`) : 10% dividendes (7% si société cotée
+      CREPMF/UEMOA), 7% plus-values de cession d'actions/parts, 6% revenus
+      d'obligations. **Ajouté à l'écran** (migration `0059_irvm_rates.sql`, 3
+      nouveaux champs `companies.irvm_*`, section dédiée dans
+      `VatSettingsPage.tsx`) — reste un événement rare pour une SARL non cotée
+      (distribution de dividendes, cession de parts), mais contrairement à l'ITS,
+      ce sont de vrais pourcentages sans mécanisme à construire, donc cohérent
+      avec le reste de l'écran.
     - **Taxe sur la publicité** (`Livre III`) : c'est en réalité la « taxe sur la
       publicité commerciale extérieure », une taxe **communale** (comme la taxe de
       voirie ou la taxe municipale), à tarif par panneau/jour, pas un pourcentage.

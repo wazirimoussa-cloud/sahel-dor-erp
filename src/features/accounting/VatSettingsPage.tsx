@@ -26,6 +26,8 @@ const fiscalRatesSchema = z.object({
   irvmDividendesRate: percentField(),
   irvmPlusValuesCessionRate: percentField(),
   irvmObligationsRate: percentField(),
+  droitsEnregistrementActesSociete: amountField,
+  droitsEnregistrementFondsCommerceRate: percentField(),
 });
 
 function computeTaxeProfessionnelle(values: {
@@ -175,6 +177,29 @@ const IRVM_FIELDS: {
   },
 ];
 
+const DROITS_ENREGISTREMENT_FIELDS: {
+  name: keyof FiscalRatesFormValues;
+  column: keyof Pick<CompanyRow, "droits_enregistrement_actes_societe" | "droits_enregistrement_fonds_commerce_rate">;
+  label: string;
+  suffix: string;
+  help: string;
+}[] = [
+  {
+    name: "droitsEnregistrementActesSociete",
+    column: "droits_enregistrement_actes_societe",
+    label: "Actes de société (droit fixe)",
+    suffix: "FCFA",
+    help: "Constitution, augmentation de capital, fusion, cession d'actions/parts — droit fixe, quel que soit le montant de l'acte (Art. 489 CGI).",
+  },
+  {
+    name: "droitsEnregistrementFondsCommerceRate",
+    column: "droits_enregistrement_fonds_commerce_rate",
+    label: "Cession de fonds de commerce",
+    suffix: "%",
+    help: "Rachat/revente d'un commerce complet (pas une opération d'achat-revente de stock classique).",
+  },
+];
+
 export function VatSettingsPage() {
   const { hasAttribution } = useAuth();
   const { data: company, isLoading, error } = useCompanySettings();
@@ -209,6 +234,8 @@ export function VatSettingsPage() {
         irvmDividendesRate: company.irvm_dividendes_rate,
         irvmPlusValuesCessionRate: company.irvm_plus_values_cession_rate,
         irvmObligationsRate: company.irvm_obligations_rate,
+        droitsEnregistrementActesSociete: company.droits_enregistrement_actes_societe,
+        droitsEnregistrementFondsCommerceRate: company.droits_enregistrement_fonds_commerce_rate,
       });
     }
   }, [company, reset]);
@@ -313,6 +340,24 @@ export function VatSettingsPage() {
               ))}
             </dl>
           </Card>
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">Droits d'enregistrement</h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Le tarif complet couvre des dizaines de natures d'actes (successions,
+              immeubles, jugements...) hors sujet pour une SARL commerciale — seuls les
+              2 cas pertinents pour Sahel d'Or sont repris ici (Livre III CGI).
+            </p>
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {DROITS_ENREGISTREMENT_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
+                  <dd className="text-lg font-semibold text-forest-900">
+                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </Card>
         </>
       )}
 
@@ -388,6 +433,29 @@ export function VatSettingsPage() {
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {IRVM_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    {field.label} ({field.suffix})
+                  </label>
+                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  {errors[field.name] && (
+                    <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          <Card>
+            <h2 className="mb-1 text-sm font-bold text-forest-900">Droits d'enregistrement</h2>
+            <p className="mb-4 text-xs text-gray-500">
+              Le tarif complet couvre des dizaines de natures d'actes (successions,
+              immeubles, jugements...) hors sujet pour une SARL commerciale — seuls les
+              2 cas pertinents pour Sahel d'Or sont repris ici (Livre III CGI).
+            </p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {DROITS_ENREGISTREMENT_FIELDS.map((field) => (
                 <div key={field.name}>
                   <label className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})

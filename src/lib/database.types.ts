@@ -171,6 +171,8 @@ export type Database = {
           address: string | null
           capital_social: number
           created_at: string
+          droits_enregistrement_actes_societe: number
+          droits_enregistrement_fonds_commerce_rate: number
           id: string
           impot_societes_rate: number
           irvm_dividendes_rate: number
@@ -193,6 +195,8 @@ export type Database = {
           address?: string | null
           capital_social?: number
           created_at?: string
+          droits_enregistrement_actes_societe?: number
+          droits_enregistrement_fonds_commerce_rate?: number
           id?: string
           impot_societes_rate?: number
           irvm_dividendes_rate?: number
@@ -215,6 +219,8 @@ export type Database = {
           address?: string | null
           capital_social?: number
           created_at?: string
+          droits_enregistrement_actes_societe?: number
+          droits_enregistrement_fonds_commerce_rate?: number
           id?: string
           impot_societes_rate?: number
           irvm_dividendes_rate?: number

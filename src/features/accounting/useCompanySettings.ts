@@ -8,7 +8,7 @@ export function useCompanySettings() {
       const { data, error } = await supabase
         .from("companies")
         .select(
-          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative, irvm_dividendes_rate, irvm_plus_values_cession_rate, irvm_obligations_rate",
+          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative, irvm_dividendes_rate, irvm_plus_values_cession_rate, irvm_obligations_rate, droits_enregistrement_actes_societe, droits_enregistrement_fonds_commerce_rate",
         )
         .single();
       if (error) throw error;
@@ -30,6 +30,8 @@ export interface FiscalRates {
   irvmDividendesRate: number;
   irvmPlusValuesCessionRate: number;
   irvmObligationsRate: number;
+  droitsEnregistrementActesSociete: number;
+  droitsEnregistrementFondsCommerceRate: number;
 }
 
 export function useUpdateFiscalRates() {
@@ -51,6 +53,8 @@ export function useUpdateFiscalRates() {
           irvm_dividendes_rate: rates.irvmDividendesRate,
           irvm_plus_values_cession_rate: rates.irvmPlusValuesCessionRate,
           irvm_obligations_rate: rates.irvmObligationsRate,
+          droits_enregistrement_actes_societe: rates.droitsEnregistrementActesSociete,
+          droits_enregistrement_fonds_commerce_rate: rates.droitsEnregistrementFondsCommerceRate,
         })
         .eq("id", companyId);
       if (error) throw error;
