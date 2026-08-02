@@ -173,4 +173,79 @@ describe.skipIf(!hasCredentials)("module paie (Formation, réel)", () => {
     });
     expect(error).not.toBeNull();
   });
+
+  it(
+    "une avance sur salaire génère une écriture PAIE équilibrée (débit 425, crédit 522), " +
+      "puis son remboursement sur un bulletin réduit le net et crédite 425",
+    async () => {
+      const employeeId = await createEmployee("D");
+
+      const { data: advance, error: advanceErr } = await comptable.rpc("create_salary_advance", {
+        payload: { employee_id: employeeId, amount: 50000, reason: `${tag} avance` },
+      });
+      expect(advanceErr).toBeNull();
+
+      const { data: advanceEntries, error: advanceEntriesErr } = await comptable
+        .from("journal_entries")
+        .select("journal_code, journal_entry_lines(debit, credit, chart_of_accounts(code))")
+        .eq("company_id", companyId)
+        .eq("description", `Avance sur salaire — ${tag} D`);
+      expect(advanceEntriesErr).toBeNull();
+      expect(advanceEntries).toHaveLength(1);
+      expect(advanceEntries![0].journal_code).toBe("PAIE");
+
+      const advanceLines = advanceEntries![0].journal_entry_lines as unknown as {
+        debit: number;
+        credit: number;
+        chart_of_accounts: { code: string } | { code: string }[] | null;
+      }[];
+      const codeOf = (line: (typeof advanceLines)[number]) => {
+        const coa = line.chart_of_accounts;
+        return Array.isArray(coa) ? coa[0]?.code : coa?.code;
+      };
+      const advanceByCode = Object.fromEntries(advanceLines.map((l) => [codeOf(l), l]));
+      expect(Number(advanceByCode["425"]?.debit)).toBe(50000);
+      expect(Number(advanceByCode["522"]?.credit)).toBe(50000);
+
+      // Remboursement : le bulletin doit référencer l'avance et en déduire le net.
+      const { data: payslip, error: payslipErr } = await comptable.rpc("create_payslip", {
+        payload: {
+          employee_id: employeeId,
+          period: "2026-08-01",
+          gross_salary: 300000,
+          pension_withholding: 0,
+          its_withholding: 0,
+          advance_repaid_id: advance!.id,
+        },
+      });
+      expect(payslipErr).toBeNull();
+      expect(Number(payslip!.net_pay)).toBe(250000);
+
+      const { data: payslipEntries } = await comptable
+        .from("journal_entries")
+        .select("journal_entry_lines(debit, credit, chart_of_accounts(code))")
+        .eq("payslip_id", payslip!.id);
+      const payslipLines = payslipEntries![0].journal_entry_lines as unknown as {
+        debit: number;
+        credit: number;
+        chart_of_accounts: { code: string } | { code: string }[] | null;
+      }[];
+      expect(payslipLines).toHaveLength(3); // débit 661, crédit 421 (net), crédit 425 (avance) -- pas de 431/447
+      const payslipByCode = Object.fromEntries(payslipLines.map((l) => [codeOf(l), l]));
+      expect(Number(payslipByCode["661"]?.debit)).toBe(300000);
+      expect(Number(payslipByCode["421"]?.credit)).toBe(250000);
+      expect(Number(payslipByCode["425"]?.credit)).toBe(50000);
+
+      // Une avance déjà remboursée ne peut pas l'être une seconde fois.
+      const { error: secondRepaymentErr } = await comptable.rpc("create_payslip", {
+        payload: {
+          employee_id: employeeId,
+          period: "2026-09-01",
+          gross_salary: 300000,
+          advance_repaid_id: advance!.id,
+        },
+      });
+      expect(secondRepaymentErr).not.toBeNull();
+    },
+  );
 });

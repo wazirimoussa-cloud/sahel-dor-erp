@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Link } from "react-router-dom";
 import { useActiveEmployees } from "@/features/payroll/useEmployees";
 import { useCreatePayslip } from "@/features/payroll/usePayslips";
+import { useOutstandingAdvances } from "@/features/payroll/useSalaryAdvances";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -14,6 +15,7 @@ const payslipSchema = z.object({
   grossSalary: z.coerce.number().positive("Le salaire brut doit être positif"),
   pensionWithholding: z.coerce.number().min(0, "La retenue doit être positive"),
   itsWithholding: z.coerce.number().min(0, "La retenue doit être positive"),
+  advanceRepaidId: z.string().optional(),
 });
 
 type PayslipFormValues = z.infer<typeof payslipSchema>;
@@ -32,26 +34,39 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
     formState: { errors, isSubmitting },
   } = useForm<PayslipFormValues>({
     resolver: zodResolver(payslipSchema),
-    defaultValues: { grossSalary: 0, pensionWithholding: 0, itsWithholding: 0 },
+    defaultValues: { grossSalary: 0, pensionWithholding: 0, itsWithholding: 0, advanceRepaidId: "" },
   });
 
   const watched = watch();
-  const netPay = watched.grossSalary - watched.pensionWithholding - watched.itsWithholding;
+  const { data: outstandingAdvances } = useOutstandingAdvances(watched.employeeId || undefined);
+  const selectedAdvance = outstandingAdvances?.find((a) => a.id === watched.advanceRepaidId);
+  const advanceAmount = selectedAdvance?.amount ?? 0;
+  const netPay = watched.grossSalary - watched.pensionWithholding - watched.itsWithholding - advanceAmount;
 
   async function onSubmit(values: PayslipFormValues) {
     setServerError(null);
     try {
-      await createPayslip.mutateAsync(values);
-      reset({ employeeId: "", period: "", grossSalary: 0, pensionWithholding: 0, itsWithholding: 0 });
+      await createPayslip.mutateAsync({ ...values, advanceRepaidId: values.advanceRepaidId || undefined });
+      reset({
+        employeeId: "",
+        period: "",
+        grossSalary: 0,
+        pensionWithholding: 0,
+        itsWithholding: 0,
+        advanceRepaidId: "",
+      });
       onCreated?.();
     } catch {
-      setServerError("Bulletin refusé (employé invalide, retenues supérieures au brut, ou rôle non autorisé).");
+      setServerError(
+        "Bulletin refusé (employé invalide, retenues supérieures au brut, avance déjà remboursée, ou rôle non autorisé).",
+      );
     }
   }
 
   function handleEmployeeChange(employeeId: string) {
     const employee = employees?.find((e) => e.id === employeeId);
     if (employee) setValue("grossSalary", employee.base_salary);
+    setValue("advanceRepaidId", "");
   }
 
   return (
@@ -102,6 +117,18 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
           {errors.itsWithholding && (
             <p className="mt-1 text-xs text-red-600">{errors.itsWithholding.message}</p>
           )}
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">Rembourser une avance</label>
+          <select className="rounded-md border border-gray-300 px-3 py-2 text-sm" {...register("advanceRepaidId")}>
+            <option value="">— Aucune —</option>
+            {outstandingAdvances?.map((advance) => (
+              <option key={advance.id} value={advance.id}>
+                {advance.amount.toLocaleString("fr-FR")} FCFA ({new Date(advance.advance_date).toLocaleDateString("fr-FR")})
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-400">Remboursement intégral, pas de solde partiel.</p>
         </div>
       </div>
       <p className="text-sm font-semibold text-forest-900">

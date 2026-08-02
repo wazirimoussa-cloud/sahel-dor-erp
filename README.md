@@ -1060,9 +1060,9 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       comme fiable, sur une donnée qui impacte directement ce qui est versé aux
       employés et à l'État.
     - **Hors périmètre v1**, volontairement, même philosophie que le reste de
-      l'app : pas d'avances sur salaire, pas de congés/absences, pas de versionnage
-      de salaire (`base_salary` est une valeur courante simple, comme
-      `products.price`).
+      l'app : avances sur salaire (**voir point 51**, ajouté juste après), pas de
+      congés/absences, pas de versionnage de salaire (`base_salary` est une valeur
+      courante simple, comme `products.price`).
     - `tests/integration/payroll.test.ts` : bulletin avec retenues (écriture à 4
       lignes équilibrée), bulletin sans retenue (2 lignes seulement — vérifie les
       blocs conditionnels de `create_payslip`), et garde de non-régression RBAC (un
@@ -1070,6 +1070,37 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       `comptable.formation` pour les tests — décision cohérente avec ses autres
       attributions financières déjà en place (`comptabilite.gerer_plan_comptable`,
       `gerer_immobilisations`, `modifier_capital_social`).
+
+51. **Avances sur salaire** (`0064_avances_salaire.sql`) : premier vrai mécanisme de
+    dépense en espèces/bancaire de l'app en dehors du flux automatique des
+    encaissements clients (qui débite/crédite toujours le compte `521` en dur) —
+    limite documentée aux points 26-27 du README.
+    - **`salary_advances`** : fait financier immuable comme `payslips`
+      (`fn_block_mutation()`), créé exclusivement via `create_salary_advance()` (même
+      patron que `create_production`/`create_payslip`) qui génère une écriture
+      `'PAIE'` équilibrée : débit `425` (Personnel — avances et acomptes), crédit
+      `522` (Banque de fonctionnement — décision confirmée avec l'utilisateur,
+      distincte de la Banque d'opération `521` pour ne pas mélanger flux commerciaux
+      et dépenses RH ; **c'est la première fois que le compte 522 est réellement
+      mouvementé**, jusqu'ici une structure comptable vide).
+    - **Remboursement, décision confirmée avec l'utilisateur : en une seule fois,
+      pas d'étalement/solde partiel.** Une avance se rembourse en la référençant sur
+      un bulletin de paie ultérieur du même employé (`payslips.advance_repaid_id`) —
+      `create_payslip()` déduit alors le montant **intégral** de l'avance (pas de
+      saisie libre) du net à payer et ajoute une 5e ligne conditionnelle (crédit
+      `425`) à l'écriture, tout en restant équilibrée
+      (661 = 421 + 431 + 447 + 425). Le statut "remboursée" **n'est jamais stocké**
+      sur `salary_advances` — il se déduit uniquement de l'existence d'un bulletin
+      qui la référence, pour ne jamais avoir à modifier une avance après coup (même
+      philosophie d'immutabilité que le reste du grand livre).
+    - Écran `/paie` étendu avec une section "Avances sur salaire" : formulaire de
+      versement (gardé par `paie.gerer`) et liste avec statut "En attente"/
+      "Remboursée" ; le formulaire de bulletin propose les avances non remboursées de
+      l'employé sélectionné dans un menu dédié, avec net recalculé en direct.
+    - `tests/integration/payroll.test.ts` étendu : avance versée (écriture 425/522
+      équilibrée), remboursement sur un bulletin (net réduit, 3 lignes — pas de
+      431/447 dans ce scénario), et garde de non-régression (une avance déjà
+      remboursée ne peut pas l'être une seconde fois).
 
 ## Limites connues / pistes pour la suite
 

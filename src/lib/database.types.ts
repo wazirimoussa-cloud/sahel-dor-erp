@@ -645,6 +645,7 @@ export type Database = {
       }
       payslips: {
         Row: {
+          advance_repaid_id: string | null
           company_id: string
           created_at: string
           employee_id: string
@@ -657,6 +658,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          advance_repaid_id?: string | null
           company_id: string
           created_at?: string
           employee_id: string
@@ -669,6 +671,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          advance_repaid_id?: string | null
           company_id?: string
           created_at?: string
           employee_id?: string
@@ -681,6 +684,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "payslips_advance_repaid_id_fkey"
+            columns: ["advance_repaid_id"]
+            isOneToOne: false
+            referencedRelation: "salary_advances"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payslips_company_id_fkey"
             columns: ["company_id"]
@@ -1124,6 +1134,61 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      salary_advances: {
+        Row: {
+          advance_date: string
+          amount: number
+          company_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          advance_date?: string
+          amount: number
+          company_id: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          advance_date?: string
+          amount?: number
+          company_id?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_advances_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_advances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_advances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_loss_requests: {
         Row: {
@@ -1909,6 +1974,7 @@ export type Database = {
       create_payslip: {
         Args: { payload: Json }
         Returns: {
+          advance_repaid_id: string | null
           company_id: string
           created_at: string
           employee_id: string
@@ -1966,6 +2032,25 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "purchases"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_salary_advance: {
+        Args: { payload: Json }
+        Returns: {
+          advance_date: string
+          amount: number
+          company_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "salary_advances"
           isOneToOne: true
           isSetofReturn: false
         }

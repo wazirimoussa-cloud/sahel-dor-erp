@@ -7,6 +7,7 @@ export interface NewPayslip {
   grossSalary: number;
   pensionWithholding: number;
   itsWithholding: number;
+  advanceRepaidId?: string;
 }
 
 export function usePayslips() {
@@ -16,7 +17,7 @@ export function usePayslips() {
       const { data, error } = await supabase
         .from("payslips")
         .select(
-          "id, period, gross_salary, pension_withholding, its_withholding, net_pay, created_at, employees(full_name)",
+          "id, period, gross_salary, pension_withholding, its_withholding, net_pay, advance_repaid_id, created_at, employees(full_name)",
         )
         .order("period", { ascending: false });
       if (error) throw error;
@@ -36,12 +37,14 @@ export function useCreatePayslip() {
           gross_salary: payslip.grossSalary,
           pension_withholding: payslip.pensionWithholding,
           its_withholding: payslip.itsWithholding,
+          advance_repaid_id: payslip.advanceRepaidId || null,
         },
       });
       if (error) throw error;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["payslips"] });
+      void queryClient.invalidateQueries({ queryKey: ["salary_advances"] });
       void queryClient.invalidateQueries({ queryKey: ["journal_entries"] });
     },
   });
