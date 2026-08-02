@@ -178,10 +178,12 @@ export type Database = {
           precompte_isb_rate: number
           rccm: string | null
           taxe_immobiliere_rate: number
+          taxe_professionnelle_ca_annuel: number
           taxe_professionnelle_droit_fixe_pour_mille: number
           taxe_professionnelle_droit_proportionnel_rate: number
           taxe_professionnelle_plancher: number
           taxe_professionnelle_rate: number
+          taxe_professionnelle_valeur_locative: number
           vat_rate: number
         }
         Insert: {
@@ -195,10 +197,12 @@ export type Database = {
           precompte_isb_rate?: number
           rccm?: string | null
           taxe_immobiliere_rate?: number
+          taxe_professionnelle_ca_annuel?: number
           taxe_professionnelle_droit_fixe_pour_mille?: number
           taxe_professionnelle_droit_proportionnel_rate?: number
           taxe_professionnelle_plancher?: number
           taxe_professionnelle_rate?: number
+          taxe_professionnelle_valeur_locative?: number
           vat_rate?: number
         }
         Update: {
@@ -212,10 +216,12 @@ export type Database = {
           precompte_isb_rate?: number
           rccm?: string | null
           taxe_immobiliere_rate?: number
+          taxe_professionnelle_ca_annuel?: number
           taxe_professionnelle_droit_fixe_pour_mille?: number
           taxe_professionnelle_droit_proportionnel_rate?: number
           taxe_professionnelle_plancher?: number
           taxe_professionnelle_rate?: number
+          taxe_professionnelle_valeur_locative?: number
           vat_rate?: number
         }
         Relationships: []

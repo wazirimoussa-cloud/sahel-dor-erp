@@ -21,7 +21,24 @@ const fiscalRatesSchema = z.object({
   taxeProfessionnelleDroitFixePourMille: percentField(50),
   taxeProfessionnellePlancher: amountField,
   taxeProfessionnelleDroitProportionnelRate: percentField(),
+  taxeProfessionnelleCaAnnuel: amountField,
+  taxeProfessionnelleValeurLocative: amountField,
 });
+
+function computeTaxeProfessionnelle(values: {
+  taxeProfessionnelleDroitFixePourMille: number;
+  taxeProfessionnellePlancher: number;
+  taxeProfessionnelleDroitProportionnelRate: number;
+  taxeProfessionnelleCaAnnuel: number;
+  taxeProfessionnelleValeurLocative: number;
+}) {
+  const droitFixe = Math.max(
+    (values.taxeProfessionnelleCaAnnuel * values.taxeProfessionnelleDroitFixePourMille) / 1000,
+    values.taxeProfessionnellePlancher,
+  );
+  const droitProportionnel = (values.taxeProfessionnelleValeurLocative * values.taxeProfessionnelleDroitProportionnelRate) / 100;
+  return { droitFixe, droitProportionnel, total: droitFixe + droitProportionnel };
+}
 
 type FiscalRatesFormValues = z.infer<typeof fiscalRatesSchema>;
 
@@ -99,6 +116,29 @@ const TAXE_PROFESSIONNELLE_FIELDS: {
   },
 ];
 
+const TAXE_PROFESSIONNELLE_DATA_FIELDS: {
+  name: keyof FiscalRatesFormValues;
+  column: keyof Pick<CompanyRow, "taxe_professionnelle_ca_annuel" | "taxe_professionnelle_valeur_locative">;
+  label: string;
+  suffix: string;
+  help: string;
+}[] = [
+  {
+    name: "taxeProfessionnelleCaAnnuel",
+    column: "taxe_professionnelle_ca_annuel",
+    label: "Chiffre d'affaires de l'exercice précédent",
+    suffix: "FCFA",
+    help: "Saisie manuelle — assiette du droit fixe (Art. 175 CGI).",
+  },
+  {
+    name: "taxeProfessionnelleValeurLocative",
+    column: "taxe_professionnelle_valeur_locative",
+    label: "Valeur locative des locaux",
+    suffix: "FCFA",
+    help: "Saisie manuelle, montant global pour la société — assiette du droit proportionnel (Art. 176 CGI).",
+  },
+];
+
 export function VatSettingsPage() {
   const { hasAttribution } = useAuth();
   const { data: company, isLoading, error } = useCompanySettings();
@@ -111,8 +151,12 @@ export function VatSettingsPage() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FiscalRatesFormValues>({ resolver: zodResolver(fiscalRatesSchema) });
+
+  const watched = watch();
+  const estimation = computeTaxeProfessionnelle(watched);
 
   useEffect(() => {
     if (company) {
@@ -124,6 +168,8 @@ export function VatSettingsPage() {
         taxeProfessionnelleDroitFixePourMille: company.taxe_professionnelle_droit_fixe_pour_mille,
         taxeProfessionnellePlancher: company.taxe_professionnelle_plancher,
         taxeProfessionnelleDroitProportionnelRate: company.taxe_professionnelle_droit_proportionnel_rate,
+        taxeProfessionnelleCaAnnuel: company.taxe_professionnelle_ca_annuel,
+        taxeProfessionnelleValeurLocative: company.taxe_professionnelle_valeur_locative,
       });
     }
   }, [company, reset]);
@@ -185,7 +231,28 @@ export function VatSettingsPage() {
                   </dd>
                 </div>
               ))}
+              {TAXE_PROFESSIONNELLE_DATA_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
+                  <dd className="text-lg font-semibold text-forest-900">
+                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                  </dd>
+                </div>
+              ))}
             </dl>
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <p className="text-xs font-medium text-gray-500">Montant estimé (référence, non déclaratif)</p>
+              <p className="text-lg font-semibold text-forest-900">
+                {computeTaxeProfessionnelle({
+                  taxeProfessionnelleDroitFixePourMille: company.taxe_professionnelle_droit_fixe_pour_mille,
+                  taxeProfessionnellePlancher: company.taxe_professionnelle_plancher,
+                  taxeProfessionnelleDroitProportionnelRate: company.taxe_professionnelle_droit_proportionnel_rate,
+                  taxeProfessionnelleCaAnnuel: company.taxe_professionnelle_ca_annuel,
+                  taxeProfessionnelleValeurLocative: company.taxe_professionnelle_valeur_locative,
+                }).total.toLocaleString("fr-FR")}{" "}
+                FCFA
+              </p>
+            </div>
           </Card>
         </>
       )}
@@ -212,10 +279,9 @@ export function VatSettingsPage() {
           <Card>
             <h2 className="mb-1 text-sm font-bold text-forest-900">Taxe professionnelle (patente)</h2>
             <p className="mb-4 text-xs text-gray-500">
-              Pas un taux unique : droit fixe + droit proportionnel (Art. 174 CGI). Ces 3
-              constantes légales sont des références de calcul manuel — l'app ne suit ni le
-              chiffre d'affaires annuel ni la valeur locative des locaux nécessaires pour
-              produire un montant réel.
+              Pas un taux unique : droit fixe + droit proportionnel (Art. 174 CGI). Le
+              montant estimé ci-dessous est une référence de calcul, pas une écriture
+              comptable ni une déclaration — à faire valider par un comptable.
             </p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {TAXE_PROFESSIONNELLE_FIELDS.map((field) => (
@@ -230,6 +296,26 @@ export function VatSettingsPage() {
                   )}
                 </div>
               ))}
+            </div>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {TAXE_PROFESSIONNELLE_DATA_FIELDS.map((field) => (
+                <div key={field.name}>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    {field.label} ({field.suffix})
+                  </label>
+                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  {errors[field.name] && (
+                    <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 border-t border-gray-100 pt-4">
+              <p className="text-xs font-medium text-gray-500">Montant estimé (référence, non déclaratif)</p>
+              <p className="text-lg font-semibold text-forest-900">
+                {Number.isFinite(estimation.total) ? estimation.total.toLocaleString("fr-FR") : "—"} FCFA
+              </p>
             </div>
           </Card>
 

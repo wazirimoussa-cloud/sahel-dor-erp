@@ -8,7 +8,7 @@ export function useCompanySettings() {
       const { data, error } = await supabase
         .from("companies")
         .select(
-          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate",
+          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative",
         )
         .single();
       if (error) throw error;
@@ -25,6 +25,8 @@ export interface FiscalRates {
   taxeProfessionnelleDroitFixePourMille: number;
   taxeProfessionnellePlancher: number;
   taxeProfessionnelleDroitProportionnelRate: number;
+  taxeProfessionnelleCaAnnuel: number;
+  taxeProfessionnelleValeurLocative: number;
 }
 
 export function useUpdateFiscalRates() {
@@ -41,6 +43,8 @@ export function useUpdateFiscalRates() {
           taxe_professionnelle_droit_fixe_pour_mille: rates.taxeProfessionnelleDroitFixePourMille,
           taxe_professionnelle_plancher: rates.taxeProfessionnellePlancher,
           taxe_professionnelle_droit_proportionnel_rate: rates.taxeProfessionnelleDroitProportionnelRate,
+          taxe_professionnelle_ca_annuel: rates.taxeProfessionnelleCaAnnuel,
+          taxe_professionnelle_valeur_locative: rates.taxeProfessionnelleValeurLocative,
         })
         .eq("id", companyId);
       if (error) throw error;

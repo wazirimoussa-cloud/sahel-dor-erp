@@ -935,6 +935,20 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     - `magasinier.formation` aligné sur `saheldor2026-testAB`, comme les 4 autres
       profils Formation.
 
+45. **Montant estimé de la taxe professionnelle** (`0058_taxe_professionnelle_ca_valeur_locative.sql`) :
+    ajoute `companies.taxe_professionnelle_ca_annuel` et
+    `companies.taxe_professionnelle_valeur_locative` (saisie manuelle, décision
+    confirmée avec l'utilisateur — pas de calcul automatique depuis les écritures
+    réelles, et un seul montant global par société plutôt que par entrepôt). Avec
+    ces deux données renseignées, `VatSettingsPage.tsx` affiche désormais un
+    **montant estimé** (`computeTaxeProfessionnelle` : `max(CA × 1‰, plancher) +
+    valeur locative × 10%`), recalculé en direct pendant la saisie (`watch()`)
+    côté édition et depuis les valeurs enregistrées côté lecture seule — toujours
+    présenté comme une référence de calcul, pas une écriture comptable ni une
+    déclaration. Vérifié de bout en bout sur Formation (CA 300M FCFA + valeur
+    locative 2M FCFA → 500 000 FCFA, cohérent avec le calcul manuel), puis remis
+    à 0 pour ne pas laisser de donnée de test dans les paramètres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
