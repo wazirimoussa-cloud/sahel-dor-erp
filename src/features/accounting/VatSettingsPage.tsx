@@ -226,6 +226,36 @@ const TAXE_PUBLICITE_FIELDS: {
   },
 ];
 
+// ITS (Art. 50-68 CGI) : barème légal fixe, identique pour toute société —
+// contrairement au reste de l'écran, ce n'est pas une donnée propre à Sahel
+// d'Or et il n'y a donc pas de champ éditable en base. Un vrai calcul
+// suppose un module paie (employés, salaire mensuel, charges de famille)
+// que l'app ne modélise pas — décision confirmée avec l'utilisateur de
+// laisser RH hors périmètre. Ce tableau est une référence de consultation
+// uniquement.
+const ITS_BAREME: { tranche: string; taux: string }[] = [
+  { tranche: "0 à 25 000 FCFA", taux: "1%" },
+  { tranche: "25 001 à 50 000 FCFA", taux: "2%" },
+  { tranche: "50 001 à 100 000 FCFA", taux: "6%" },
+  { tranche: "100 001 à 150 000 FCFA", taux: "13%" },
+  { tranche: "150 001 à 300 000 FCFA", taux: "25%" },
+  { tranche: "300 001 à 400 000 FCFA", taux: "30%" },
+  { tranche: "400 001 à 700 000 FCFA", taux: "32%" },
+  { tranche: "700 001 à 1 000 000 FCFA", taux: "34%" },
+  { tranche: "Au-delà de 1 000 000 FCFA", taux: "35%" },
+];
+
+const ITS_ABATTEMENTS_FAMILLE: { charges: string; abattement: string }[] = [
+  { charges: "0 charge", abattement: "0%" },
+  { charges: "1 charge", abattement: "5%" },
+  { charges: "2 charges", abattement: "10%" },
+  { charges: "3 charges", abattement: "12%" },
+  { charges: "4 charges", abattement: "13%" },
+  { charges: "5 charges", abattement: "14%" },
+  { charges: "6 charges", abattement: "15%" },
+  { charges: "7 charges", abattement: "30%" },
+];
+
 const DROITS_FONCIERS_FIELDS: {
   name: keyof FiscalRatesFormValues;
   column: keyof Pick<CompanyRow, "redevance_domaine_public_rate">;
@@ -307,6 +337,50 @@ export function VatSettingsPage() {
         de calcul manuel : aucune écriture comptable n'est encore générée
         automatiquement à partir d'eux.
       </p>
+
+      <Card>
+        <h2 className="mb-1 text-sm font-bold text-forest-900">
+          Impôt sur les Traitements et Salaires (ITS) — barème de référence
+        </h2>
+        <p className="mb-4 text-xs text-gray-500">
+          Barème légal fixe (Art. 50-68 CGI), consultable uniquement — aucun champ
+          éditable, aucun calcul automatique. Un vrai calcul suppose un module paie
+          (employés, salaire mensuel, charges de famille) que l'app ne suit pas
+          actuellement.
+        </p>
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          <div>
+            <h3 className="mb-2 text-xs font-semibold text-gray-600">
+              Barème progressif mensuel (Art. 66)
+            </h3>
+            <table className="w-full text-sm">
+              <tbody>
+                {ITS_BAREME.map((row) => (
+                  <tr key={row.tranche} className="border-b border-gray-100">
+                    <td className="py-1 pr-3 text-gray-700">{row.tranche}</td>
+                    <td className="py-1 text-right font-semibold text-forest-900">{row.taux}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <h3 className="mb-2 text-xs font-semibold text-gray-600">
+              Abattement selon charges de famille (Art. 65)
+            </h3>
+            <table className="w-full text-sm">
+              <tbody>
+                {ITS_ABATTEMENTS_FAMILLE.map((row) => (
+                  <tr key={row.charges} className="border-b border-gray-100">
+                    <td className="py-1 pr-3 text-gray-700">{row.charges}</td>
+                    <td className="py-1 text-right font-semibold text-forest-900">{row.abattement}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </Card>
 
       {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
       {error && <p className="text-sm text-red-600">Impossible de charger les paramètres.</p>}

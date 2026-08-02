@@ -1019,6 +1019,17 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     comptable automatique, et l'app ne suit pas la surface réellement occupée (à
     multiplier manuellement).
 
+49. **ITS — barème de référence** : contrairement à tous les autres taux ajoutés à
+    l'écran, l'ITS (`Art. 50-68` CGI) se calcule **par salarié, par mois**, sur la
+    base d'un salaire réel et de charges de famille — ce n'est pas une donnée propre
+    à Sahel d'Or comme les autres, mais un barème légal fixe. Décision confirmée avec
+    l'utilisateur (portée volontairement limitée à la référence, RH reste hors
+    périmètre) : ajout d'un tableau **non éditable**, sans colonne en base — le
+    barème progressif mensuel à 9 tranches (`Art. 66`, 1% à 35%) et l'abattement
+    selon charges de famille (`Art. 65`, 0% à 30%). Aucun calcul, aucun suivi de
+    salarié : un vrai calcul suppose un module paie (employés, salaire mensuel,
+    nombre de charges) qui reste un chantier à part, pas un taux fiscal de plus.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
