@@ -8,7 +8,7 @@ export function useStockLossRequests() {
       const { data, error } = await supabase
         .from("stock_loss_requests")
         .select(
-          "id, quantity, repackaged_quantity, reason, status, rejection_reason, created_at, reviewed_at, products(name, unit), warehouses(name), requester:users!requested_by(email), reviewer:users!reviewed_by(email)",
+          "id, quantity, repackaged_quantity, reason, status, rejection_reason, created_at, reviewed_at, products(name, unit), warehouses(name), requester:users!requested_by(email), reviewer:users!reviewed_by(email), stock_lots(lot_number, expiry_date)",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -26,6 +26,7 @@ export function useRequestStockLoss() {
       quantity: number;
       reason: string;
       repackagedQuantity?: number;
+      lotId?: string;
     }) => {
       const { error } = await supabase.rpc("request_stock_loss", {
         p_product_id: params.productId,
@@ -33,6 +34,7 @@ export function useRequestStockLoss() {
         p_quantity: params.quantity,
         p_reason: params.reason,
         p_repackaged_quantity: params.repackagedQuantity,
+        p_lot_id: params.lotId,
       });
       if (error) throw error;
     },

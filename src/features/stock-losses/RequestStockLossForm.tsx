@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
 import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useRequestStockLoss } from "@/features/stock-losses/useStockLossRequests";
+import { useStockLots } from "@/features/stock/useStockLots";
+import { lotStatus } from "@/lib/stockDisplay";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
@@ -16,6 +18,7 @@ const schema = z
     isRepackaging: z.boolean(),
     repackagedQuantity: z.coerce.number().optional(),
     reason: z.string().min(3, "Précisez un motif"),
+    lotId: z.string().optional(),
   })
   .refine(
     (values) =>
@@ -32,6 +35,7 @@ type FormValues = z.infer<typeof schema>;
 export function RequestStockLossForm() {
   const { data: products } = useActiveProducts();
   const { data: warehouses } = useActiveWarehouses();
+  const { data: lots } = useStockLots();
   const requestLoss = useRequestStockLoss();
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -41,13 +45,31 @@ export function RequestStockLossForm() {
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { isRepackaging: false },
+    defaultValues: { isRepackaging: false, lotId: "" },
   });
 
   const isRepackaging = watch("isRepackaging");
+  const selectedProductId = watch("productId");
+  const selectedWarehouseId = watch("warehouseId");
+
+  const matchingLots = useMemo(
+    () =>
+      (lots ?? []).filter(
+        (lot) => lot.product_id === selectedProductId && lot.warehouse_id === selectedWarehouseId,
+      ),
+    [lots, selectedProductId, selectedWarehouseId],
+  );
+
+  // Un lot sélectionné pour un produit/magasin donné ne veut plus rien dire si le
+  // produit ou le magasin change ensuite -- react-hook-form garde la valeur en mémoire
+  // même quand le <select> disparaît du DOM, donc on la vide explicitement.
+  useEffect(() => {
+    setValue("lotId", "");
+  }, [selectedProductId, selectedWarehouseId, setValue]);
 
   async function onSubmit(values: FormValues) {
     setServerError(null);
@@ -59,11 +81,12 @@ export function RequestStockLossForm() {
         quantity: values.quantity,
         reason: values.reason,
         repackagedQuantity: values.isRepackaging ? values.repackagedQuantity : undefined,
+        lotId: values.lotId ? values.lotId : undefined,
       });
-      reset({ isRepackaging: false });
+      reset({ isRepackaging: false, lotId: "" });
       setSuccessMessage("Demande envoyée — en attente de validation par le Contrôleur.");
     } catch {
-      setServerError("Demande refusée (rôle non autorisé, ou produit/magasin invalide).");
+      setServerError("Demande refusée (rôle non autorisé, ou produit/magasin/lot invalide).");
     }
   }
 
@@ -112,6 +135,30 @@ export function RequestStockLossForm() {
           {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
         </div>
       </div>
+
+      {matchingLots.length > 0 && (
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">
+            Lot ciblé (optionnel — sinon la sortie suit l'ordre FEFO habituel)
+          </label>
+          <select
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            {...register("lotId")}
+          >
+            <option value="">— Aucun (FEFO automatique) —</option>
+            {matchingLots.map((lot) => {
+              const status = lotStatus(lot.expiry_date);
+              return (
+                <option key={lot.id} value={lot.id}>
+                  Lot #{lot.lot_number} — {lot.quantity_remaining} restant
+                  {lot.expiry_date ? ` — péremption ${lot.expiry_date}` : ""}
+                  {status ? ` — ${status.label}` : ""}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      )}
 
       <label className="flex items-center gap-2 text-sm text-gray-700">
         <input type="checkbox" {...register("isRepackaging")} />

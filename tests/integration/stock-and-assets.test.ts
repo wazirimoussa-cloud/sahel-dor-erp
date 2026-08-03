@@ -265,6 +265,143 @@ describe.skipIf(!hasCredentials)("mouvements, transferts, pertes et immobilisati
     expect(Number(stock?.stock)).toBe(9);
   });
 
+  // Ciblage d'un lot précis (0067_pertes_stock_lot_cible.sql) : la perte peut désigner
+  // exactement quel lot est concerné, au lieu de toujours passer par le FEFO générique.
+  it("une perte ciblant un lot précis consomme exactement ce lot, sans toucher l'autre lot du même produit", async () => {
+    const productId = await seedStock(gerant, companyId, warehouseId, `${tag} G`, 5, 1000);
+
+    // Deuxième lot du même produit/magasin (péremption inconnue comme le premier --
+    // sans le ciblage, le FEFO générique consommerait le premier lot créé en premier).
+    const { error: secondProductionErr } = await gerant.rpc("create_production", {
+      payload: {
+        warehouse_id: warehouseId,
+        items: [{ product_id: productId, quantity: 5, unit_cost: 1500 }],
+      },
+    });
+    expect(secondProductionErr).toBeNull();
+
+    const { data: lots, error: lotsErr } = await gerant
+      .from("stock_lots")
+      .select("id, quantity_remaining")
+      .eq("product_id", productId)
+      .eq("warehouse_id", warehouseId)
+      .order("created_at", { ascending: true });
+    expect(lotsErr).toBeNull();
+    expect(lots).toHaveLength(2);
+    const [lotA, lotB] = lots!;
+
+    const { data: request, error: requestErr } = await magasinier.rpc("request_stock_loss", {
+      p_product_id: productId,
+      p_warehouse_id: warehouseId,
+      p_quantity: 3,
+      p_reason: "Perte ciblée sur le second lot -- test intégration",
+      p_lot_id: lotB.id,
+    });
+    expect(requestErr).toBeNull();
+
+    const { error: approveErr } = await superviseur.rpc("approve_stock_loss", {
+      p_request_id: request!.id,
+    });
+    expect(approveErr).toBeNull();
+
+    const { data: refreshedLotA } = await magasinier
+      .from("stock_lots")
+      .select("quantity_remaining")
+      .eq("id", lotA.id)
+      .single();
+    expect(Number(refreshedLotA?.quantity_remaining)).toBe(Number(lotA.quantity_remaining));
+
+    const { data: refreshedLotB } = await magasinier
+      .from("stock_lots")
+      .select("quantity_remaining")
+      .eq("id", lotB.id)
+      .single();
+    expect(Number(refreshedLotB?.quantity_remaining)).toBe(Number(lotB.quantity_remaining) - 3);
+  });
+
+  it("un lot ciblé insuffisant fait échouer l'approbation sans effet de bord (rollback atomique)", async () => {
+    // Le lot ciblé (5 unités) est insuffisant pour la quantité demandée (10), mais le
+    // stock TOTAL du produit (5 + 20 = 25, deux lots) suffirait très largement -- ça
+    // isole bien l'échec sur "ce lot précis n'a pas assez", pas sur le stock global
+    // (qui déclencherait plus tôt la contrainte products_stock_check, un cas différent).
+    const productId = await seedStock(gerant, companyId, warehouseId, `${tag} H`, 5, 1000);
+    const { error: secondProductionErr } = await gerant.rpc("create_production", {
+      payload: {
+        warehouse_id: warehouseId,
+        items: [{ product_id: productId, quantity: 20, unit_cost: 1000 }],
+      },
+    });
+    expect(secondProductionErr).toBeNull();
+
+    const { data: lot } = await gerant
+      .from("stock_lots")
+      .select("id, quantity_remaining")
+      .eq("product_id", productId)
+      .eq("warehouse_id", warehouseId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .single();
+
+    const { data: request, error: requestErr } = await magasinier.rpc("request_stock_loss", {
+      p_product_id: productId,
+      p_warehouse_id: warehouseId,
+      p_quantity: 10,
+      p_reason: "Quantité impossible sur ce lot précis -- test intégration",
+      p_lot_id: lot!.id,
+    });
+    expect(requestErr).toBeNull();
+
+    const { error: approveErr } = await superviseur.rpc("approve_stock_loss", {
+      p_request_id: request!.id,
+    });
+    expect(approveErr).not.toBeNull();
+    expect(approveErr?.message).toMatch(/insuffisant/i);
+
+    const { data: refreshedRequest } = await superviseur
+      .from("stock_loss_requests")
+      .select("status")
+      .eq("id", request!.id)
+      .single();
+    expect(refreshedRequest?.status).toBe("pending");
+
+    const { data: refreshedLot } = await magasinier
+      .from("stock_lots")
+      .select("quantity_remaining")
+      .eq("id", lot!.id)
+      .single();
+    expect(Number(refreshedLot?.quantity_remaining)).toBe(Number(lot!.quantity_remaining));
+
+    const { data: stock } = await magasinier
+      .from("product_stocks")
+      .select("stock")
+      .eq("product_id", productId)
+      .eq("warehouse_id", warehouseId)
+      .single();
+    expect(Number(stock?.stock)).toBe(25);
+  });
+
+  it("cibler un lot d'un autre produit est refusé dès la déclaration", async () => {
+    const productId = await seedStock(gerant, companyId, warehouseId, `${tag} I`, 5, 1000);
+    const otherProductId = await seedStock(gerant, companyId, warehouseId, `${tag} J`, 5, 1000);
+
+    const { data: otherLot } = await gerant
+      .from("stock_lots")
+      .select("id")
+      .eq("product_id", otherProductId)
+      .eq("warehouse_id", warehouseId)
+      .single();
+
+    const { error: requestErr } = await magasinier.rpc("request_stock_loss", {
+      p_product_id: productId,
+      p_warehouse_id: warehouseId,
+      p_quantity: 2,
+      p_reason: "Lot d'un autre produit -- test intégration",
+      p_lot_id: otherLot!.id,
+    });
+    expect(requestErr).not.toBeNull();
+    expect(requestErr?.message).toMatch(/lot ciblé/i);
+  });
+
   it("une perte rejetée ne modifie pas le stock", async () => {
     const productId = await seedStock(gerant, companyId, warehouseId, `${tag} E`, 10, 1000);
 

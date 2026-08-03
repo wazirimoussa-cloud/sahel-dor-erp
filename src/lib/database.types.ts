@@ -1253,6 +1253,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          lot_id: string | null
           product_id: string
           quantity: number
           reason: string
@@ -1270,6 +1271,7 @@ export type Database = {
           company_id: string
           created_at?: string
           id?: string
+          lot_id?: string | null
           product_id: string
           quantity: number
           reason: string
@@ -1287,6 +1289,7 @@ export type Database = {
           company_id?: string
           created_at?: string
           id?: string
+          lot_id?: string | null
           product_id?: string
           quantity?: number
           reason?: string
@@ -1306,6 +1309,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_loss_requests_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "stock_lots"
             referencedColumns: ["id"]
           },
           {
@@ -1514,6 +1524,7 @@ export type Database = {
           production_id: string | null
           purchase_id: string | null
           quantity: number
+          target_lot_id: string | null
           transfer_group_id: string | null
           transformation_id: string | null
           type: Database["public"]["Enums"]["transaction_type"]
@@ -1531,6 +1542,7 @@ export type Database = {
           production_id?: string | null
           purchase_id?: string | null
           quantity: number
+          target_lot_id?: string | null
           transfer_group_id?: string | null
           transformation_id?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
@@ -1548,6 +1560,7 @@ export type Database = {
           production_id?: string | null
           purchase_id?: string | null
           quantity?: number
+          target_lot_id?: string | null
           transfer_group_id?: string | null
           transformation_id?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
@@ -1582,6 +1595,13 @@ export type Database = {
             columns: ["purchase_id"]
             isOneToOne: false
             referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_target_lot_id_fkey"
+            columns: ["target_lot_id"]
+            isOneToOne: false
+            referencedRelation: "stock_lots"
             referencedColumns: ["id"]
           },
           {
@@ -1915,6 +1935,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          lot_id: string | null
           product_id: string
           quantity: number
           reason: string
@@ -2156,6 +2177,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fn_consume_specific_lot: {
+        Args: {
+          p_lot_id: string
+          p_product_id: string
+          p_quantity: number
+          p_transaction_id: string
+          p_warehouse_id: string
+        }
+        Returns: undefined
+      }
       fn_consume_stock_lots: {
         Args: {
           p_product_id: string
@@ -2233,6 +2264,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          lot_id: string | null
           product_id: string
           quantity: number
           reason: string
@@ -2255,6 +2287,7 @@ export type Database = {
       }
       request_stock_loss: {
         Args: {
+          p_lot_id?: string
           p_product_id: string
           p_quantity: number
           p_reason: string
@@ -2265,6 +2298,7 @@ export type Database = {
           company_id: string
           created_at: string
           id: string
+          lot_id: string | null
           product_id: string
           quantity: number
           reason: string

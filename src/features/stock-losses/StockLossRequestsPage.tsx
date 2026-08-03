@@ -6,6 +6,7 @@ import {
   useRejectStockLoss,
 } from "@/features/stock-losses/useStockLossRequests";
 import { RequestStockLossForm } from "@/features/stock-losses/RequestStockLossForm";
+import { lotStatus } from "@/lib/stockDisplay";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
@@ -27,6 +28,15 @@ function relationName(rel: { name: string } | { name: string }[] | null) {
 
 function relationEmail(rel: { email: string } | { email: string }[] | null) {
   return Array.isArray(rel) ? rel[0]?.email : rel?.email;
+}
+
+function relationLot(
+  rel:
+    | { lot_number: number; expiry_date: string | null }
+    | { lot_number: number; expiry_date: string | null }[]
+    | null,
+) {
+  return Array.isArray(rel) ? rel[0] : rel;
 }
 
 export function StockLossRequestsPage() {
@@ -89,6 +99,23 @@ export function StockLossRequestsPage() {
                         → reconditionné : {r.repackaged_quantity} {productInfo?.unit ?? ""}
                       </span>
                     )}
+                    {(() => {
+                      const lot = relationLot(r.stock_lots);
+                      if (!lot) return null;
+                      const status = lotStatus(lot.expiry_date);
+                      return (
+                        <span className="block text-xs text-gray-500">
+                          Lot ciblé : #{lot.lot_number}
+                          {status && (
+                            <span
+                              className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${status.className}`}
+                            >
+                              {status.label}
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="py-2">
                     {r.reason}

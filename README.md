@@ -1149,6 +1149,29 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       demandant date **et** prix de cession (≥ 0, 0 = mise au rebut).
     - `tests/integration/stock-and-assets.test.ts` étendu : plus-value, moins-value,
       mise au rebut (vérifie qu'une seule écriture est postée, sans ligne 521/775).
+54. **Ciblage d'un lot précis pour les pertes de stock** (`0067_pertes_stock_lot_cible.sql`,
+    section "Lot ciblé" du formulaire "Pertes de stock") : corrige une limite documentée
+    depuis le point 34 — jusqu'ici, une perte déclarée consommait toujours le produit en
+    FEFO générique, sans possibilité de désigner le lot précis constaté abîmé/périmé en
+    magasin. `stock_loss_requests.lot_id` (renseigné par le déclarant, optionnel) est
+    transmis à l'approbation comme `transactions.target_lot_id`, lu par
+    `fn_apply_transaction_stock` qui bascule alors sur la nouvelle
+    `fn_consume_specific_lot` au lieu du `fn_consume_stock_lots` générique — sur les deux
+    chemins de sortie (perte sèche `ADJUSTMENT` et intrant du reconditionnement `OUT`).
+    Décision actée : si le lot ciblé n'a plus assez de quantité restante au moment de
+    l'approbation, celle-ci **échoue avec une exception explicite** — aucun repli
+    automatique sur les autres lots du produit/magasin, pour ne jamais faire sortir un
+    stock différent de ce qui a été déclaré et validé. Champ optionnel : sans lot
+    sélectionné, le comportement FEFO générique de 0037 est inchangé (rétrocompatible
+    avec le mouvement manuel direct et les 5 autres RPC qui touchent au stock).
+    **Bug latent corrigé au passage** : `request_stock_loss`/`reject_stock_loss`
+    vérifiaient encore l'ancien rôle fixe (`current_role_name()` → `users.role_id`),
+    abandonné depuis le passage aux attributions granulaires (point 33,
+    `0032_attributions.sql`) — `role_id` n'étant plus renseigné pour les comptes actuels,
+    la déclaration et le rejet d'une perte de stock étaient cassés pour tout le monde
+    (`approve_stock_loss` avait déjà été migrée vers `has_attribution` en 0037, mais pas
+    ces deux-là). Basculées sur `has_attribution('pertes_stock.declarer'/'pertes_stock.approuver')`,
+    cohérent avec le reste de l'app et avec les gardes déjà en place côté frontend.
 
 ## Limites connues / pistes pour la suite
 
@@ -1168,10 +1191,11 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   entrée successive.
 - **Suivi par lot** (point 34) : un transfert entre magasins mélangeant des lots à
   péremptions différentes perd cette granularité (le lot destination hérite d'une seule
-  date, la plus proche parmi les lots consommés). Le module Pertes de stock ne permet pas
-  de cibler un lot précis — la consommation FEFO automatique tend déjà à retirer le lot
-  le plus proche de la péremption en premier, mais sans garantie absolue si plusieurs
-  lots ont la même date.
+  date, la plus proche parmi les lots consommés). ~~Le module Pertes de stock ne permet
+  pas de cibler un lot précis...~~ — **corrigé** (point 54,
+  `0067_pertes_stock_lot_cible.sql`) : la déclaration d'une perte peut désormais désigner
+  un lot précis, dont l'approbation échoue explicitement (pas de repli FEFO) si sa
+  quantité restante s'avère insuffisante entre-temps.
 - **Prix de revient** (point 36) : la répartition des frais de transport/manutention
   est **au prorata de la quantité**, pas de la valeur — une réception mélangeant des
   produits d'unités très différentes (ex. tonnes et cartons) répartit la même quote-
