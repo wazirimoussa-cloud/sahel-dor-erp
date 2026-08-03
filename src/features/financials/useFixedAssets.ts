@@ -92,10 +92,11 @@ export function useCreateFixedAsset() {
 export function useDisposeFixedAsset() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (params: { assetId: string; disposalDate: string }) => {
+    mutationFn: async (params: { assetId: string; disposalDate: string; disposalPrice: number }) => {
       const { error } = await supabase.rpc("dispose_fixed_asset", {
         p_asset_id: params.assetId,
         p_disposal_date: params.disposalDate,
+        p_disposal_price: params.disposalPrice,
       });
       if (error) throw error;
     },

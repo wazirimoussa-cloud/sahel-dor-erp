@@ -1125,6 +1125,30 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     - `tests/integration/payroll.test.ts` étendu : création/lecture/suppression,
       vérification qu'aucune écriture comptable n'est générée, et garde RBAC (un
       profil sans `paie.gerer` ne peut pas créer d'enregistrement).
+53. **Cession d'immobilisations : écriture comptable et plus/moins-value**
+    (`0066_cession_immobilisations.sql`) : corrige une limite documentée depuis le
+    point 35 — la cession d'une immobilisation ne générait jusqu'ici **aucune**
+    écriture (`disposal_date` retirait simplement l'actif du bilan). Nouveaux comptes
+    `28` (amortissements des immobilisations — mouvementé **uniquement** à la cession,
+    jamais par une dotation périodique, qui reste calculée à la demande côté client
+    comme avant), `675` (VCEAC) et `775` (produits de cession). `dispose_fixed_asset`
+    prend désormais un `p_disposal_price` obligatoire et poste :
+    - Sortie du bien (toujours) : Débit 28 (amortissement cumulé) + Débit 675 (VNC) =
+      Crédit 21 (coût total) — solde entièrement le 21 pour cet actif. L'amortissement
+      cumulé/VNC est recalculé côté serveur (jamais fourni par le client) en reproduisant
+      exactement la formule de `useFixedAssets.ts`.
+    - Encaissement (omis si prix nul, mise au rebut) : Débit 521 (Banque d'opération,
+      même hypothèse comptant que l'acquisition) = Crédit 775.
+    - Le compte de résultat (`useFinancialStatements.ts`) expose désormais
+      `incomeStatement.resultatCessionImmobilisations` (775 − 675 sur la période),
+      inclus dans le résultat net — peut être négatif (moins-value). Le bilan n'a
+      nécessité aucun changement : `immobilisationsNettes` était déjà à 0 après
+      cession, et la trésorerie (521) capte déjà l'encaissement.
+    - Formulaire de cession (`FinancialStatementsPage.tsx`) : le `window.prompt()`
+      ne demandant que la date est remplacé par un formulaire `react-hook-form`/`zod`
+      demandant date **et** prix de cession (≥ 0, 0 = mise au rebut).
+    - `tests/integration/stock-and-assets.test.ts` étendu : plus-value, moins-value,
+      mise au rebut (vérifie qu'une seule écriture est postée, sans ligne 521/775).
 
 ## Limites connues / pistes pour la suite
 
@@ -1136,9 +1160,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   l'état pour des déclarations fiscales ou un bilan officiel sans revue par un
   comptable.
 - **Immobilisations** (point 35) : amortissement linéaire uniquement (pas de dégressif),
-  cession sans plus/moins-value calculée, acquisition supposée payée comptant (pas de
-  dette fournisseur distincte pour ce type d'achat). Le CUMP du stock reste un coût moyen
-  global, pas recalculé après chaque entrée successive.
+  ~~cession sans plus/moins-value calculée~~ — **corrigée** (point 53,
+  `0066_cession_immobilisations.sql`) : la cession poste désormais une écriture réelle
+  (28/675/21 + 521/775) avec plus/moins-value dans le compte de résultat. Reste inchangé :
+  acquisition supposée payée comptant (pas de dette fournisseur distincte pour ce type
+  d'achat). Le CUMP du stock reste un coût moyen global, pas recalculé après chaque
+  entrée successive.
 - **Suivi par lot** (point 34) : un transfert entre magasins mélangeant des lots à
   péremptions différentes perd cette granularité (le lot destination hérite d'une seule
   date, la plus proche parmi les lots consommés). Le module Pertes de stock ne permet pas

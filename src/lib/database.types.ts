@@ -2132,7 +2132,11 @@ export type Database = {
       current_company_id: { Args: never; Returns: string }
       current_role_name: { Args: never; Returns: string }
       dispose_fixed_asset: {
-        Args: { p_asset_id: string; p_disposal_date: string }
+        Args: {
+          p_asset_id: string
+          p_disposal_date: string
+          p_disposal_price: number
+        }
         Returns: {
           acquisition_cost: number
           acquisition_date: string

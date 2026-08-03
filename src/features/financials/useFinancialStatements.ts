@@ -142,8 +142,26 @@ export function useFinancialStatements(startDate: string, endDate: string) {
         accountTotals("601", startDate, endDate).debit -
         accountTotals("601", startDate, endDate).credit;
       const variationStock = stockEnd.total - stockStart.total;
+
+      // Résultat de cession d'immobilisations : produits de cession (775) − VCEAC (675),
+      // sur la même période -- reflète en compte de résultat les écritures désormais
+      // postées par dispose_fixed_asset (0066_cession_immobilisations.sql). Peut être
+      // négatif (moins-value), pas de clamp.
+      const produitsCessionImmobilisations =
+        accountTotals("775", startDate, endDate).credit -
+        accountTotals("775", startDate, endDate).debit;
+      const chargesCessionImmobilisations =
+        accountTotals("675", startDate, endDate).debit -
+        accountTotals("675", startDate, endDate).credit;
+      const resultatCessionImmobilisations =
+        produitsCessionImmobilisations - chargesCessionImmobilisations;
+
       const resultatNetPeriode =
-        produitsPeriode - chargesPeriode + variationStock - dotationsAmortissements;
+        produitsPeriode -
+        chargesPeriode +
+        variationStock -
+        dotationsAmortissements +
+        resultatCessionImmobilisations;
 
       // Bilan : soldes cumulés depuis toujours jusqu'à la date de fin choisie.
       const clientsSolde =
@@ -210,6 +228,7 @@ export function useFinancialStatements(startDate: string, endDate: string) {
           charges: chargesPeriode,
           variationStock,
           dotationsAmortissements,
+          resultatCessionImmobilisations,
           resultatNet: resultatNetPeriode,
         },
         balanceSheet: { actif, totalActif, passif, totalPassif },

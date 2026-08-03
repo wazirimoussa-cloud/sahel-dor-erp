@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -18,6 +18,12 @@ const assetSchema = z.object({
   usefulLifeYears: z.coerce.number().positive("La durée doit être positive"),
 });
 type AssetFormValues = z.infer<typeof assetSchema>;
+
+const disposalSchema = z.object({
+  disposalDate: z.string().min(1, "Date requise"),
+  disposalPrice: z.coerce.number().min(0, "Le prix ne peut pas être négatif (0 = mise au rebut)"),
+});
+type DisposalFormValues = z.infer<typeof disposalSchema>;
 
 function formatFCFA(value: number) {
   return `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
@@ -49,6 +55,7 @@ export function FinancialStatementsPage() {
   const createFixedAsset = useCreateFixedAsset();
   const disposeFixedAsset = useDisposeFixedAsset();
   const [assetError, setAssetError] = useState<string | null>(null);
+  const [disposingAssetId, setDisposingAssetId] = useState<string | null>(null);
 
   const {
     register: registerAsset,
@@ -56,6 +63,13 @@ export function FinancialStatementsPage() {
     reset: resetAssetForm,
     formState: { errors: assetErrors, isSubmitting: isSubmittingAsset },
   } = useForm<AssetFormValues>({ resolver: zodResolver(assetSchema) });
+
+  const {
+    register: registerDisposal,
+    handleSubmit: handleDisposalSubmit,
+    reset: resetDisposalForm,
+    formState: { errors: disposalErrors, isSubmitting: isSubmittingDisposal },
+  } = useForm<DisposalFormValues>({ resolver: zodResolver(disposalSchema) });
 
   const displayedCapital = capitalInput ?? (data ? String(data.capitalSocial) : "");
 
@@ -77,14 +91,24 @@ export function FinancialStatementsPage() {
     }
   }
 
-  async function handleDisposeAsset(assetId: string) {
-    const disposalDate = window.prompt("Date de cession (AAAA-MM-JJ) ?", defaultEndDate());
-    if (!disposalDate) return;
+  function openDisposalForm(assetId: string) {
+    setAssetError(null);
+    setDisposingAssetId(assetId);
+    resetDisposalForm({ disposalDate: defaultEndDate(), disposalPrice: 0 });
+  }
+
+  async function onConfirmDispose(values: DisposalFormValues) {
+    if (!disposingAssetId) return;
     setAssetError(null);
     try {
-      await disposeFixedAsset.mutateAsync({ assetId, disposalDate });
+      await disposeFixedAsset.mutateAsync({
+        assetId: disposingAssetId,
+        disposalDate: values.disposalDate,
+        disposalPrice: values.disposalPrice,
+      });
+      setDisposingAssetId(null);
     } catch {
-      setAssetError("Cession refusée (droits insuffisants, date invalide, ou déjà cédée).");
+      setAssetError("Cession refusée (droits insuffisants, date/prix invalide, ou déjà cédée).");
     }
   }
 
@@ -152,6 +176,13 @@ export function FinancialStatementsPage() {
                   <td className="py-2">Dotations aux amortissements</td>
                   <td className="py-2 text-right">
                     − {formatFCFA(data.incomeStatement.dotationsAmortissements)}
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2">Résultat de cession d'immobilisations</td>
+                  <td className="py-2 text-right">
+                    {data.incomeStatement.resultatCessionImmobilisations >= 0 ? "+ " : "− "}
+                    {formatFCFA(Math.abs(data.incomeStatement.resultatCessionImmobilisations))}
                   </td>
                 </tr>
                 <tr className="font-semibold">
@@ -352,38 +383,86 @@ export function FinancialStatementsPage() {
               </thead>
               <tbody>
                 {data.fixedAssets.map((asset) => (
-                  <tr key={asset.id} className="border-b border-gray-100">
-                    <td className="py-2">{asset.name}</td>
-                    <td className="py-2">{asset.category}</td>
-                    <td className="py-2">
-                      {new Date(asset.acquisition_date).toLocaleDateString("fr-FR")}
-                    </td>
-                    <td className="py-2">{formatFCFA(asset.acquisition_cost)}</td>
-                    <td className="py-2">{formatFCFA(asset.netBookValue)}</td>
-                    <td className="py-2">
-                      {asset.disposal_date ? (
-                        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                          Cédée le {new Date(asset.disposal_date).toLocaleDateString("fr-FR")}
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
-                          En service
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 text-right">
-                      {canManageAssets && !asset.disposal_date && (
-                        <Button
-                          variant="secondary"
-                          className="px-2 py-1 text-xs"
-                          disabled={disposeFixedAsset.isPending}
-                          onClick={() => void handleDisposeAsset(asset.id)}
-                        >
-                          Céder
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
+                  <Fragment key={asset.id}>
+                    <tr className="border-b border-gray-100">
+                      <td className="py-2">{asset.name}</td>
+                      <td className="py-2">{asset.category}</td>
+                      <td className="py-2">
+                        {new Date(asset.acquisition_date).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td className="py-2">{formatFCFA(asset.acquisition_cost)}</td>
+                      <td className="py-2">{formatFCFA(asset.netBookValue)}</td>
+                      <td className="py-2">
+                        {asset.disposal_date ? (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                            Cédée le {new Date(asset.disposal_date).toLocaleDateString("fr-FR")}
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs text-green-700">
+                            En service
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 text-right">
+                        {canManageAssets && !asset.disposal_date && disposingAssetId !== asset.id && (
+                          <Button
+                            variant="secondary"
+                            className="px-2 py-1 text-xs"
+                            onClick={() => openDisposalForm(asset.id)}
+                          >
+                            Céder
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                    {disposingAssetId === asset.id && (
+                      <tr className="border-b border-gray-100 bg-gray-50">
+                        <td colSpan={7} className="py-2">
+                          <form
+                            onSubmit={handleDisposalSubmit(onConfirmDispose)}
+                            className="flex flex-wrap items-end gap-3 px-2"
+                            noValidate
+                          >
+                            <span className="text-xs text-gray-500">
+                              VNC actuelle : {formatFCFA(asset.netBookValue)}
+                            </span>
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-gray-600">
+                                Date de cession
+                              </label>
+                              <Input type="date" {...registerDisposal("disposalDate")} />
+                              {disposalErrors.disposalDate && (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {disposalErrors.disposalDate.message}
+                                </p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="mb-1 block text-xs font-medium text-gray-600">
+                                Prix de cession (FCFA)
+                              </label>
+                              <Input type="number" min={0} step="0.01" {...registerDisposal("disposalPrice")} />
+                              {disposalErrors.disposalPrice && (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {disposalErrors.disposalPrice.message}
+                                </p>
+                              )}
+                            </div>
+                            <Button type="submit" disabled={isSubmittingDisposal}>
+                              Valider
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              onClick={() => setDisposingAssetId(null)}
+                            >
+                              Annuler
+                            </Button>
+                          </form>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
                 {data.fixedAssets.length === 0 && (
                   <tr>

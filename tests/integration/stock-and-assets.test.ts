@@ -349,6 +349,7 @@ describe.skipIf(!hasCredentials)("mouvements, transferts, pertes et immobilisati
     const { error: disposeErr } = await comptable.rpc("dispose_fixed_asset", {
       p_asset_id: asset!.id,
       p_disposal_date: new Date().toISOString().slice(0, 10),
+      p_disposal_price: 0,
     });
     expect(disposeErr).toBeNull();
 
@@ -358,5 +359,128 @@ describe.skipIf(!hasCredentials)("mouvements, transferts, pertes et immobilisati
       .eq("id", asset!.id)
       .single();
     expect(disposed?.disposal_date).not.toBeNull();
+  });
+
+  // Trois scénarios de cession (0066_cession_immobilisations.sql) : la cession postait
+  // jusqu'ici uniquement disposal_date, sans écriture -- ces tests vérifient les deux
+  // écritures désormais générées (sortie du bien 28/675/21, encaissement 521/775). Les
+  // deux écritures sont postées dans la même transaction, donc created_at est identique
+  // (now() est stable par transaction) -- on les distingue par le préfixe de description,
+  // jamais par un ordre de tri, qui n'est pas garanti en cas d'égalité.
+  async function createTestAsset(nameSuffix: string, acquisitionDate: string) {
+    const assetName = `Immobilisation cession ${tag} ${nameSuffix}`;
+    const { data: asset, error } = await comptable.rpc("create_fixed_asset", {
+      p_name: assetName,
+      p_category: "Matériel",
+      p_acquisition_date: acquisitionDate,
+      p_acquisition_cost: 400000,
+      p_useful_life_years: 4,
+    });
+    expect(error).toBeNull();
+    return { ...asset!, name: assetName };
+  }
+
+  async function entriesForAsset(assetName: string) {
+    const { data: allEntries, error } = await comptable
+      .from("journal_entries")
+      .select("description, journal_entry_lines(debit, credit, chart_of_accounts(code))")
+      .eq("company_id", companyId)
+      .eq("journal_code", "IMMOBILISATIONS")
+      .ilike("description", `%${assetName}`);
+    expect(error).toBeNull();
+    // Exclut l'écriture d'acquisition (même journal_code, même suffixe de description) --
+    // seules les écritures de cession (sortie/encaissement) intéressent ces tests.
+    const entries = allEntries!.filter((e) => !e.description.startsWith("Acquisition "));
+    const sortie = entries.find((e) => e.description.startsWith("Sortie "));
+    const encaissement = entries.find((e) => e.description.startsWith("Encaissement cession "));
+    return { entries, sortie, encaissement };
+  }
+
+  function linesOf(entry: {
+    journal_entry_lines: {
+      debit: number;
+      credit: number;
+      chart_of_accounts: { code: string } | { code: string }[] | null;
+    }[];
+  }) {
+    const codeOf = (line: (typeof entry.journal_entry_lines)[number]) => {
+      const coa = line.chart_of_accounts;
+      return Array.isArray(coa) ? coa[0]?.code : coa?.code;
+    };
+    return Object.fromEntries(entry.journal_entry_lines.map((l) => [codeOf(l), l]));
+  }
+
+  it("une cession en plus-value génère une écriture de sortie (28/675/21) et une écriture d'encaissement (521/775)", async () => {
+    const acquisitionDate = new Date().toISOString().slice(0, 10);
+    const asset = await createTestAsset("plus-value", acquisitionDate);
+
+    // Cession le jour même de l'acquisition : amortissement cumulé nul, VNC = coût.
+    const { error: disposeErr } = await comptable.rpc("dispose_fixed_asset", {
+      p_asset_id: asset.id,
+      p_disposal_date: acquisitionDate,
+      p_disposal_price: 550000,
+    });
+    expect(disposeErr).toBeNull();
+
+    const { sortie, encaissement } = await entriesForAsset(asset.name);
+    expect(sortie).toBeDefined();
+    expect(encaissement).toBeDefined();
+
+    const sortieLines = linesOf(sortie!);
+    expect(Number(sortieLines["28"]?.debit)).toBe(0);
+    expect(Number(sortieLines["675"]?.debit)).toBe(400000);
+    expect(Number(sortieLines["21"]?.credit)).toBe(400000);
+
+    const encaissementLines = linesOf(encaissement!);
+    expect(Number(encaissementLines["521"]?.debit)).toBe(550000);
+    expect(Number(encaissementLines["775"]?.credit)).toBe(550000);
+  });
+
+  it("une cession en moins-value (prix inférieur à la VNC) génère les mêmes écritures avec un produit réduit", async () => {
+    const acquisitionDate = new Date().toISOString().slice(0, 10);
+    const asset = await createTestAsset("moins-value", acquisitionDate);
+
+    const { error: disposeErr } = await comptable.rpc("dispose_fixed_asset", {
+      p_asset_id: asset.id,
+      p_disposal_date: acquisitionDate,
+      p_disposal_price: 100000,
+    });
+    expect(disposeErr).toBeNull();
+
+    const { sortie, encaissement } = await entriesForAsset(asset.name);
+    expect(sortie).toBeDefined();
+    expect(encaissement).toBeDefined();
+    const sortieLines = linesOf(sortie!);
+    expect(Number(sortieLines["675"]?.debit)).toBe(400000);
+    expect(Number(sortieLines["21"]?.credit)).toBe(400000);
+
+    const encaissementLines = linesOf(encaissement!);
+    expect(Number(encaissementLines["521"]?.debit)).toBe(100000);
+    expect(Number(encaissementLines["775"]?.credit)).toBe(100000);
+    // Moins-value = produit (775=100000) < charge (675=400000) -- pas d'assertion directe
+    // sur le résultat net ici (calculé côté useFinancialStatements.ts, pas par la RPC),
+    // seules les écritures postées relèvent de ce test d'intégration.
+  });
+
+  it("une mise au rebut (prix de cession nul) ne génère qu'une seule écriture, sans ligne 521/775", async () => {
+    const acquisitionDate = new Date().toISOString().slice(0, 10);
+    const asset = await createTestAsset("rebut", acquisitionDate);
+
+    const { error: disposeErr } = await comptable.rpc("dispose_fixed_asset", {
+      p_asset_id: asset.id,
+      p_disposal_date: acquisitionDate,
+      p_disposal_price: 0,
+    });
+    expect(disposeErr).toBeNull();
+
+    const { entries, sortie, encaissement } = await entriesForAsset(asset.name);
+    expect(entries).toHaveLength(1);
+    expect(sortie).toBeDefined();
+    expect(encaissement).toBeUndefined();
+    const sortieLines = linesOf(sortie!);
+    expect(Number(sortieLines["675"]?.debit)).toBe(400000);
+    expect(Number(sortieLines["21"]?.credit)).toBe(400000);
+    expect(sortieLines["521"]).toBeUndefined();
+    expect(sortieLines["775"]).toBeUndefined();
   });
 });
