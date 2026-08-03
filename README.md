@@ -1210,11 +1210,10 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   confirmée — voir point 50), solde de congés acquis/pris (registre simple
   uniquement, voir point 52 — aucun texte du Code du Travail fourni), versionnage de
   salaire, et tout le reste d'un vrai module RH (recrutement, évaluation, contrats).
-- **Un produit créé via le formulaire "Produits" n'obtient toujours pas de ligne
-  `product_stocks`** (`useCreateProduct`, insert direct dans `products`, sans passer par
-  une transaction) : c'est le bug corrigé rétroactivement en Phase 14 (points 24, `0022`)
-  pour les produits existants, mais la cause (le formulaire de création) n'a pas été
-  changée — un nouveau produit créé avec un stock initial non nul reproduira le même
-  écart (invisible sur la synthèse de stock tant qu'aucun mouvement réel ne le
-  concerne). À corriger en insérant aussi une ligne `product_stocks` au magasin par
-  défaut lors de la création, si ce cas se represente.
+- ~~Un produit créé via le formulaire "Produits" n'obtient pas de ligne `product_stocks`~~
+  — **corrigé à la source** par le trigger `trg_seed_product_stock` (point 30,
+  `0029_seed_product_stock_on_create.sql`) : toute création de produit avec un stock
+  initial non nul (formulaire, insert direct, ou tout outil futur) reçoit désormais
+  automatiquement sa ligne `product_stocks` au "Magasin principal" de sa société.
+  Revérifié en base le 03/08/2026 (insertion de test au Magasin principal Formation,
+  ligne `product_stocks` bien créée avec le même stock, donnée de test supprimée).
