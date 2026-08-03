@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,13 +10,20 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
-const assetSchema = z.object({
-  name: z.string().min(1, "Nom requis"),
-  category: z.string().min(1, "Catégorie requise"),
-  acquisitionDate: z.string().min(1, "Date requise"),
-  acquisitionCost: z.coerce.number().positive("Le coût doit être positif"),
-  usefulLifeYears: z.coerce.number().positive("La durée doit être positive"),
-});
+const assetSchema = z
+  .object({
+    name: z.string().min(1, "Nom requis"),
+    category: z.string().min(1, "Catégorie requise"),
+    acquisitionDate: z.string().min(1, "Date requise"),
+    acquisitionCost: z.coerce.number().positive("Le coût doit être positif"),
+    usefulLifeYears: z.coerce.number().positive("La durée doit être positive"),
+    depreciationMethod: z.enum(["lineaire", "degressif"]),
+    degressifCoefficient: z.coerce.number().positive("Le coefficient doit être positif").optional(),
+  })
+  .refine(
+    (values) => values.depreciationMethod !== "degressif" || values.degressifCoefficient !== undefined,
+    { message: "Un coefficient est requis pour la méthode dégressif", path: ["degressifCoefficient"] },
+  );
 type AssetFormValues = z.infer<typeof assetSchema>;
 
 const disposalSchema = z.object({
@@ -61,8 +68,21 @@ export function FinancialStatementsPage() {
     register: registerAsset,
     handleSubmit: handleAssetSubmit,
     reset: resetAssetForm,
+    watch: watchAsset,
+    setValue: setAssetValue,
     formState: { errors: assetErrors, isSubmitting: isSubmittingAsset },
-  } = useForm<AssetFormValues>({ resolver: zodResolver(assetSchema) });
+  } = useForm<AssetFormValues>({
+    resolver: zodResolver(assetSchema),
+    defaultValues: { depreciationMethod: "lineaire" },
+  });
+  const depreciationMethod = watchAsset("depreciationMethod");
+
+  // Une méthode repassée en linéaire ne veut plus rien dire pour un coefficient déjà
+  // saisi -- react-hook-form garde la valeur en mémoire même quand le champ disparaît du
+  // DOM, donc on la vide explicitement (même pattern que le lot ciblé des pertes de stock).
+  useEffect(() => {
+    if (depreciationMethod === "lineaire") setAssetValue("degressifCoefficient", undefined);
+  }, [depreciationMethod, setAssetValue]);
 
   const {
     register: registerDisposal,
@@ -84,8 +104,11 @@ export function FinancialStatementsPage() {
   async function onCreateAsset(values: AssetFormValues) {
     setAssetError(null);
     try {
-      await createFixedAsset.mutateAsync(values);
-      resetAssetForm();
+      await createFixedAsset.mutateAsync({
+        ...values,
+        degressifCoefficient: values.degressifCoefficient ?? null,
+      });
+      resetAssetForm({ depreciationMethod: "lineaire" });
     } catch {
       setAssetError("Création refusée (droits insuffisants ou valeurs invalides).");
     }
@@ -119,7 +142,8 @@ export function FinancialStatementsPage() {
         <p className="mt-1 text-sm text-gray-500">
           Bilan et compte de résultat SYSCOHADA simplifiés, calculés automatiquement à partir du
           journal comptable, des mouvements de stock et des immobilisations. Amortissement
-          linéaire recalculé à la demande, sans écriture de clôture (voir README).
+          linéaire ou dégressif (au choix par actif) recalculé à la demande, sans écriture de
+          clôture (voir README).
         </p>
       </div>
 
@@ -363,6 +387,31 @@ export function FinancialStatementsPage() {
                     <p className="mt-1 text-xs text-red-600">{assetErrors.usefulLifeYears.message}</p>
                   )}
                 </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                    Méthode d'amortissement
+                  </label>
+                  <select
+                    className="h-9 rounded-md border border-gray-300 px-2 text-sm"
+                    {...registerAsset("depreciationMethod")}
+                  >
+                    <option value="lineaire">Linéaire</option>
+                    <option value="degressif">Dégressif</option>
+                  </select>
+                </div>
+                {depreciationMethod === "degressif" && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                      Coefficient dégressif
+                    </label>
+                    <Input type="number" step="0.1" min="0" {...registerAsset("degressifCoefficient")} />
+                    {assetErrors.degressifCoefficient && (
+                      <p className="mt-1 text-xs text-red-600">
+                        {assetErrors.degressifCoefficient.message}
+                      </p>
+                    )}
+                  </div>
+                )}
                 <Button type="submit" disabled={isSubmittingAsset}>
                   Créer
                 </Button>
@@ -376,6 +425,7 @@ export function FinancialStatementsPage() {
                   <th className="py-2">Catégorie</th>
                   <th className="py-2">Acquisition</th>
                   <th className="py-2">Coût</th>
+                  <th className="py-2">Méthode</th>
                   <th className="py-2">VNC à la date de fin</th>
                   <th className="py-2">Statut</th>
                   <th className="py-2" />
@@ -391,6 +441,18 @@ export function FinancialStatementsPage() {
                         {new Date(asset.acquisition_date).toLocaleDateString("fr-FR")}
                       </td>
                       <td className="py-2">{formatFCFA(asset.acquisition_cost)}</td>
+                      <td className="py-2">
+                        {asset.depreciation_method === "degressif" ? (
+                          <>
+                            Dégressif
+                            <span className="ml-1 text-xs text-gray-400">
+                              (×{asset.degressif_coefficient})
+                            </span>
+                          </>
+                        ) : (
+                          "Linéaire"
+                        )}
+                      </td>
                       <td className="py-2">{formatFCFA(asset.netBookValue)}</td>
                       <td className="py-2">
                         {asset.disposal_date ? (
@@ -417,7 +479,7 @@ export function FinancialStatementsPage() {
                     </tr>
                     {disposingAssetId === asset.id && (
                       <tr className="border-b border-gray-100 bg-gray-50">
-                        <td colSpan={7} className="py-2">
+                        <td colSpan={8} className="py-2">
                           <form
                             onSubmit={handleDisposalSubmit(onConfirmDispose)}
                             className="flex flex-wrap items-end gap-3 px-2"
@@ -466,7 +528,7 @@ export function FinancialStatementsPage() {
                 ))}
                 {data.fixedAssets.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-4 text-center text-gray-400">
+                    <td colSpan={8} className="py-4 text-center text-gray-400">
                       Aucune immobilisation enregistrée.
                     </td>
                   </tr>

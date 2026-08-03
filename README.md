@@ -680,8 +680,8 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
 
 35. **Immobilisations et amortissements** (`0036_fixed_assets.sql`, section
     "Immobilisations" sur la page "États financiers") : nouvelle table `fixed_assets`
-    (coût, date d'acquisition, durée d'utilité), amortissement **linéaire uniquement**
-    (dégressif hors périmètre), recalculé à la demande (valeur nette comptable et
+    (coût, date d'acquisition, durée d'utilité), amortissement **linéaire** (dégressif
+    ajouté au point 56), recalculé à la demande (valeur nette comptable et
     dotation de la période) exactement comme la valeur du stock — aucune écriture
     d'amortissement n'est postée périodiquement, pas de compte "28"/"681" créé. Seule
     l'acquisition génère une vraie écriture (Débit 21 / Crédit 521 Banque d'opération) —
@@ -1192,6 +1192,30 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     Nouveau test d'intégration (`purchase-to-payment.test.ts`) avec deux lignes de poids
     de valeur identique (50 %/50 %) mais de quantités très différentes (100 vs 5 unités),
     prouvant que la répartition suit bien la valeur et non plus la quantité.
+56. **Amortissement dégressif des immobilisations** (`0069_amortissement_degressif.sql`,
+    section "Immobilisations" sur la page "États financiers") : corrige une limite
+    documentée depuis le point 35 — amortissement linéaire uniquement jusqu'ici.
+    `fixed_assets.depreciation_method` (`'lineaire' | 'degressif'`, défaut `'lineaire'`)
+    et `degressif_coefficient` (obligatoire et positif si dégressif, toujours `null` en
+    linéaire — contrainte table-level dédiée), saisi **manuellement** par l'utilisateur à
+    la création : aucun barème automatique par tranche de durée (aucune source CGI
+    Niger/SYSCOHADA vérifiée pour ce projet). Calcul dégressif **continu au prorata du
+    temps écoulé**, pas la mécanique SYSCOHADA stricte par exercice comptable avec
+    bascule au linéaire — cohérent avec l'absence totale de notion d'exercice
+    comptable/clôture dans l'app (tout est recalculé à la demande, comme le linéaire
+    depuis 0036) : `VNC = coût × (1 − min(coefficient × 1/durée, 1)) ^ (mois écoulés /
+    12)`, sans plafond à la durée d'utilité (décroissance exponentielle par nature
+    asymptotique — la plafonner laisserait un résidu figé pour toujours, moins honnête
+    que la vraie asymptote). `create_fixed_asset` (signature étendue, deux nouveaux
+    paramètres) valide la cohérence méthode/coefficient ; `dispose_fixed_asset`
+    (signature inchangée) branche sur la méthode pour le recalcul serveur de
+    l'amortissement cumulé/VNC à la cession, toujours en reproduisant exactement la
+    formule de `useFixedAssets.ts`. Correction d'arrondi au passage (les deux méthodes) :
+    la VNC est désormais arrondie en premier, l'amortissement cumulé dérivé par
+    soustraction exacte, pour garantir que les deux lignes de l'écriture de sortie
+    somment exactement au coût d'acquisition. Nouveaux tests d'intégration
+    (`stock-and-assets.test.ts`) : formule exponentielle vérifiée sur un actif cédé 18
+    mois après acquisition, et validation de la cohérence méthode/coefficient.
 
 ## Limites connues / pistes pour la suite
 
@@ -1202,13 +1226,17 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   de stock déjà valorisé, pas un nouveau mouvement de valeur). Ne pas utiliser en
   l'état pour des déclarations fiscales ou un bilan officiel sans revue par un
   comptable.
-- **Immobilisations** (point 35) : amortissement linéaire uniquement (pas de dégressif),
-  ~~cession sans plus/moins-value calculée~~ — **corrigée** (point 53,
-  `0066_cession_immobilisations.sql`) : la cession poste désormais une écriture réelle
-  (28/675/21 + 521/775) avec plus/moins-value dans le compte de résultat. Reste inchangé :
-  acquisition supposée payée comptant (pas de dette fournisseur distincte pour ce type
-  d'achat). Le CUMP du stock reste un coût moyen global, pas recalculé après chaque
-  entrée successive.
+- **Immobilisations** (points 35, 56) : ~~amortissement linéaire uniquement (pas de
+  dégressif)~~ — **corrigée** (point 56, `0069_amortissement_degressif.sql`) :
+  amortissement dégressif disponible en option par actif, coefficient saisi
+  manuellement (pas de barème automatique par tranche de durée), calculé en continu au
+  prorata du temps écoulé (pas de bascule au linéaire par exercice comptable, cohérent
+  avec l'absence de clôture dans l'app). ~~cession sans plus/moins-value calculée~~ —
+  **corrigée** (point 53, `0066_cession_immobilisations.sql`) : la cession poste
+  désormais une écriture réelle (28/675/21 + 521/775) avec plus/moins-value dans le
+  compte de résultat. Reste inchangé : acquisition supposée payée comptant (pas de dette
+  fournisseur distincte pour ce type d'achat). Le CUMP du stock reste un coût moyen
+  global, pas recalculé après chaque entrée successive.
 - **Suivi par lot** (point 34) : un transfert entre magasins mélangeant des lots à
   péremptions différentes perd cette granularité (le lot destination hérite d'une seule
   date, la plus proche parmi les lots consommés). ~~Le module Pertes de stock ne permet

@@ -45,7 +45,9 @@ export function useFinancialStatements(startDate: string, endDate: string) {
           supabase.from("companies").select("capital_social").eq("id", companyId).single(),
           supabase
             .from("fixed_assets")
-            .select("id, name, category, acquisition_date, acquisition_cost, useful_life_years, disposal_date"),
+            .select(
+              "id, name, category, acquisition_date, acquisition_cost, useful_life_years, disposal_date, depreciation_method, degressif_coefficient",
+            ),
         ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -55,7 +57,9 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       if (companyRes.error) throw companyRes.error;
       if (fixedAssetsRes.error) throw fixedAssetsRes.error;
 
-      const fixedAssets: FixedAssetRow[] = fixedAssetsRes.data;
+      // depreciation_method est une colonne text+check (pas un enum Postgres), donc
+      // supabase gen types la génère en string simple -- cast vers le littéral union.
+      const fixedAssets: FixedAssetRow[] = fixedAssetsRes.data as FixedAssetRow[];
       const immobilisationsNettes = fixedAssets.reduce(
         (sum, asset) => sum + netBookValueAsOf(asset, endDate),
         0,

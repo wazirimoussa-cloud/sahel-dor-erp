@@ -298,6 +298,8 @@ export type Database = {
           category: string
           company_id: string
           created_at: string
+          degressif_coefficient: number | null
+          depreciation_method: string
           disposal_date: string | null
           id: string
           name: string
@@ -310,6 +312,8 @@ export type Database = {
           category: string
           company_id: string
           created_at?: string
+          degressif_coefficient?: number | null
+          depreciation_method?: string
           disposal_date?: string | null
           id?: string
           name: string
@@ -322,6 +326,8 @@ export type Database = {
           category?: string
           company_id?: string
           created_at?: string
+          degressif_coefficient?: number | null
+          depreciation_method?: string
           disposal_date?: string | null
           id?: string
           name?: string
@@ -2008,6 +2014,8 @@ export type Database = {
           p_acquisition_cost: number
           p_acquisition_date: string
           p_category: string
+          p_degressif_coefficient?: number
+          p_depreciation_method?: string
           p_name: string
           p_useful_life_years: number
         }
@@ -2017,6 +2025,8 @@ export type Database = {
           category: string
           company_id: string
           created_at: string
+          degressif_coefficient: number | null
+          depreciation_method: string
           disposal_date: string | null
           id: string
           name: string
@@ -2164,6 +2174,8 @@ export type Database = {
           category: string
           company_id: string
           created_at: string
+          degressif_coefficient: number | null
+          depreciation_method: string
           disposal_date: string | null
           id: string
           name: string

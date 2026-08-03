@@ -620,4 +620,104 @@ describe.skipIf(!hasCredentials)("mouvements, transferts, pertes et immobilisati
     expect(sortieLines["521"]).toBeUndefined();
     expect(sortieLines["775"]).toBeUndefined();
   });
+
+  it("une cession d'immobilisation dégressive applique la formule exponentielle continue (prorata temporis, sans plafond)", async () => {
+    const acquisitionCost = 400000;
+    const usefulLifeYears = 4;
+    const coefficient = 2;
+    const acquisitionDate = new Date();
+    // 18 mois avant aujourd'hui, pour avoir un elapsedYears non trivial (1.5 an).
+    acquisitionDate.setMonth(acquisitionDate.getMonth() - 18);
+    const acquisitionDateIso = acquisitionDate.toISOString().slice(0, 10);
+    const disposalDateIso = new Date().toISOString().slice(0, 10);
+
+    const { data: asset, error: createErr } = await comptable.rpc("create_fixed_asset", {
+      p_name: `Immobilisation dégressive ${tag}`,
+      p_category: "Matériel",
+      p_acquisition_date: acquisitionDateIso,
+      p_acquisition_cost: acquisitionCost,
+      p_useful_life_years: usefulLifeYears,
+      p_depreciation_method: "degressif",
+      p_degressif_coefficient: coefficient,
+    });
+    expect(createErr).toBeNull();
+
+    // Reproduit exactement accumulatedDepreciationAsOf() côté client (useFixedAssets.ts) :
+    // aucun code partagé possible entre le test JS et le calcul PL/pgSQL, donc le test
+    // recalcule la formule indépendamment pour vérifier la valeur postée par le serveur.
+    const linearRate = 1 / usefulLifeYears;
+    const effectiveRate = Math.min(coefficient * linearRate, 1);
+    const elapsedYears = 18 / 12;
+    const expectedVnc = acquisitionCost * Math.pow(1 - effectiveRate, elapsedYears);
+    const expectedAmortissementCumule = acquisitionCost - expectedVnc;
+
+    const { error: disposeErr } = await comptable.rpc("dispose_fixed_asset", {
+      p_asset_id: asset!.id,
+      p_disposal_date: disposalDateIso,
+      p_disposal_price: 0,
+    });
+    expect(disposeErr).toBeNull();
+
+    const { data: entries, error: entriesErr } = await comptable
+      .from("journal_entries")
+      .select("description, journal_entry_lines(debit, credit, chart_of_accounts(code))")
+      .eq("company_id", companyId)
+      .eq("journal_code", "IMMOBILISATIONS")
+      .ilike("description", `Sortie Immobilisation dégressive ${tag}`);
+    expect(entriesErr).toBeNull();
+    expect(entries).toHaveLength(1);
+
+    const lines = entries![0].journal_entry_lines as unknown as {
+      debit: number;
+      credit: number;
+      chart_of_accounts: { code: string } | { code: string }[] | null;
+    }[];
+    const codeOf = (line: (typeof lines)[number]) => {
+      const coa = line.chart_of_accounts;
+      return Array.isArray(coa) ? coa[0]?.code : coa?.code;
+    };
+    const line28 = lines.find((l) => codeOf(l) === "28");
+    const line675 = lines.find((l) => codeOf(l) === "675");
+
+    // toBeCloseTo à 2 décimales : le serveur arrondit en numeric(14,2), le calcul JS
+    // attendu est en double précision -- une comparaison exacte flotterait de 1e-9.
+    expect(Number(line28!.debit)).toBeCloseTo(expectedAmortissementCumule, 2);
+    expect(Number(line675!.debit)).toBeCloseTo(expectedVnc, 2);
+    expect(Number(line28!.debit) + Number(line675!.debit)).toBeCloseTo(acquisitionCost, 2);
+  });
+
+  it("un actif dégressif rejette une création sans coefficient, un actif linéaire ignore un coefficient renseigné", async () => {
+    const { error: missingCoefficientErr } = await comptable.rpc("create_fixed_asset", {
+      p_name: `Dégressif sans coefficient ${tag}`,
+      p_category: "Matériel",
+      p_acquisition_date: new Date().toISOString().slice(0, 10),
+      p_acquisition_cost: 100000,
+      p_useful_life_years: 3,
+      p_depreciation_method: "degressif",
+      p_degressif_coefficient: null,
+    });
+    expect(missingCoefficientErr).not.toBeNull();
+    expect(missingCoefficientErr?.message).toMatch(/coefficient dégressif positif/i);
+
+    // Un coefficient envoyé en linéaire est silencieusement ignoré (forcé à null par la
+    // RPC), pas rejeté -- vérifie que l'insertion aboutit et que le coefficient stocké
+    // est bien null, jamais la valeur envoyée par erreur.
+    const { data: asset, error: ignoredCoefficientErr } = await comptable.rpc("create_fixed_asset", {
+      p_name: `Linéaire avec coefficient ignoré ${tag}`,
+      p_category: "Matériel",
+      p_acquisition_date: new Date().toISOString().slice(0, 10),
+      p_acquisition_cost: 100000,
+      p_useful_life_years: 3,
+      p_depreciation_method: "lineaire",
+      p_degressif_coefficient: 2,
+    });
+    expect(ignoredCoefficientErr).toBeNull();
+
+    const { data: stored } = await comptable
+      .from("fixed_assets")
+      .select("degressif_coefficient")
+      .eq("id", asset!.id)
+      .single();
+    expect(stored?.degressif_coefficient).toBeNull();
+  });
 });

@@ -9,6 +9,8 @@ export interface FixedAssetRow {
   acquisition_cost: number;
   useful_life_years: number;
   disposal_date: string | null;
+  depreciation_method: "lineaire" | "degressif";
+  degressif_coefficient: number | null;
 }
 
 // Amortissement linéaire, calculé à la demande (aucune écriture d'amortissement postée
@@ -25,14 +27,36 @@ function monthsBetween(fromIso: string, toIso: string): number {
 
 // Amortissements cumulés, figés à la date de cession si l'actif a été cédé (la
 // dépréciation n'évolue plus au-delà -- utilisé aussi pour calculer la dotation d'une
-// période qui chevauche une cession).
+// période qui chevauche une cession). Branche selon la méthode : linéaire inchangé depuis
+// l'origine ; dégressif calculé en continu au prorata du temps écoulé (pas la mécanique
+// SYSCOHADA stricte par exercice comptable avec bascule au linéaire -- décision actée,
+// cohérente avec l'absence totale de notion d'exercice comptable/clôture dans l'app).
 function accumulatedDepreciationAsOf(asset: FixedAssetRow, asOfIso: string): number {
   if (asOfIso < asset.acquisition_date) return 0;
   const effectiveDate =
     asset.disposal_date && asset.disposal_date < asOfIso ? asset.disposal_date : asOfIso;
+  const elapsedMonths = monthsBetween(asset.acquisition_date, effectiveDate);
+
+  if (asset.depreciation_method === "degressif") {
+    // Coefficient saisi manuellement (pas de barème automatique par tranche de durée --
+    // aucune source CGI Niger/SYSCOHADA vérifiée pour ce projet). Pas de plafond à
+    // useful_life_years ici (contrairement au linéaire ci-dessous) : une décroissance
+    // exponentielle continue est par nature asymptotique, la plafonner laisserait un
+    // résidu figé pour toujours après la durée d'utilité.
+    const linearRate = 1 / asset.useful_life_years;
+    const coefficient = asset.degressif_coefficient ?? 0;
+    // Clamp à 100% nécessaire, pas seulement défensif : sans lui, un coefficient × taux
+    // linéaire > 1 rendrait (1 - taux) négatif, et Math.pow d'une base négative avec un
+    // exposant fractionnaire renvoie NaN.
+    const effectiveRate = Math.min(coefficient * linearRate, 1);
+    const elapsedYears = elapsedMonths / 12;
+    const netBookValue = asset.acquisition_cost * Math.pow(1 - effectiveRate, elapsedYears);
+    return asset.acquisition_cost - netBookValue;
+  }
+
   const totalMonths = asset.useful_life_years * 12;
-  const elapsedMonths = Math.min(monthsBetween(asset.acquisition_date, effectiveDate), totalMonths);
-  return (asset.acquisition_cost * elapsedMonths) / totalMonths;
+  const cappedMonths = Math.min(elapsedMonths, totalMonths);
+  return (asset.acquisition_cost * cappedMonths) / totalMonths;
 }
 
 // Valeur nette comptable à une date donnée -- 0 avant acquisition, 0 à partir de la date
@@ -55,10 +79,14 @@ export function useFixedAssets() {
     queryFn: async (): Promise<FixedAssetRow[]> => {
       const { data, error } = await supabase
         .from("fixed_assets")
-        .select("id, name, category, acquisition_date, acquisition_cost, useful_life_years, disposal_date")
+        .select(
+          "id, name, category, acquisition_date, acquisition_cost, useful_life_years, disposal_date, depreciation_method, degressif_coefficient",
+        )
         .order("acquisition_date", { ascending: false });
       if (error) throw error;
-      return data;
+      // depreciation_method est une colonne text+check (pas un enum Postgres), donc
+      // supabase gen types la génère en string simple -- cast vers le littéral union.
+      return data as FixedAssetRow[];
     },
   });
 }
@@ -72,6 +100,8 @@ export function useCreateFixedAsset() {
       acquisitionDate: string;
       acquisitionCost: number;
       usefulLifeYears: number;
+      depreciationMethod: "lineaire" | "degressif";
+      degressifCoefficient: number | null;
     }) => {
       const { error } = await supabase.rpc("create_fixed_asset", {
         p_name: params.name,
@@ -79,6 +109,8 @@ export function useCreateFixedAsset() {
         p_acquisition_date: params.acquisitionDate,
         p_acquisition_cost: params.acquisitionCost,
         p_useful_life_years: params.usefulLifeYears,
+        p_depreciation_method: params.depreciationMethod,
+        p_degressif_coefficient: params.degressifCoefficient ?? undefined,
       });
       if (error) throw error;
     },
