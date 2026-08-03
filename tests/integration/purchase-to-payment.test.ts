@@ -182,8 +182,11 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     expect(receiveErr).toBeNull();
     expect(received?.status).toBe("received");
 
-    // 3. Le prix de revient doit être achat + quote-part frais au prorata de la
-    //    quantité : 1000 + (500 + 300) / 10 = 1080.
+    // 3. Le prix de revient doit être achat + quote-part frais au prorata de la valeur
+    //    commandée (0068) : une seule ligne ici, donc le résultat est identique à
+    //    l'ancien prorata par quantité (100% de la valeur = 100% de la quantité) --
+    //    1000 + (500 + 300) / 10 = 1080. Le test dédié à la répartition multi-lignes est
+    //    plus bas ("répartit les frais accessoires au prorata de la valeur...").
     const { data: lot, error: lotErr } = await magasinier
       .from("stock_lots")
       .select("quantity_remaining, unit_cost")
@@ -260,6 +263,73 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     expect(entriesErr).toBeNull();
     const journalCodes = (entries ?? []).map((e) => e.journal_code).sort();
     expect(journalCodes).toEqual(["ACHATS", "BANQUE", "BANQUE", "FRAIS", "VENTES"]);
+  });
+
+  it("répartit les frais accessoires au prorata de la valeur commandée, pas de la quantité (0068)", async () => {
+    const tag = `Intégration prorata ${new Date().toISOString()}`;
+
+    // Produit A : grosse quantité, faible valeur unitaire (ex. céréales en vrac).
+    const { data: productA, error: productAErr } = await gerant
+      .from("products")
+      .insert({ company_id: companyId, name: `${tag} A`, price: 10, stock: 0, unit: "tonne", vat_exempt: false })
+      .select("id")
+      .single();
+    expect(productAErr).toBeNull();
+
+    // Produit B : faible quantité, forte valeur unitaire (ex. un équipement).
+    const { data: productB, error: productBErr } = await gerant
+      .from("products")
+      .insert({ company_id: companyId, name: `${tag} B`, price: 200, stock: 0, unit: "unité", vat_exempt: false })
+      .select("id")
+      .single();
+    expect(productBErr).toBeNull();
+
+    // Valeur commandée : A = 100 × 10 = 1000 ; B = 5 × 200 = 1000 -- les deux lignes
+    // pèsent EXACTEMENT le même poids en valeur (50/50), malgré des quantités
+    // physiques très différentes (100 vs 5). Un prorata par quantité donnerait
+    // 100/105 ≈ 95% à A et 5/105 ≈ 5% à B -- un prorata par valeur donne 50/50.
+    const { data: purchase, error: purchaseErr } = await gerant.rpc("create_purchase", {
+      payload: {
+        supplier_id: supplierId,
+        warehouse_id: warehouseId,
+        items: [
+          { product_id: productA!.id, quantity: 100, unit_cost: 10 },
+          { product_id: productB!.id, quantity: 5, unit_cost: 200 },
+        ],
+        freight_cost: 150,
+        handling_cost: 50,
+      },
+    });
+    expect(purchaseErr).toBeNull();
+
+    const { error: receiveErr } = await magasinier.rpc("receive_purchase", {
+      purchase_id: purchase!.id,
+      losses: [],
+      lot_expiry_dates: [],
+      p_driver_name: "Chauffeur Test",
+      p_truck_plate: "TEST-INTEGRATION",
+      p_driver_phone: "90000000",
+    });
+    expect(receiveErr).toBeNull();
+
+    // Frais totaux = 200, répartis 50/50 par valeur = 100 chacun.
+    // A : 100 / 100 unités = 1/unité -> prix de revient = 10 + 1 = 11.
+    // B : 100 / 5 unités = 20/unité -> prix de revient = 200 + 20 = 220.
+    const { data: lotA } = await magasinier
+      .from("stock_lots")
+      .select("unit_cost")
+      .eq("product_id", productA!.id)
+      .eq("warehouse_id", warehouseId)
+      .single();
+    expect(Number(lotA?.unit_cost)).toBeCloseTo(11, 2);
+
+    const { data: lotB } = await magasinier
+      .from("stock_lots")
+      .select("unit_cost")
+      .eq("product_id", productB!.id)
+      .eq("warehouse_id", warehouseId)
+      .single();
+    expect(Number(lotB?.unit_cost)).toBeCloseTo(220, 2);
   });
 
   it("refuse au Gérant la réception de son propre achat (séparation des tâches)", async () => {

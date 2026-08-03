@@ -694,8 +694,9 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     d'achat) : le coût unitaire capitalisé dans `stock_lots.unit_cost` à la réception
     d'un achat n'est plus le seul prix d'achat, mais un prix de revient =
     prix d'achat + quote-part des frais de transport/manutention saisis à la
-    **création** de l'achat (voir point 38), répartis **au prorata de la quantité
-    commandée** (et non reçue) sur chaque ligne. Périmètre volontairement limité à
+    **création** de l'achat (voir point 38), répartis ~~au prorata de la quantité
+    commandée~~ **au prorata de la valeur commandée** (et non reçue) sur chaque ligne —
+    voir point 55 pour la correction. Périmètre volontairement limité à
     **achat + transport +
     manutention** — deux autres coûts explicitement exclus de cette valeur :
     - **Les pertes constatées à la réception restent hors du prix de revient** : la
@@ -1172,6 +1173,25 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     (`approve_stock_loss` avait déjà été migrée vers `has_attribution` en 0037, mais pas
     ces deux-là). Basculées sur `has_attribution('pertes_stock.declarer'/'pertes_stock.approuver')`,
     cohérent avec le reste de l'app et avec les gardes déjà en place côté frontend.
+55. **Prix de revient réparti au prorata de la valeur, pas de la quantité**
+    (`0068_prix_de_revient_prorata_valeur.sql`) : corrige une limite documentée depuis le
+    point 36 — les frais de transport/manutention (`purchases.freight_cost`/
+    `handling_cost`) étaient répartis également par unité de quantité, sans égard à la
+    valeur de chaque ligne. Une réception mélangeant une grosse quantité à faible valeur
+    unitaire (céréales en vrac) et une petite quantité à forte valeur unitaire
+    (équipement) faisait porter l'essentiel des frais à la ligne la plus volumineuse,
+    même si sa valeur commandée était comparable voire inférieure. `receive_purchase`
+    calcule désormais la quote-part de chaque ligne au prorata de sa **valeur commandée**
+    (quantité × coût unitaire d'achat) dans la valeur totale commandée — dénominateur
+    toujours basé sur les quantités **commandées**, pas reçues, comme avant. Formule
+    simplifiée : `frais_total × coût_unitaire_ligne / valeur_totale_commandée`. Repli à 0
+    si la valeur totale commandée est nulle (tous les coûts unitaires à 0), symétrique à
+    l'ancien repli sur quantité nulle. Le calcul miroir côté client
+    (`PurchaseDetailPage.tsx`, colonne "Prix de revient / unité") et le texte explicatif
+    du formulaire de création (`NewPurchaseForm.tsx`) sont mis à jour en conséquence.
+    Nouveau test d'intégration (`purchase-to-payment.test.ts`) avec deux lignes de poids
+    de valeur identique (50 %/50 %) mais de quantités très différentes (100 vs 5 unités),
+    prouvant que la répartition suit bien la valeur et non plus la quantité.
 
 ## Limites connues / pistes pour la suite
 
@@ -1196,12 +1216,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   `0067_pertes_stock_lot_cible.sql`) : la déclaration d'une perte peut désormais désigner
   un lot précis, dont l'approbation échoue explicitement (pas de repli FEFO) si sa
   quantité restante s'avère insuffisante entre-temps.
-- **Prix de revient** (point 36) : la répartition des frais de transport/manutention
-  est **au prorata de la quantité**, pas de la valeur — une réception mélangeant des
-  produits d'unités très différentes (ex. tonnes et cartons) répartit la même quote-
-  part par unité de quantité, sans pondération par valeur. Aucune TVA modélisée sur
-  ces frais. Périmètre volontairement limité à achat + transport + manutention : les
-  pertes et le reconditionnement n'y ajoutent jamais de coût (voir point 36).
+- **Prix de revient** (point 36) : ~~la répartition des frais de transport/manutention
+  est au prorata de la quantité, pas de la valeur~~ — **corrigé** (point 55,
+  `0068_prix_de_revient_prorata_valeur.sql`) : répartie au prorata de la valeur
+  commandée depuis lors. Reste inchangé : aucune TVA modélisée sur ces frais, périmètre
+  volontairement limité à achat + transport + manutention (les pertes et le
+  reconditionnement n'y ajoutent jamais de coût, voir point 36).
 - **Prix de revient des transformations** (point 37) : la répartition entre extrants
   multiples utilise le **prix de vente courant** comme clé de valeur marchande — un
   produit mal tarifé (prix à 0 ou obsolète) fausse sa part relative du coût total.

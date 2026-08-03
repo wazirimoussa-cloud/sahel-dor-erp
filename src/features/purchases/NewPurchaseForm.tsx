@@ -155,9 +155,9 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
         </div>
       </div>
       <p className="text-xs text-gray-500">
-        Ces frais sont répartis au prorata de la quantité commandée pour calculer le prix de
-        revient du stock à la réception ; ils sont comptabilisés séparément (compte 608) et
-        n'affectent pas la dette envers le fournisseur.
+        Ces frais sont répartis au prorata de la valeur commandée (quantité × coût unitaire)
+        pour calculer le prix de revient du stock à la réception ; ils sont comptabilisés
+        séparément (compte 608) et n'affectent pas la dette envers le fournisseur.
       </p>
 
       <div className="flex gap-3">

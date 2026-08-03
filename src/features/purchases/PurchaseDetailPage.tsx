@@ -101,9 +101,11 @@ export function PurchaseDetailPage() {
   const totalTTC = totalHT + vatAmount;
   const freightCost = purchase.freight_cost ?? 0;
   const handlingCost = purchase.handling_cost ?? 0;
-  const totalOrderedQty = items.reduce((sum, item) => sum + item.quantity, 0);
-  const ancillaryPerUnit =
-    totalOrderedQty > 0 ? (freightCost + handlingCost) / totalOrderedQty : 0;
+  const ancillaryTotal = freightCost + handlingCost;
+  const totalOrderedValue = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
+  function ancillaryPerUnitFor(item: { unit_cost: number }) {
+    return totalOrderedValue > 0 ? (ancillaryTotal * item.unit_cost) / totalOrderedValue : 0;
+  }
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
@@ -307,7 +309,7 @@ export function PurchaseDetailPage() {
                   </td>
                   {purchase.status === "received" && canViewLandedCost && (
                     <td className="py-2">
-                      {(item.unit_cost + ancillaryPerUnit).toLocaleString("fr-FR", {
+                      {(item.unit_cost + ancillaryPerUnitFor(item)).toLocaleString("fr-FR", {
                         maximumFractionDigits: 2,
                       })}{" "}
                       FCFA
@@ -346,7 +348,8 @@ export function PurchaseDetailPage() {
                 <td colSpan={4} className="pt-2 text-right text-xs text-gray-500">
                   Frais accessoires (compte 608) : transport {freightCost.toLocaleString("fr-FR")}{" "}
                   FCFA + manutention {handlingCost.toLocaleString("fr-FR")} FCFA — répartis au
-                  prorata de la quantité commandée ({totalOrderedQty})
+                  prorata de la valeur commandée (
+                  {totalOrderedValue.toLocaleString("fr-FR")} FCFA)
                 </td>
                 <td className="pt-2" />
               </tr>
