@@ -43,7 +43,7 @@ export function ChartOfAccountsPage() {
               ))}
               {accounts.length === 0 && (
                 <tr>
-                  <td colSpan={2} className="py-4 text-center text-gray-400">
+                  <td colSpan={2} className="py-4 text-center text-gray-500">
                     Aucun compte pour le moment.
                   </td>
                 </tr>

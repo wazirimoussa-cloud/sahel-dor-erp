@@ -121,7 +121,7 @@ export function JournalPage() {
           </Card>
         );
       })}
-      {entries?.length === 0 && <p className="text-sm text-gray-400">Aucune écriture pour le moment.</p>}
+      {entries?.length === 0 && <p className="text-sm text-gray-500">Aucune écriture pour le moment.</p>}
     </div>
   );
 }

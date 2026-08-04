@@ -88,7 +88,7 @@ export function TransformationsPage() {
             })}
             {transformations?.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-4 text-center text-gray-400">
+                <td colSpan={6} className="py-4 text-center text-gray-500">
                   Aucune transformation pour le moment.
                 </td>
               </tr>

@@ -79,7 +79,7 @@ export function EmployeesPage() {
               ))}
               {employees.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 6 : 5} className="py-4 text-center text-gray-400">
+                  <td colSpan={canManage ? 6 : 5} className="py-4 text-center text-gray-500">
                     Aucun employé pour le moment.
                   </td>
                 </tr>

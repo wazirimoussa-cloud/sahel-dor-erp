@@ -75,7 +75,7 @@ export function PayePage() {
               ))}
               {payslips.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-4 text-center text-gray-400">
+                  <td colSpan={7} className="py-4 text-center text-gray-500">
                     Aucun bulletin de paie pour le moment.
                   </td>
                 </tr>
@@ -122,7 +122,7 @@ export function PayePage() {
               })}
               {advances.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-gray-400">
+                  <td colSpan={5} className="py-4 text-center text-gray-500">
                     Aucune avance pour le moment.
                   </td>
                 </tr>
@@ -181,7 +181,7 @@ export function PayePage() {
               ))}
               {leaveRecords.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 6 : 5} className="py-4 text-center text-gray-400">
+                  <td colSpan={canManage ? 6 : 5} className="py-4 text-center text-gray-500">
                     Aucun congé/absence enregistré pour le moment.
                   </td>
                 </tr>

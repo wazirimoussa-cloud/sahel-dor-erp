@@ -93,7 +93,7 @@ export function ProductionDashboard() {
                 <li key={p.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
                   <div>
                     <span>{warehouseName(p.warehouses) ?? "—"}</span>
-                    <span className="ml-2 text-xs text-gray-400">
+                    <span className="ml-2 text-xs text-gray-500">
                       {new Date(p.created_at).toLocaleDateString("fr-FR")}
                     </span>
                   </div>
@@ -120,7 +120,7 @@ export function ProductionDashboard() {
                 <li key={t.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
                   <div>
                     <span>{warehouseName(t.warehouses) ?? "—"}</span>
-                    <span className="ml-2 text-xs text-gray-400">
+                    <span className="ml-2 text-xs text-gray-500">
                       {new Date(t.created_at).toLocaleDateString("fr-FR")}
                     </span>
                   </div>

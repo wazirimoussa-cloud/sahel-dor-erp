@@ -112,7 +112,7 @@ export function OrdersPage() {
             })}
             {orders?.length === 0 && (
               <tr>
-                <td colSpan={7} className="py-4 text-center text-gray-400">
+                <td colSpan={7} className="py-4 text-center text-gray-500">
                   Aucune commande pour le moment.
                 </td>
               </tr>

@@ -171,7 +171,7 @@ export function FinancialStatementsPage() {
               onChange={(e) => setEndDate(e.target.value)}
             />
           </div>
-          <p className="pb-2 text-xs text-gray-400">
+          <p className="pb-2 text-xs text-gray-500">
             Le bilan est toujours une photo cumulée à la date de fin choisie.
           </p>
         </div>
@@ -199,7 +199,7 @@ export function FinancialStatementsPage() {
                 <tr className="border-b border-gray-100">
                   <td className="py-2">
                     Variation de stocks
-                    <span className="ml-1 text-xs text-gray-400">
+                    <span className="ml-1 text-xs text-gray-500">
                       (stock fin − stock début de période, achats uniquement)
                     </span>
                   </td>
@@ -507,7 +507,7 @@ export function FinancialStatementsPage() {
                         {asset.depreciation_method === "degressif" ? (
                           <>
                             Dégressif
-                            <span className="ml-1 text-xs text-gray-400">
+                            <span className="ml-1 text-xs text-gray-500">
                               (×{asset.degressif_coefficient})
                             </span>
                           </>
@@ -606,7 +606,7 @@ export function FinancialStatementsPage() {
                 ))}
                 {data.fixedAssets.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-4 text-center text-gray-400">
+                    <td colSpan={8} className="py-4 text-center text-gray-500">
                       Aucune immobilisation enregistrée.
                     </td>
                   </tr>

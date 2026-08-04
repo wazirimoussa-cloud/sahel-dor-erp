@@ -94,7 +94,7 @@ export function WarehousesPage() {
               ))}
               {warehouses.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-400">
+                  <td colSpan={4} className="py-4 text-center text-gray-500">
                     Aucun magasin pour le moment.
                   </td>
                 </tr>

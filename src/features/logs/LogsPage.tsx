@@ -42,7 +42,7 @@ export function LogsPage() {
               })}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="py-4 text-center text-gray-400">
+                  <td colSpan={4} className="py-4 text-center text-gray-500">
                     Aucune entrée pour le moment.
                   </td>
                 </tr>

@@ -371,7 +371,7 @@ export function OrderDetailPage() {
               })}
               {payments?.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="py-4 text-center text-gray-400">
+                  <td colSpan={3} className="py-4 text-center text-gray-500">
                     Aucun paiement enregistré.
                   </td>
                 </tr>

@@ -59,7 +59,7 @@ export function ProductionsPage() {
             })}
             {productions?.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-center text-gray-400">
+                <td colSpan={5} className="py-4 text-center text-gray-500">
                   Aucune production pour le moment.
                 </td>
               </tr>

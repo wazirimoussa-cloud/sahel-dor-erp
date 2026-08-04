@@ -110,7 +110,7 @@ export function UserAttributionsPanel({
               <div className="flex gap-2 text-xs">
                 <button
                   type="button"
-                  className="text-gray-400 hover:underline"
+                  className="text-gray-500 hover:underline"
                   onClick={() => setModuleLevel(module, "aucun")}
                 >
                   Aucun

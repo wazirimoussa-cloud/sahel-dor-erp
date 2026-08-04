@@ -145,7 +145,7 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
               </option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-gray-400">Remboursement intégral, pas de solde partiel.</p>
+          <p className="mt-1 text-xs text-gray-500">Remboursement intégral, pas de solde partiel.</p>
         </div>
       </div>
       <p className="text-sm font-semibold text-forest-900">

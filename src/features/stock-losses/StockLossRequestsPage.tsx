@@ -181,7 +181,7 @@ export function StockLossRequestsPage() {
             })}
             {requests?.length === 0 && (
               <tr>
-                <td colSpan={canApprove ? 8 : 7} className="py-4 text-center text-gray-400">
+                <td colSpan={canApprove ? 8 : 7} className="py-4 text-center text-gray-500">
                   Aucune déclaration de perte pour le moment.
                 </td>
               </tr>

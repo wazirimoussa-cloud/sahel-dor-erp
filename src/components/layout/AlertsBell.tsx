@@ -49,7 +49,7 @@ export function AlertsBell() {
       {open && (
         <div className="absolute right-0 z-10 mt-2 w-72 rounded-md border border-gray-200 bg-white p-3 shadow-lg">
           <p className="mb-2 text-xs font-medium uppercase text-gray-500">Alertes</p>
-          {total === 0 && <p className="text-sm text-gray-400">Aucune alerte pour le moment.</p>}
+          {total === 0 && <p className="text-sm text-gray-500">Aucune alerte pour le moment.</p>}
           <ul className="space-y-2 text-sm">
             {lowStockCount > 0 && (
               <li>

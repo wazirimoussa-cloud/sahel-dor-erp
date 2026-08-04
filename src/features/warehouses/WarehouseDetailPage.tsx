@@ -164,7 +164,7 @@ export function WarehouseDetailPage() {
               })}
               {transactions.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-4 text-center text-gray-400">
+                  <td colSpan={7} className="py-4 text-center text-gray-500">
                     Aucun mouvement pour cette recherche.
                   </td>
                 </tr>
@@ -205,7 +205,7 @@ export function WarehouseDetailPage() {
                     <td className="py-2">
                       {lot.quantity_received} {productInfo?.unit ?? ""}
                     </td>
-                    <td className={`py-2 ${lot.quantity_remaining <= 0 ? "text-gray-400" : ""}`}>
+                    <td className={`py-2 ${lot.quantity_remaining <= 0 ? "text-gray-500" : ""}`}>
                       {lot.quantity_remaining} {productInfo?.unit ?? ""}
                     </td>
                     <td className="py-2">{lot.unit_cost.toLocaleString("fr-FR")} FCFA</td>
@@ -233,7 +233,7 @@ export function WarehouseDetailPage() {
               })}
               {lots.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="py-4 text-center text-gray-400">
+                  <td colSpan={8} className="py-4 text-center text-gray-500">
                     Aucun lot pour cette recherche.
                   </td>
                 </tr>

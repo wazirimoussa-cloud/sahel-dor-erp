@@ -92,7 +92,7 @@ export function PurchaseLossesPage() {
               })}
               {losses.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-4 text-center text-gray-400">
+                  <td colSpan={7} className="py-4 text-center text-gray-500">
                     Aucune perte enregistrée.
                   </td>
                 </tr>

@@ -99,7 +99,7 @@ export function TransformationDetailPage() {
           )}
           {!sameUnit && <span className="ml-1 text-gray-500">(unités différentes)</span>}
         </p>
-        <p className="mt-1 text-xs text-gray-400">
+        <p className="mt-1 text-xs text-gray-500">
           {sameUnit
             ? "Ratio de quantités (extrants/intrants) — pas un rendement massique réel."
             : "Non calculable : les intrants et extrants ne partagent pas la même unité de mesure."}

@@ -80,7 +80,7 @@ export function SalesDashboard() {
                 <li key={o.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
                   <div>
                     <span>{clientName ?? "—"}</span>
-                    <span className="ml-2 text-xs text-gray-400">
+                    <span className="ml-2 text-xs text-gray-500">
                       {new Date(o.created_at).toLocaleDateString("fr-FR")}
                     </span>
                   </div>

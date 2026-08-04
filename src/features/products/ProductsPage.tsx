@@ -23,9 +23,9 @@ type PriceFormValues = z.infer<typeof priceSchema>;
 
 function PriceHistoryRows({ productId }: { productId: string }) {
   const { data: history, isLoading } = usePriceHistory(productId);
-  if (isLoading) return <p className="py-2 text-xs text-gray-400">Chargement…</p>;
+  if (isLoading) return <p className="py-2 text-xs text-gray-500">Chargement…</p>;
   if (!history || history.length === 0) {
-    return <p className="py-2 text-xs text-gray-400">Aucun changement de prix enregistré.</p>;
+    return <p className="py-2 text-xs text-gray-500">Aucun changement de prix enregistré.</p>;
   }
   return (
     <table className="w-full text-left text-xs text-gray-600">
@@ -249,7 +249,7 @@ export function ProductsPage() {
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-gray-400">
+                  <td colSpan={5} className="py-4 text-center text-gray-500">
                     Aucun produit pour le moment.
                   </td>
                 </tr>

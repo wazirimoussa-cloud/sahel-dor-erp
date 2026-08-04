@@ -526,7 +526,7 @@ export function VatSettingsPage() {
                     {field.label} ({field.suffix})
                   </label>
                   <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
-                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  <p className="mt-1 text-xs text-gray-500">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
                   )}
@@ -549,7 +549,7 @@ export function VatSettingsPage() {
                     {field.label} ({field.suffix})
                   </label>
                   <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
-                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  <p className="mt-1 text-xs text-gray-500">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
                   )}
@@ -563,7 +563,7 @@ export function VatSettingsPage() {
                     {field.label} ({field.suffix})
                   </label>
                   <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
-                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  <p className="mt-1 text-xs text-gray-500">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
                   )}
@@ -593,7 +593,7 @@ export function VatSettingsPage() {
                     {field.label} ({field.suffix})
                   </label>
                   <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
-                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  <p className="mt-1 text-xs text-gray-500">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
                   )}
@@ -616,7 +616,7 @@ export function VatSettingsPage() {
                     {field.label} ({field.suffix})
                   </label>
                   <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
-                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  <p className="mt-1 text-xs text-gray-500">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
                   )}
@@ -640,7 +640,7 @@ export function VatSettingsPage() {
                     {field.label} ({field.suffix})
                   </label>
                   <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
-                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  <p className="mt-1 text-xs text-gray-500">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
                   )}
@@ -664,7 +664,7 @@ export function VatSettingsPage() {
                     {field.label} ({field.suffix})
                   </label>
                   <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
-                  <p className="mt-1 text-xs text-gray-400">{field.help}</p>
+                  <p className="mt-1 text-xs text-gray-500">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
                   )}

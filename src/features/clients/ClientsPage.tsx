@@ -89,7 +89,7 @@ export function ClientsPage() {
               ))}
               {clients.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center text-gray-400">
+                  <td colSpan={6} className="py-4 text-center text-gray-500">
                     Aucun client pour le moment.
                   </td>
                 </tr>
