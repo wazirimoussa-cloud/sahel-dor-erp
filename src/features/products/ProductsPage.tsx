@@ -122,11 +122,11 @@ export function ProductsPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Nom</th>
-                <th className="py-2">Prix</th>
-                <th className="py-2">Stock</th>
-                <th className="py-2">Statut</th>
-                <th className="py-2" />
+                <th scope="col" className="py-2">Nom</th>
+                <th scope="col" className="py-2">Prix</th>
+                <th scope="col" className="py-2">Stock</th>
+                <th scope="col" className="py-2">Statut</th>
+                <th scope="col" className="py-2" />
               </tr>
             </thead>
             <tbody>

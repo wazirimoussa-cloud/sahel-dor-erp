@@ -46,12 +46,12 @@ export function EmployeesPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Nom</th>
-                <th className="py-2">Poste</th>
-                <th className="py-2">Salaire de base</th>
-                <th className="py-2">Charges de famille</th>
-                <th className="py-2">Statut</th>
-                {canManage && <th className="py-2" />}
+                <th scope="col" className="py-2">Nom</th>
+                <th scope="col" className="py-2">Poste</th>
+                <th scope="col" className="py-2">Salaire de base</th>
+                <th scope="col" className="py-2">Charges de famille</th>
+                <th scope="col" className="py-2">Statut</th>
+                {canManage && <th scope="col" className="py-2" />}
               </tr>
             </thead>
             <tbody>

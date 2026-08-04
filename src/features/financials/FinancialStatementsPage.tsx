@@ -483,14 +483,14 @@ export function FinancialStatementsPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-gray-500">
-                  <th className="py-2">Nom</th>
-                  <th className="py-2">Catégorie</th>
-                  <th className="py-2">Acquisition</th>
-                  <th className="py-2">Coût</th>
-                  <th className="py-2">Méthode</th>
-                  <th className="py-2">VNC à la date de fin</th>
-                  <th className="py-2">Statut</th>
-                  <th className="py-2" />
+                  <th scope="col" className="py-2">Nom</th>
+                  <th scope="col" className="py-2">Catégorie</th>
+                  <th scope="col" className="py-2">Acquisition</th>
+                  <th scope="col" className="py-2">Coût</th>
+                  <th scope="col" className="py-2">Méthode</th>
+                  <th scope="col" className="py-2">VNC à la date de fin</th>
+                  <th scope="col" className="py-2">Statut</th>
+                  <th scope="col" className="py-2" />
                 </tr>
               </thead>
               <tbody>

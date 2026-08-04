@@ -25,13 +25,13 @@ export function PurchaseLossesPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Date</th>
-                <th className="py-2">Transporteur</th>
-                <th className="py-2">Produit</th>
-                <th className="py-2">Quantité perdue</th>
-                <th className="py-2">Valeur</th>
-                <th className="py-2">Achat</th>
-                <th className="py-2" />
+                <th scope="col" className="py-2">Date</th>
+                <th scope="col" className="py-2">Transporteur</th>
+                <th scope="col" className="py-2">Produit</th>
+                <th scope="col" className="py-2">Quantité perdue</th>
+                <th scope="col" className="py-2">Valeur</th>
+                <th scope="col" className="py-2">Achat</th>
+                <th scope="col" className="py-2" />
               </tr>
             </thead>
             <tbody>

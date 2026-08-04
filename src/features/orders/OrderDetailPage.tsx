@@ -216,10 +216,10 @@ export function OrderDetailPage() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
-              <th className="py-2">Produit</th>
-              <th className="py-2">Quantité</th>
-              <th className="py-2">Prix unitaire</th>
-              <th className="py-2">Sous-total</th>
+              <th scope="col" className="py-2">Produit</th>
+              <th scope="col" className="py-2">Quantité</th>
+              <th scope="col" className="py-2">Prix unitaire</th>
+              <th scope="col" className="py-2">Sous-total</th>
             </tr>
           </thead>
           <tbody>
@@ -349,9 +349,9 @@ export function OrderDetailPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Date</th>
-                <th className="py-2">Montant</th>
-                <th className="py-2">Enregistré par</th>
+                <th scope="col" className="py-2">Date</th>
+                <th scope="col" className="py-2">Montant</th>
+                <th scope="col" className="py-2">Enregistré par</th>
               </tr>
             </thead>
             <tbody>

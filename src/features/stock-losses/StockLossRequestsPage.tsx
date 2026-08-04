@@ -73,14 +73,14 @@ export function StockLossRequestsPage() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
-              <th className="py-2">Date</th>
-              <th className="py-2">Produit</th>
-              <th className="py-2">Magasin</th>
-              <th className="py-2">Quantité</th>
-              <th className="py-2">Motif</th>
-              <th className="py-2">Demandeur</th>
-              <th className="py-2">Statut</th>
-              {canApprove && <th className="py-2" />}
+              <th scope="col" className="py-2">Date</th>
+              <th scope="col" className="py-2">Produit</th>
+              <th scope="col" className="py-2">Magasin</th>
+              <th scope="col" className="py-2">Quantité</th>
+              <th scope="col" className="py-2">Motif</th>
+              <th scope="col" className="py-2">Demandeur</th>
+              <th scope="col" className="py-2">Statut</th>
+              {canApprove && <th scope="col" className="py-2" />}
             </tr>
           </thead>
           <tbody>

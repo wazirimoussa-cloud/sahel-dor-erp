@@ -21,10 +21,10 @@ export function LogsPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Date</th>
-                <th className="py-2">Utilisateur</th>
-                <th className="py-2">Module</th>
-                <th className="py-2">Action</th>
+                <th scope="col" className="py-2">Date</th>
+                <th scope="col" className="py-2">Utilisateur</th>
+                <th scope="col" className="py-2">Module</th>
+                <th scope="col" className="py-2">Action</th>
               </tr>
             </thead>
             <tbody>

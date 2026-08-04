@@ -86,9 +86,9 @@ export function JournalPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-gray-500">
-                  <th className="py-1">Compte</th>
-                  <th className="py-1">Débit</th>
-                  <th className="py-1">Crédit</th>
+                  <th scope="col" className="py-1">Compte</th>
+                  <th scope="col" className="py-1">Débit</th>
+                  <th scope="col" className="py-1">Crédit</th>
                 </tr>
               </thead>
               <tbody>

@@ -50,13 +50,13 @@ export function PayePage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Mois</th>
-                <th className="py-2">Employé</th>
-                <th className="py-2">Brut</th>
-                <th className="py-2">Pension</th>
-                <th className="py-2">ITS</th>
-                <th className="py-2">Avance remboursée</th>
-                <th className="py-2">Net</th>
+                <th scope="col" className="py-2">Mois</th>
+                <th scope="col" className="py-2">Employé</th>
+                <th scope="col" className="py-2">Brut</th>
+                <th scope="col" className="py-2">Pension</th>
+                <th scope="col" className="py-2">ITS</th>
+                <th scope="col" className="py-2">Avance remboursée</th>
+                <th scope="col" className="py-2">Net</th>
               </tr>
             </thead>
             <tbody>
@@ -100,11 +100,11 @@ export function PayePage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Date</th>
-                <th className="py-2">Employé</th>
-                <th className="py-2">Montant</th>
-                <th className="py-2">Motif</th>
-                <th className="py-2">Statut</th>
+                <th scope="col" className="py-2">Date</th>
+                <th scope="col" className="py-2">Employé</th>
+                <th scope="col" className="py-2">Montant</th>
+                <th scope="col" className="py-2">Motif</th>
+                <th scope="col" className="py-2">Statut</th>
               </tr>
             </thead>
             <tbody>
@@ -154,12 +154,12 @@ export function PayePage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Employé</th>
-                <th className="py-2">Type</th>
-                <th className="py-2">Début</th>
-                <th className="py-2">Fin</th>
-                <th className="py-2">Motif</th>
-                {canManage && <th className="py-2" />}
+                <th scope="col" className="py-2">Employé</th>
+                <th scope="col" className="py-2">Type</th>
+                <th scope="col" className="py-2">Début</th>
+                <th scope="col" className="py-2">Fin</th>
+                <th scope="col" className="py-2">Motif</th>
+                {canManage && <th scope="col" className="py-2" />}
               </tr>
             </thead>
             <tbody>

@@ -25,10 +25,10 @@ export function TransportersPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Nom</th>
-                <th className="py-2">Contact</th>
-                <th className="py-2">Téléphone</th>
-                <th className="py-2">Email</th>
+                <th scope="col" className="py-2">Nom</th>
+                <th scope="col" className="py-2">Contact</th>
+                <th scope="col" className="py-2">Téléphone</th>
+                <th scope="col" className="py-2">Email</th>
               </tr>
             </thead>
             <tbody>

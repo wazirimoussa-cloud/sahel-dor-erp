@@ -278,12 +278,12 @@ export function PurchaseDetailPage() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
-              <th className="py-2">Produit</th>
-              <th className="py-2">Quantité</th>
-              <th className="py-2">Coût unitaire</th>
-              <th className="py-2">Sous-total</th>
+              <th scope="col" className="py-2">Produit</th>
+              <th scope="col" className="py-2">Quantité</th>
+              <th scope="col" className="py-2">Coût unitaire</th>
+              <th scope="col" className="py-2">Sous-total</th>
               {purchase.status === "received" && canViewLandedCost && (
-                <th className="py-2">Prix de revient / unité</th>
+                <th scope="col" className="py-2">Prix de revient / unité</th>
               )}
             </tr>
           </thead>
@@ -396,12 +396,12 @@ export function PurchaseDetailPage() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-gray-500">
-                  <th className="py-2">Produit</th>
-                  <th className="py-2">Commandé</th>
-                  <th className="py-2">Reçu</th>
-                  <th className="py-2">Péremption</th>
-                  <th className="py-2">Transporteur (si perte)</th>
-                  <th className="py-2">Motif</th>
+                  <th scope="col" className="py-2">Produit</th>
+                  <th scope="col" className="py-2">Commandé</th>
+                  <th scope="col" className="py-2">Reçu</th>
+                  <th scope="col" className="py-2">Péremption</th>
+                  <th scope="col" className="py-2">Transporteur (si perte)</th>
+                  <th scope="col" className="py-2">Motif</th>
                 </tr>
               </thead>
               <tbody>
@@ -539,11 +539,11 @@ export function PurchaseDetailPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th className="py-2">Produit</th>
-                <th className="py-2">Quantité perdue</th>
-                <th className="py-2">Valeur</th>
-                <th className="py-2">Transporteur</th>
-                <th className="py-2" />
+                <th scope="col" className="py-2">Produit</th>
+                <th scope="col" className="py-2">Quantité perdue</th>
+                <th scope="col" className="py-2">Valeur</th>
+                <th scope="col" className="py-2">Transporteur</th>
+                <th scope="col" className="py-2" />
               </tr>
             </thead>
             <tbody>

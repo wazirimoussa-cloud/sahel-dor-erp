@@ -57,10 +57,10 @@ export function ProductionDetailPage() {
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
-              <th className="py-2">Produit</th>
-              <th className="py-2">Quantité</th>
-              <th className="py-2">Coût unitaire</th>
-              <th className="py-2">Sous-total</th>
+              <th scope="col" className="py-2">Produit</th>
+              <th scope="col" className="py-2">Quantité</th>
+              <th scope="col" className="py-2">Coût unitaire</th>
+              <th scope="col" className="py-2">Sous-total</th>
             </tr>
           </thead>
           <tbody>
