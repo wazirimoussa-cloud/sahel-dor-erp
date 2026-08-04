@@ -41,8 +41,14 @@ export function SalaryAdvanceForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Employé</label>
-        <select className="rounded-md border border-gray-300 px-3 py-2 text-sm" {...register("employeeId")}>
+        <label htmlFor="advance-employeeId" className="mb-1 block text-xs font-medium text-gray-600">
+          Employé
+        </label>
+        <select
+          id="advance-employeeId"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          {...register("employeeId")}
+        >
           <option value="">— Choisir —</option>
           {employees?.map((employee) => (
             <option key={employee.id} value={employee.id}>
@@ -53,18 +59,26 @@ export function SalaryAdvanceForm({ onCreated }: { onCreated?: () => void }) {
         {errors.employeeId && <p className="mt-1 text-xs text-red-600">{errors.employeeId.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Montant (FCFA)</label>
-        <Input type="number" step="0.01" {...register("amount")} />
+        <label htmlFor="advance-amount" className="mb-1 block text-xs font-medium text-gray-600">
+          Montant (FCFA)
+        </label>
+        <Input id="advance-amount" type="number" step="0.01" {...register("amount")} />
         {errors.amount && <p className="mt-1 text-xs text-red-600">{errors.amount.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Motif (optionnel)</label>
-        <Input {...register("reason")} />
+        <label htmlFor="advance-reason" className="mb-1 block text-xs font-medium text-gray-600">
+          Motif (optionnel)
+        </label>
+        <Input id="advance-reason" {...register("reason")} />
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Verser l'avance
       </Button>
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

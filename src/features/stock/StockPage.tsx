@@ -129,8 +129,11 @@ export function StockPage() {
         <h2 className="mb-3 text-base font-semibold text-gray-800">Synthèse du stock disponible</h2>
         <div className="mb-3 flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+            <label htmlFor="stock-filter-productId" className="mb-1 block text-xs font-medium text-gray-600">
+              Produit
+            </label>
             <select
+              id="stock-filter-productId"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               value={productFilter}
               onChange={(e) => setProductFilter(e.target.value)}
@@ -144,8 +147,11 @@ export function StockPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+            <label htmlFor="stock-filter-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+              Magasin
+            </label>
             <select
+              id="stock-filter-warehouseId"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               value={warehouseFilter}
               onChange={(e) => setWarehouseFilter(e.target.value)}

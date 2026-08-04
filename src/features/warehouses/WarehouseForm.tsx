@@ -33,13 +33,17 @@ export function WarehouseForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
-        <Input {...register("name")} />
+        <label htmlFor="warehouse-name" className="mb-1 block text-xs font-medium text-gray-600">
+          Nom
+        </label>
+        <Input id="warehouse-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Emplacement</label>
-        <Input {...register("location")} placeholder="Ville, quartier…" />
+        <label htmlFor="warehouse-location" className="mb-1 block text-xs font-medium text-gray-600">
+          Emplacement
+        </label>
+        <Input id="warehouse-location" {...register("location")} placeholder="Ville, quartier…" />
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le magasin

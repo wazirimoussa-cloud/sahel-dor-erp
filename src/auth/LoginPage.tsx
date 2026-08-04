@@ -82,7 +82,7 @@ export function LoginPage() {
           <p className="mb-6 text-center text-sm text-gray-500">Connexion à l'espace de gestion</p>
 
           {deactivatedMessage && (
-            <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p role="alert" className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
               {deactivatedMessage}
             </p>
           )}
@@ -111,7 +111,11 @@ export function LoginPage() {
               )}
             </div>
 
-            {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+            {serverError && (
+              <p role="alert" className="text-sm text-red-600">
+                {serverError}
+              </p>
+            )}
 
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Connexion…" : "Se connecter"}
@@ -149,7 +153,9 @@ export function LoginPage() {
                 )}
               </div>
               {forgotPasswordMessage && (
-                <p className="text-xs text-green-600">{forgotPasswordMessage}</p>
+                <p role="status" className="text-xs text-green-600">
+                  {forgotPasswordMessage}
+                </p>
               )}
               <Button
                 type="submit"

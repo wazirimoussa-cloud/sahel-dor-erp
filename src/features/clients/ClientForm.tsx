@@ -36,26 +36,36 @@ export function ClientForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
-        <Input {...register("name")} />
+        <label htmlFor="client-name" className="mb-1 block text-xs font-medium text-gray-600">
+          Nom
+        </label>
+        <Input id="client-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Contact</label>
-        <Input {...register("contactName")} />
+        <label htmlFor="client-contactName" className="mb-1 block text-xs font-medium text-gray-600">
+          Contact
+        </label>
+        <Input id="client-contactName" {...register("contactName")} />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Téléphone</label>
-        <Input {...register("phone")} />
+        <label htmlFor="client-phone" className="mb-1 block text-xs font-medium text-gray-600">
+          Téléphone
+        </label>
+        <Input id="client-phone" {...register("phone")} />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Email</label>
-        <Input type="email" {...register("email")} />
+        <label htmlFor="client-email" className="mb-1 block text-xs font-medium text-gray-600">
+          Email
+        </label>
+        <Input id="client-email" type="email" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Adresse</label>
-        <Input {...register("address")} />
+        <label htmlFor="client-address" className="mb-1 block text-xs font-medium text-gray-600">
+          Adresse
+        </label>
+        <Input id="client-address" {...register("address")} />
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le client

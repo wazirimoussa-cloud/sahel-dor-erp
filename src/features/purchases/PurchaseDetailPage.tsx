@@ -374,7 +374,11 @@ export function PurchaseDetailPage() {
         )}
       </div>
 
-      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+      {actionError && (
+        <p role="alert" className="text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
 
       {purchase.status === "pending" && canReceive && (
         <Card>
@@ -415,6 +419,7 @@ export function PurchaseDetailPage() {
                         min={0}
                         max={item.quantity}
                         className="w-20"
+                        aria-label={`Quantité reçue — ${productInfoOf(item)?.name ?? "produit"}`}
                         {...registerReception(`lines.${index}.quantityReceived` as const)}
                       />
                     </td>
@@ -422,12 +427,14 @@ export function PurchaseDetailPage() {
                       <Input
                         type="date"
                         className="w-36"
+                        aria-label={`Date de péremption — ${productInfoOf(item)?.name ?? "produit"}`}
                         {...registerReception(`lines.${index}.expiryDate` as const)}
                       />
                     </td>
                     <td className="py-2">
                       <select
                         className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+                        aria-label={`Transporteur — ${productInfoOf(item)?.name ?? "produit"}`}
                         {...registerReception(`lines.${index}.transporterId` as const)}
                       >
                         <option value="">— Aucune —</option>
@@ -442,6 +449,7 @@ export function PurchaseDetailPage() {
                       <Input
                         type="text"
                         placeholder="Optionnel"
+                        aria-label={`Motif — ${productInfoOf(item)?.name ?? "produit"}`}
                         {...registerReception(`lines.${index}.reason` as const)}
                       />
                     </td>
@@ -452,10 +460,11 @@ export function PurchaseDetailPage() {
 
             <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 sm:grid-cols-4">
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label htmlFor="driverName" className="mb-1 block text-xs font-medium text-gray-600">
                   Nom et prénom du chauffeur
                 </label>
                 <Input
+                  id="driverName"
                   type="text"
                   {...registerReception("driverName", { required: true })}
                 />
@@ -464,10 +473,11 @@ export function PurchaseDetailPage() {
                 )}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label htmlFor="truckPlate" className="mb-1 block text-xs font-medium text-gray-600">
                   Immatriculation du camion
                 </label>
                 <Input
+                  id="truckPlate"
                   type="text"
                   {...registerReception("truckPlate", { required: true })}
                 />
@@ -476,10 +486,11 @@ export function PurchaseDetailPage() {
                 )}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label htmlFor="driverPhone" className="mb-1 block text-xs font-medium text-gray-600">
                   Numéro de téléphone
                 </label>
                 <Input
+                  id="driverPhone"
                   type="text"
                   {...registerReception("driverPhone", { required: true })}
                 />
@@ -488,10 +499,11 @@ export function PurchaseDetailPage() {
                 )}
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-600">
+                <label htmlFor="repackageCount" className="mb-1 block text-xs font-medium text-gray-600">
                   Sacs à reconditionner
                 </label>
                 <Input
+                  id="repackageCount"
                   type="number"
                   min={0}
                   step="1"
@@ -502,10 +514,11 @@ export function PurchaseDetailPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label htmlFor="observation" className="mb-1 block text-xs font-medium text-gray-600">
                 Point d'observation
               </label>
               <textarea
+                id="observation"
                 rows={2}
                 placeholder="Remarques générales sur la livraison (optionnel)"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"

@@ -80,8 +80,11 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Employé</label>
+          <label htmlFor="payslip-employeeId" className="mb-1 block text-xs font-medium text-gray-600">
+            Employé
+          </label>
           <select
+            id="payslip-employeeId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("employeeId", { onChange: (e) => handleEmployeeChange(e.target.value) })}
           >
@@ -95,32 +98,46 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
           {errors.employeeId && <p className="mt-1 text-xs text-red-600">{errors.employeeId.message}</p>}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Mois</label>
-          <Input type="month" {...register("period")} />
+          <label htmlFor="period" className="mb-1 block text-xs font-medium text-gray-600">
+            Mois
+          </label>
+          <Input id="period" type="month" {...register("period")} />
           {errors.period && <p className="mt-1 text-xs text-red-600">{errors.period.message}</p>}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Salaire brut (FCFA)</label>
-          <Input type="number" step="0.01" {...register("grossSalary")} />
+          <label htmlFor="grossSalary" className="mb-1 block text-xs font-medium text-gray-600">
+            Salaire brut (FCFA)
+          </label>
+          <Input id="grossSalary" type="number" step="0.01" {...register("grossSalary")} />
           {errors.grossSalary && <p className="mt-1 text-xs text-red-600">{errors.grossSalary.message}</p>}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Retenue pension (FCFA)</label>
-          <Input type="number" step="0.01" {...register("pensionWithholding")} />
+          <label htmlFor="pensionWithholding" className="mb-1 block text-xs font-medium text-gray-600">
+            Retenue pension (FCFA)
+          </label>
+          <Input id="pensionWithholding" type="number" step="0.01" {...register("pensionWithholding")} />
           {errors.pensionWithholding && (
             <p className="mt-1 text-xs text-red-600">{errors.pensionWithholding.message}</p>
           )}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Retenue ITS (FCFA)</label>
-          <Input type="number" step="0.01" {...register("itsWithholding")} />
+          <label htmlFor="itsWithholding" className="mb-1 block text-xs font-medium text-gray-600">
+            Retenue ITS (FCFA)
+          </label>
+          <Input id="itsWithholding" type="number" step="0.01" {...register("itsWithholding")} />
           {errors.itsWithholding && (
             <p className="mt-1 text-xs text-red-600">{errors.itsWithholding.message}</p>
           )}
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Rembourser une avance</label>
-          <select className="rounded-md border border-gray-300 px-3 py-2 text-sm" {...register("advanceRepaidId")}>
+          <label htmlFor="advanceRepaidId" className="mb-1 block text-xs font-medium text-gray-600">
+            Rembourser une avance
+          </label>
+          <select
+            id="advanceRepaidId"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            {...register("advanceRepaidId")}
+          >
             <option value="">— Aucune —</option>
             {outstandingAdvances?.map((advance) => (
               <option key={advance.id} value={advance.id}>
@@ -137,7 +154,11 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
       <Button type="submit" disabled={isSubmitting}>
         Créer le bulletin
       </Button>
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

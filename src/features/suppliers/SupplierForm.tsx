@@ -36,26 +36,36 @@ export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
-        <Input {...register("name")} />
+        <label htmlFor="supplier-name" className="mb-1 block text-xs font-medium text-gray-600">
+          Nom
+        </label>
+        <Input id="supplier-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Contact</label>
-        <Input {...register("contactName")} />
+        <label htmlFor="supplier-contactName" className="mb-1 block text-xs font-medium text-gray-600">
+          Contact
+        </label>
+        <Input id="supplier-contactName" {...register("contactName")} />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Téléphone</label>
-        <Input {...register("phone")} />
+        <label htmlFor="supplier-phone" className="mb-1 block text-xs font-medium text-gray-600">
+          Téléphone
+        </label>
+        <Input id="supplier-phone" {...register("phone")} />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Email</label>
-        <Input type="email" {...register("email")} />
+        <label htmlFor="supplier-email" className="mb-1 block text-xs font-medium text-gray-600">
+          Email
+        </label>
+        <Input id="supplier-email" type="email" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Adresse</label>
-        <Input {...register("address")} />
+        <label htmlFor="supplier-address" className="mb-1 block text-xs font-medium text-gray-600">
+          Adresse
+        </label>
+        <Input id="supplier-address" {...register("address")} />
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le fournisseur

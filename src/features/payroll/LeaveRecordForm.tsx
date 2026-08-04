@@ -62,8 +62,14 @@ export function LeaveRecordForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Employé</label>
-        <select className="rounded-md border border-gray-300 px-3 py-2 text-sm" {...register("employeeId")}>
+        <label htmlFor="leave-employeeId" className="mb-1 block text-xs font-medium text-gray-600">
+          Employé
+        </label>
+        <select
+          id="leave-employeeId"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          {...register("employeeId")}
+        >
           <option value="">— Choisir —</option>
           {employees?.map((employee) => (
             <option key={employee.id} value={employee.id}>
@@ -74,8 +80,14 @@ export function LeaveRecordForm({ onCreated }: { onCreated?: () => void }) {
         {errors.employeeId && <p className="mt-1 text-xs text-red-600">{errors.employeeId.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Type</label>
-        <select className="rounded-md border border-gray-300 px-3 py-2 text-sm" {...register("type")}>
+        <label htmlFor="leave-type" className="mb-1 block text-xs font-medium text-gray-600">
+          Type
+        </label>
+        <select
+          id="leave-type"
+          className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          {...register("type")}
+        >
           {Object.entries(LEAVE_TYPE_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
@@ -84,23 +96,33 @@ export function LeaveRecordForm({ onCreated }: { onCreated?: () => void }) {
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Début</label>
-        <Input type="date" {...register("startDate")} />
+        <label htmlFor="leave-startDate" className="mb-1 block text-xs font-medium text-gray-600">
+          Début
+        </label>
+        <Input id="leave-startDate" type="date" {...register("startDate")} />
         {errors.startDate && <p className="mt-1 text-xs text-red-600">{errors.startDate.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Fin</label>
-        <Input type="date" {...register("endDate")} />
+        <label htmlFor="leave-endDate" className="mb-1 block text-xs font-medium text-gray-600">
+          Fin
+        </label>
+        <Input id="leave-endDate" type="date" {...register("endDate")} />
         {errors.endDate && <p className="mt-1 text-xs text-red-600">{errors.endDate.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Motif (optionnel)</label>
-        <Input {...register("reason")} />
+        <label htmlFor="leave-reason" className="mb-1 block text-xs font-medium text-gray-600">
+          Motif (optionnel)
+        </label>
+        <Input id="leave-reason" {...register("reason")} />
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Enregistrer
       </Button>
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

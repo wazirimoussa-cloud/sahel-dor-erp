@@ -72,8 +72,11 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+        <label htmlFor="transformation-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+          Magasin
+        </label>
         <select
+          id="transformation-warehouseId"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("warehouseId")}
         >
@@ -94,8 +97,14 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
         {inputsArray.fields.map((field, index) => (
           <div key={field.id} className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+              <label
+                htmlFor={`inputs-${index}-productId`}
+                className="mb-1 block text-xs font-medium text-gray-600"
+              >
+                Produit
+              </label>
               <select
+                id={`inputs-${index}-productId`}
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm"
                 {...register(`inputs.${index}.productId` as const)}
               >
@@ -113,8 +122,18 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
               )}
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-              <Input type="number" step="0.001" {...register(`inputs.${index}.quantity` as const)} />
+              <label
+                htmlFor={`inputs-${index}-quantity`}
+                className="mb-1 block text-xs font-medium text-gray-600"
+              >
+                Quantité
+              </label>
+              <Input
+                id={`inputs-${index}-quantity`}
+                type="number"
+                step="0.001"
+                {...register(`inputs.${index}.quantity` as const)}
+              />
             </div>
             <Button type="button" variant="secondary" onClick={() => inputsArray.remove(index)}>
               Retirer
@@ -138,8 +157,14 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
         {outputsArray.fields.map((field, index) => (
           <div key={field.id} className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+              <label
+                htmlFor={`outputs-${index}-productId`}
+                className="mb-1 block text-xs font-medium text-gray-600"
+              >
+                Produit
+              </label>
               <select
+                id={`outputs-${index}-productId`}
                 className="rounded-md border border-gray-300 px-3 py-2 text-sm"
                 {...register(`outputs.${index}.productId` as const)}
               >
@@ -157,14 +182,31 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
               )}
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-              <Input type="number" step="0.001" {...register(`outputs.${index}.quantity` as const)} />
+              <label
+                htmlFor={`outputs-${index}-quantity`}
+                className="mb-1 block text-xs font-medium text-gray-600"
+              >
+                Quantité
+              </label>
+              <Input
+                id={`outputs-${index}-quantity`}
+                type="number"
+                step="0.001"
+                {...register(`outputs.${index}.quantity` as const)}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label
+                htmlFor={`outputs-${index}-expiryDate`}
+                className="mb-1 block text-xs font-medium text-gray-600"
+              >
                 Péremption (optionnelle)
               </label>
-              <Input type="date" {...register(`outputs.${index}.expiryDate` as const)} />
+              <Input
+                id={`outputs-${index}-expiryDate`}
+                type="date"
+                {...register(`outputs.${index}.expiryDate` as const)}
+              />
             </div>
             <Button type="button" variant="secondary" onClick={() => outputsArray.remove(index)}>
               Retirer
@@ -187,7 +229,11 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
         Créer la transformation
       </Button>
 
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

@@ -150,14 +150,26 @@ export function FinancialStatementsPage() {
       <Card>
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label htmlFor="statement-startDate" className="mb-1 block text-xs font-medium text-gray-600">
               Compte de résultat — du
             </label>
-            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <Input
+              id="statement-startDate"
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">au</label>
-            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <label htmlFor="statement-endDate" className="mb-1 block text-xs font-medium text-gray-600">
+              au
+            </label>
+            <Input
+              id="statement-endDate"
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+            />
           </div>
           <p className="pb-2 text-xs text-gray-400">
             Le bilan est toujours une photo cumulée à la date de fin choisie.
@@ -297,6 +309,7 @@ export function FinancialStatementsPage() {
                               min={0}
                               step="0.01"
                               className="w-32"
+                              aria-label="Capital social"
                               value={displayedCapital}
                               onChange={(e) => setCapitalInput(e.target.value)}
                             />
@@ -351,47 +364,83 @@ export function FinancialStatementsPage() {
                 noValidate
               >
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
-                  <Input type="text" {...registerAsset("name")} />
+                  <label htmlFor="asset-name" className="mb-1 block text-xs font-medium text-gray-600">
+                    Nom
+                  </label>
+                  <Input id="asset-name" type="text" {...registerAsset("name")} />
                   {assetErrors.name && (
                     <p className="mt-1 text-xs text-red-600">{assetErrors.name.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Catégorie</label>
-                  <Input type="text" placeholder="Véhicule, Bâtiment…" {...registerAsset("category")} />
+                  <label htmlFor="asset-category" className="mb-1 block text-xs font-medium text-gray-600">
+                    Catégorie
+                  </label>
+                  <Input
+                    id="asset-category"
+                    type="text"
+                    placeholder="Véhicule, Bâtiment…"
+                    {...registerAsset("category")}
+                  />
                   {assetErrors.category && (
                     <p className="mt-1 text-xs text-red-600">{assetErrors.category.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label
+                    htmlFor="asset-acquisitionDate"
+                    className="mb-1 block text-xs font-medium text-gray-600"
+                  >
                     Date d'acquisition
                   </label>
-                  <Input type="date" {...registerAsset("acquisitionDate")} />
+                  <Input id="asset-acquisitionDate" type="date" {...registerAsset("acquisitionDate")} />
                   {assetErrors.acquisitionDate && (
                     <p className="mt-1 text-xs text-red-600">{assetErrors.acquisitionDate.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Coût (FCFA)</label>
-                  <Input type="number" step="0.01" {...registerAsset("acquisitionCost")} />
+                  <label
+                    htmlFor="asset-acquisitionCost"
+                    className="mb-1 block text-xs font-medium text-gray-600"
+                  >
+                    Coût (FCFA)
+                  </label>
+                  <Input
+                    id="asset-acquisitionCost"
+                    type="number"
+                    step="0.01"
+                    {...registerAsset("acquisitionCost")}
+                  />
                   {assetErrors.acquisitionCost && (
                     <p className="mt-1 text-xs text-red-600">{assetErrors.acquisitionCost.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">Durée (années)</label>
-                  <Input type="number" step="0.5" {...registerAsset("usefulLifeYears")} />
+                  <label
+                    htmlFor="asset-usefulLifeYears"
+                    className="mb-1 block text-xs font-medium text-gray-600"
+                  >
+                    Durée (années)
+                  </label>
+                  <Input
+                    id="asset-usefulLifeYears"
+                    type="number"
+                    step="0.5"
+                    {...registerAsset("usefulLifeYears")}
+                  />
                   {assetErrors.usefulLifeYears && (
                     <p className="mt-1 text-xs text-red-600">{assetErrors.usefulLifeYears.message}</p>
                   )}
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label
+                    htmlFor="asset-depreciationMethod"
+                    className="mb-1 block text-xs font-medium text-gray-600"
+                  >
                     Méthode d'amortissement
                   </label>
                   <select
+                    id="asset-depreciationMethod"
                     className="h-9 rounded-md border border-gray-300 px-2 text-sm"
                     {...registerAsset("depreciationMethod")}
                   >
@@ -401,10 +450,19 @@ export function FinancialStatementsPage() {
                 </div>
                 {depreciationMethod === "degressif" && (
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-gray-600">
+                    <label
+                      htmlFor="asset-degressifCoefficient"
+                      className="mb-1 block text-xs font-medium text-gray-600"
+                    >
                       Coefficient dégressif
                     </label>
-                    <Input type="number" step="0.1" min="0" {...registerAsset("degressifCoefficient")} />
+                    <Input
+                      id="asset-degressifCoefficient"
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      {...registerAsset("degressifCoefficient")}
+                    />
                     {assetErrors.degressifCoefficient && (
                       <p className="mt-1 text-xs text-red-600">
                         {assetErrors.degressifCoefficient.message}
@@ -417,7 +475,11 @@ export function FinancialStatementsPage() {
                 </Button>
               </form>
             )}
-            {assetError && <p className="mb-3 text-xs text-red-600">{assetError}</p>}
+            {assetError && (
+              <p role="alert" className="mb-3 text-xs text-red-600">
+                {assetError}
+              </p>
+            )}
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-gray-500">
@@ -489,10 +551,17 @@ export function FinancialStatementsPage() {
                               VNC actuelle : {formatFCFA(asset.netBookValue)}
                             </span>
                             <div>
-                              <label className="mb-1 block text-xs font-medium text-gray-600">
+                              <label
+                                htmlFor="disposal-disposalDate"
+                                className="mb-1 block text-xs font-medium text-gray-600"
+                              >
                                 Date de cession
                               </label>
-                              <Input type="date" {...registerDisposal("disposalDate")} />
+                              <Input
+                                id="disposal-disposalDate"
+                                type="date"
+                                {...registerDisposal("disposalDate")}
+                              />
                               {disposalErrors.disposalDate && (
                                 <p className="mt-1 text-xs text-red-600">
                                   {disposalErrors.disposalDate.message}
@@ -500,10 +569,19 @@ export function FinancialStatementsPage() {
                               )}
                             </div>
                             <div>
-                              <label className="mb-1 block text-xs font-medium text-gray-600">
+                              <label
+                                htmlFor="disposal-disposalPrice"
+                                className="mb-1 block text-xs font-medium text-gray-600"
+                              >
                                 Prix de cession (FCFA)
                               </label>
-                              <Input type="number" min={0} step="0.01" {...registerDisposal("disposalPrice")} />
+                              <Input
+                                id="disposal-disposalPrice"
+                                type="number"
+                                min={0}
+                                step="0.01"
+                                {...registerDisposal("disposalPrice")}
+                              />
                               {disposalErrors.disposalPrice && (
                                 <p className="mt-1 text-xs text-red-600">
                                   {disposalErrors.disposalPrice.message}

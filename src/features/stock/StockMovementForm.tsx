@@ -69,8 +69,11 @@ export function StockMovementForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+        <label htmlFor="movement-productId" className="mb-1 block text-xs font-medium text-gray-600">
+          Produit
+        </label>
         <select
+          id="movement-productId"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("productId")}
         >
@@ -87,8 +90,11 @@ export function StockMovementForm() {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+        <label htmlFor="movement-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+          Magasin
+        </label>
         <select
+          id="movement-warehouseId"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("warehouseId")}
         >
@@ -105,8 +111,11 @@ export function StockMovementForm() {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Type</label>
+        <label htmlFor="movement-type" className="mb-1 block text-xs font-medium text-gray-600">
+          Type
+        </label>
         <select
+          id="movement-type"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("type")}
         >
@@ -117,28 +126,34 @@ export function StockMovementForm() {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-        <Input type="number" step="0.001" {...register("quantity")} />
+        <label htmlFor="movement-quantity" className="mb-1 block text-xs font-medium text-gray-600">
+          Quantité
+        </label>
+        <Input id="movement-quantity" type="number" step="0.001" {...register("quantity")} />
         {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">
+        <label htmlFor="movement-note" className="mb-1 block text-xs font-medium text-gray-600">
           {NOTE_LABELS[selectedType]}
         </label>
-        <Input type="text" placeholder="Optionnel" {...register("note")} />
+        <Input id="movement-note" type="text" placeholder="Optionnel" {...register("note")} />
       </div>
 
       {selectedType === "IN" && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label htmlFor="movement-expiryDate" className="mb-1 block text-xs font-medium text-gray-600">
             Péremption (optionnelle)
           </label>
-          <Input type="date" {...register("expiryDate")} />
+          <Input id="movement-expiryDate" type="date" {...register("expiryDate")} />
         </div>
       )}
 
-      {serverError && <p className="w-full text-xs text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="w-full text-xs text-red-600">
+          {serverError}
+        </p>
+      )}
 
       <Button type="submit" disabled={isSubmitting}>
         Enregistrer le mouvement

@@ -65,8 +65,11 @@ export function VatDeclarationPage() {
       </div>
 
       <Card>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Mois</label>
+        <label htmlFor="vat-declaration-month" className="mb-1 block text-xs font-medium text-gray-600">
+          Mois
+        </label>
         <input
+          id="vat-declaration-month"
           type="month"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           value={month}

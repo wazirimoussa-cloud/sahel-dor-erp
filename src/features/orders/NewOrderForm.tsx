@@ -63,8 +63,11 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
       <div className="flex flex-wrap gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Client</label>
+          <label htmlFor="order-clientId" className="mb-1 block text-xs font-medium text-gray-600">
+            Client
+          </label>
           <select
+            id="order-clientId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("clientId")}
           >
@@ -79,8 +82,11 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+          <label htmlFor="order-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+            Magasin
+          </label>
           <select
+            id="order-warehouseId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("warehouseId")}
           >
@@ -100,8 +106,14 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
       {fields.map((field, index) => (
         <div key={field.id} className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+            <label
+              htmlFor={`order-items-${index}-productId`}
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Produit
+            </label>
             <select
+              id={`order-items-${index}-productId`}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"
               {...register(`items.${index}.productId` as const)}
             >
@@ -118,8 +130,18 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-            <Input type="number" step="0.001" {...register(`items.${index}.quantity` as const)} />
+            <label
+              htmlFor={`order-items-${index}-quantity`}
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Quantité
+            </label>
+            <Input
+              id={`order-items-${index}-quantity`}
+              type="number"
+              step="0.001"
+              {...register(`items.${index}.quantity` as const)}
+            />
           </div>
 
           <Button type="button" variant="secondary" onClick={() => remove(index)}>
@@ -139,7 +161,11 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
         </Button>
       </div>
 
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

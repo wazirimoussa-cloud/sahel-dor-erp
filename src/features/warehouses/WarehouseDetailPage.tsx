@@ -68,8 +68,11 @@ export function WarehouseDetailPage() {
         <h2 className="mb-3 text-base font-semibold text-gray-800">Rechercher dans l'historique</h2>
         <div className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+            <label htmlFor="wh-detail-productId" className="mb-1 block text-xs font-medium text-gray-600">
+              Produit
+            </label>
             <select
+              id="wh-detail-productId"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               value={productId}
               onChange={(e) => setProductId(e.target.value)}
@@ -83,8 +86,11 @@ export function WarehouseDetailPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Type de mouvement</label>
+            <label htmlFor="wh-detail-type" className="mb-1 block text-xs font-medium text-gray-600">
+              Type de mouvement
+            </label>
             <select
+              id="wh-detail-type"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
               value={type}
               onChange={(e) => setType(e.target.value as TransactionType | "")}
@@ -96,12 +102,16 @@ export function WarehouseDetailPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Depuis le</label>
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+            <label htmlFor="wh-detail-from" className="mb-1 block text-xs font-medium text-gray-600">
+              Depuis le
+            </label>
+            <Input id="wh-detail-from" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Jusqu'au</label>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+            <label htmlFor="wh-detail-to" className="mb-1 block text-xs font-medium text-gray-600">
+              Jusqu'au
+            </label>
+            <Input id="wh-detail-to" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
           <button
             type="button"

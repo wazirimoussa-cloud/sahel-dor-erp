@@ -53,8 +53,11 @@ export function TransferStockForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+        <label htmlFor="transfer-productId" className="mb-1 block text-xs font-medium text-gray-600">
+          Produit
+        </label>
         <select
+          id="transfer-productId"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("productId")}
         >
@@ -71,8 +74,11 @@ export function TransferStockForm() {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Magasin source</label>
+        <label htmlFor="fromWarehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+          Magasin source
+        </label>
         <select
+          id="fromWarehouseId"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("fromWarehouseId")}
         >
@@ -89,8 +95,11 @@ export function TransferStockForm() {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Magasin destination</label>
+        <label htmlFor="toWarehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+          Magasin destination
+        </label>
         <select
+          id="toWarehouseId"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("toWarehouseId")}
         >
@@ -107,12 +116,18 @@ export function TransferStockForm() {
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-        <Input type="number" step="0.001" {...register("quantity")} />
+        <label htmlFor="transfer-quantity" className="mb-1 block text-xs font-medium text-gray-600">
+          Quantité
+        </label>
+        <Input id="transfer-quantity" type="number" step="0.001" {...register("quantity")} />
         {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
       </div>
 
-      {serverError && <p className="w-full text-xs text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="w-full text-xs text-red-600">
+          {serverError}
+        </p>
+      )}
 
       <Button type="submit" disabled={isSubmitting}>
         Transférer

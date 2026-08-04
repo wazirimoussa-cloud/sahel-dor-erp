@@ -36,26 +36,36 @@ export function TransporterForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
-        <Input {...register("name")} />
+        <label htmlFor="transporter-name" className="mb-1 block text-xs font-medium text-gray-600">
+          Nom
+        </label>
+        <Input id="transporter-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Contact</label>
-        <Input {...register("contactName")} />
+        <label htmlFor="transporter-contactName" className="mb-1 block text-xs font-medium text-gray-600">
+          Contact
+        </label>
+        <Input id="transporter-contactName" {...register("contactName")} />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Téléphone</label>
-        <Input {...register("phone")} />
+        <label htmlFor="transporter-phone" className="mb-1 block text-xs font-medium text-gray-600">
+          Téléphone
+        </label>
+        <Input id="transporter-phone" {...register("phone")} />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Email</label>
-        <Input type="email" {...register("email")} />
+        <label htmlFor="transporter-email" className="mb-1 block text-xs font-medium text-gray-600">
+          Email
+        </label>
+        <Input id="transporter-email" type="email" {...register("email")} />
         {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Adresse</label>
-        <Input {...register("address")} />
+        <label htmlFor="transporter-address" className="mb-1 block text-xs font-medium text-gray-600">
+          Adresse
+        </label>
+        <Input id="transporter-address" {...register("address")} />
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le transporteur

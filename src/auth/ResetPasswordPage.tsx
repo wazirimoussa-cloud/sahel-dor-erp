@@ -60,26 +60,40 @@ export function ResetPasswordPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="newPassword" className="mb-1 block text-sm font-medium text-gray-700">
                 Nouveau mot de passe
               </label>
-              <Input type="password" autoComplete="new-password" {...register("newPassword")} />
+              <Input
+                id="newPassword"
+                type="password"
+                autoComplete="new-password"
+                {...register("newPassword")}
+              />
               {errors.newPassword && (
                 <p className="mt-1 text-xs text-red-600">{errors.newPassword.message}</p>
               )}
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">
+              <label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium text-gray-700">
                 Confirmer le nouveau mot de passe
               </label>
-              <Input type="password" autoComplete="new-password" {...register("confirmPassword")} />
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                {...register("confirmPassword")}
+              />
               {errors.confirmPassword && (
                 <p className="mt-1 text-xs text-red-600">{errors.confirmPassword.message}</p>
               )}
             </div>
 
-            {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+            {serverError && (
+              <p role="alert" className="text-sm text-red-600">
+                {serverError}
+              </p>
+            )}
 
             <Button type="submit" disabled={isSubmitting} className="w-full">
               {isSubmitting ? "Enregistrement…" : "Définir le mot de passe"}

@@ -71,8 +71,11 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
       <div className="flex flex-wrap gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Fournisseur</label>
+          <label htmlFor="purchase-supplierId" className="mb-1 block text-xs font-medium text-gray-600">
+            Fournisseur
+          </label>
           <select
+            id="purchase-supplierId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("supplierId")}
           >
@@ -89,8 +92,11 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+          <label htmlFor="purchase-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+            Magasin
+          </label>
           <select
+            id="purchase-warehouseId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("warehouseId")}
           >
@@ -110,8 +116,14 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
       {fields.map((field, index) => (
         <div key={field.id} className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+            <label
+              htmlFor={`purchase-items-${index}-productId`}
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Produit
+            </label>
             <select
+              id={`purchase-items-${index}-productId`}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"
               {...register(`items.${index}.productId` as const)}
             >
@@ -128,8 +140,18 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-            <Input type="number" step="0.001" {...register(`items.${index}.quantity` as const)} />
+            <label
+              htmlFor={`purchase-items-${index}-quantity`}
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Quantité
+            </label>
+            <Input
+              id={`purchase-items-${index}-quantity`}
+              type="number"
+              step="0.001"
+              {...register(`items.${index}.quantity` as const)}
+            />
           </div>
 
           <Button type="button" variant="secondary" onClick={() => remove(index)}>
@@ -142,16 +164,23 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
 
       <div className="flex flex-wrap gap-3 border-t border-gray-100 pt-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label htmlFor="freightCost" className="mb-1 block text-xs font-medium text-gray-600">
             Frais de transport (FCFA)
           </label>
-          <Input type="number" min={0} step="1" placeholder="0" {...register("freightCost")} />
+          <Input id="freightCost" type="number" min={0} step="1" placeholder="0" {...register("freightCost")} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label htmlFor="handlingCost" className="mb-1 block text-xs font-medium text-gray-600">
             Frais de manutention (FCFA)
           </label>
-          <Input type="number" min={0} step="1" placeholder="0" {...register("handlingCost")} />
+          <Input
+            id="handlingCost"
+            type="number"
+            min={0}
+            step="1"
+            placeholder="0"
+            {...register("handlingCost")}
+          />
         </div>
       </div>
       <p className="text-xs text-gray-500">
@@ -173,7 +202,11 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
         </Button>
       </div>
 
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

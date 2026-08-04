@@ -288,7 +288,11 @@ export function OrderDetailPage() {
         )}
       </div>
 
-      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+      {actionError && (
+        <p role="alert" className="text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
 
       {order.status === "pending" && (canValidate || canCancel) && (
         <div className="flex gap-3">
@@ -324,10 +328,10 @@ export function OrderDetailPage() {
             noValidate
           >
             <div>
-              <label className="mb-1 block text-xs font-medium text-gray-600">
+              <label htmlFor="order-payment-amount" className="mb-1 block text-xs font-medium text-gray-600">
                 Montant reçu (FCFA)
               </label>
-              <Input type="number" {...registerPayment("amount")} />
+              <Input id="order-payment-amount" type="number" {...registerPayment("amount")} />
               {paymentErrors.amount && (
                 <p className="mt-1 text-xs text-red-600">{paymentErrors.amount.message}</p>
               )}

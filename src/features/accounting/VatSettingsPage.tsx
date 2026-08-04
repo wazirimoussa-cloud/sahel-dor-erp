@@ -522,10 +522,10 @@ export function VatSettingsPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {RATE_FIELDS.map((field) => (
                 <div key={field.name}>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label htmlFor={field.name} className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
                   </label>
-                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
                   <p className="mt-1 text-xs text-gray-400">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
@@ -545,10 +545,10 @@ export function VatSettingsPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {TAXE_PROFESSIONNELLE_FIELDS.map((field) => (
                 <div key={field.name}>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label htmlFor={field.name} className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
                   </label>
-                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
                   <p className="mt-1 text-xs text-gray-400">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
@@ -559,10 +559,10 @@ export function VatSettingsPage() {
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               {TAXE_PROFESSIONNELLE_DATA_FIELDS.map((field) => (
                 <div key={field.name}>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label htmlFor={field.name} className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
                   </label>
-                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
                   <p className="mt-1 text-xs text-gray-400">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
@@ -589,10 +589,10 @@ export function VatSettingsPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {IRVM_FIELDS.map((field) => (
                 <div key={field.name}>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label htmlFor={field.name} className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
                   </label>
-                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
                   <p className="mt-1 text-xs text-gray-400">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
@@ -612,10 +612,10 @@ export function VatSettingsPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {DROITS_ENREGISTREMENT_FIELDS.map((field) => (
                 <div key={field.name}>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label htmlFor={field.name} className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
                   </label>
-                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
                   <p className="mt-1 text-xs text-gray-400">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
@@ -636,10 +636,10 @@ export function VatSettingsPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {TAXE_PUBLICITE_FIELDS.map((field) => (
                 <div key={field.name}>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label htmlFor={field.name} className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
                   </label>
-                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
                   <p className="mt-1 text-xs text-gray-400">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
@@ -660,10 +660,10 @@ export function VatSettingsPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {DROITS_FONCIERS_FIELDS.map((field) => (
                 <div key={field.name}>
-                  <label className="mb-1 block text-xs font-medium text-gray-600">
+                  <label htmlFor={field.name} className="mb-1 block text-xs font-medium text-gray-600">
                     {field.label} ({field.suffix})
                   </label>
-                  <Input type="number" step="0.01" {...register(field.name)} />
+                  <Input id={field.name} type="number" step="0.01" {...register(field.name)} />
                   <p className="mt-1 text-xs text-gray-400">{field.help}</p>
                   {errors[field.name] && (
                     <p className="mt-1 text-xs text-red-600">{errors[field.name]?.message}</p>
@@ -677,8 +677,16 @@ export function VatSettingsPage() {
             <Button type="submit" disabled={isSubmitting}>
               Enregistrer
             </Button>
-            {success && <p className="text-xs text-green-600">Taux mis à jour.</p>}
-            {formError && <p className="text-xs text-red-600">{formError}</p>}
+            {success && (
+              <p role="status" className="text-xs text-green-600">
+                Taux mis à jour.
+              </p>
+            )}
+            {formError && (
+              <p role="alert" className="text-xs text-red-600">
+                {formError}
+              </p>
+            )}
           </div>
         </form>
       )}

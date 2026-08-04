@@ -38,22 +38,30 @@ export function EmployeeForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Nom complet</label>
-        <Input {...register("fullName")} />
+        <label htmlFor="employee-fullName" className="mb-1 block text-xs font-medium text-gray-600">
+          Nom complet
+        </label>
+        <Input id="employee-fullName" {...register("fullName")} />
         {errors.fullName && <p className="mt-1 text-xs text-red-600">{errors.fullName.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Poste</label>
-        <Input {...register("position")} />
+        <label htmlFor="employee-position" className="mb-1 block text-xs font-medium text-gray-600">
+          Poste
+        </label>
+        <Input id="employee-position" {...register("position")} />
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Salaire de base (FCFA)</label>
-        <Input type="number" step="0.01" {...register("baseSalary")} />
+        <label htmlFor="employee-baseSalary" className="mb-1 block text-xs font-medium text-gray-600">
+          Salaire de base (FCFA)
+        </label>
+        <Input id="employee-baseSalary" type="number" step="0.01" {...register("baseSalary")} />
         {errors.baseSalary && <p className="mt-1 text-xs text-red-600">{errors.baseSalary.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Charges de famille</label>
-        <Input type="number" step="1" {...register("familyDependents")} />
+        <label htmlFor="employee-familyDependents" className="mb-1 block text-xs font-medium text-gray-600">
+          Charges de famille
+        </label>
+        <Input id="employee-familyDependents" type="number" step="1" {...register("familyDependents")} />
         {errors.familyDependents && (
           <p className="mt-1 text-xs text-red-600">{errors.familyDependents.message}</p>
         )}

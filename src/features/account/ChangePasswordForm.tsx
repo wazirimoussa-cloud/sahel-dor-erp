@@ -65,31 +65,58 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void } = {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-sm space-y-4" noValidate>
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Mot de passe actuel</label>
-        <Input type="password" autoComplete="current-password" {...register("currentPassword")} />
+        <label htmlFor="change-password-current" className="mb-1 block text-sm font-medium text-gray-700">
+          Mot de passe actuel
+        </label>
+        <Input
+          id="change-password-current"
+          type="password"
+          autoComplete="current-password"
+          {...register("currentPassword")}
+        />
         {errors.currentPassword && (
           <p className="mt-1 text-xs text-red-600">{errors.currentPassword.message}</p>
         )}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">Nouveau mot de passe</label>
-        <Input type="password" autoComplete="new-password" {...register("newPassword")} />
+        <label htmlFor="change-password-new" className="mb-1 block text-sm font-medium text-gray-700">
+          Nouveau mot de passe
+        </label>
+        <Input
+          id="change-password-new"
+          type="password"
+          autoComplete="new-password"
+          {...register("newPassword")}
+        />
         {errors.newPassword && <p className="mt-1 text-xs text-red-600">{errors.newPassword.message}</p>}
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-gray-700">
+        <label htmlFor="change-password-confirm" className="mb-1 block text-sm font-medium text-gray-700">
           Confirmer le nouveau mot de passe
         </label>
-        <Input type="password" autoComplete="new-password" {...register("confirmPassword")} />
+        <Input
+          id="change-password-confirm"
+          type="password"
+          autoComplete="new-password"
+          {...register("confirmPassword")}
+        />
         {errors.confirmPassword && (
           <p className="mt-1 text-xs text-red-600">{errors.confirmPassword.message}</p>
         )}
       </div>
 
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
-      {success && <p className="text-sm text-green-600">Mot de passe mis à jour avec succès.</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
+      {success && (
+        <p role="status" className="text-sm text-green-600">
+          Mot de passe mis à jour avec succès.
+        </p>
+      )}
 
       <Button type="submit" disabled={isSubmitting}>
         {isSubmitting ? "Mise à jour…" : "Changer le mot de passe"}

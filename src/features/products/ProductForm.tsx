@@ -41,23 +41,32 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
-        <Input {...register("name")} />
+        <label htmlFor="product-name" className="mb-1 block text-xs font-medium text-gray-600">
+          Nom
+        </label>
+        <Input id="product-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Prix</label>
-        <Input type="number" step="0.01" {...register("price")} />
+        <label htmlFor="product-price" className="mb-1 block text-xs font-medium text-gray-600">
+          Prix
+        </label>
+        <Input id="product-price" type="number" step="0.01" {...register("price")} />
         {errors.price && <p className="mt-1 text-xs text-red-600">{errors.price.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Stock initial</label>
-        <Input type="number" step="0.001" {...register("stock")} />
+        <label htmlFor="product-stock" className="mb-1 block text-xs font-medium text-gray-600">
+          Stock initial
+        </label>
+        <Input id="product-stock" type="number" step="0.001" {...register("stock")} />
         {errors.stock && <p className="mt-1 text-xs text-red-600">{errors.stock.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Unité</label>
+        <label htmlFor="product-unit" className="mb-1 block text-xs font-medium text-gray-600">
+          Unité
+        </label>
         <select
+          id="product-unit"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           {...register("unit")}
         >

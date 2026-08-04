@@ -94,8 +94,11 @@ export function RequestStockLossForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
       <div className="flex flex-wrap gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+          <label htmlFor="loss-productId" className="mb-1 block text-xs font-medium text-gray-600">
+            Produit
+          </label>
           <select
+            id="loss-productId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("productId")}
           >
@@ -110,8 +113,11 @@ export function RequestStockLossForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+          <label htmlFor="loss-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+            Magasin
+          </label>
           <select
+            id="loss-warehouseId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("warehouseId")}
           >
@@ -128,20 +134,21 @@ export function RequestStockLossForm() {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label htmlFor="loss-quantity" className="mb-1 block text-xs font-medium text-gray-600">
             Quantité concernée
           </label>
-          <Input type="number" step="0.001" {...register("quantity")} />
+          <Input id="loss-quantity" type="number" step="0.001" {...register("quantity")} />
           {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
         </div>
       </div>
 
       {matchingLots.length > 0 && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label htmlFor="loss-lotId" className="mb-1 block text-xs font-medium text-gray-600">
             Lot ciblé (optionnel — sinon la sortie suit l'ordre FEFO habituel)
           </label>
           <select
+            id="loss-lotId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("lotId")}
           >
@@ -167,10 +174,10 @@ export function RequestStockLossForm() {
 
       {isRepackaging && (
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">
+          <label htmlFor="repackagedQuantity" className="mb-1 block text-xs font-medium text-gray-600">
             Quantité récupérée après reconditionnement
           </label>
-          <Input type="number" step="0.001" {...register("repackagedQuantity")} />
+          <Input id="repackagedQuantity" type="number" step="0.001" {...register("repackagedQuantity")} />
           {errors.repackagedQuantity && (
             <p className="mt-1 text-xs text-red-600">{errors.repackagedQuantity.message}</p>
           )}
@@ -178,8 +185,11 @@ export function RequestStockLossForm() {
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Motif</label>
+        <label htmlFor="loss-reason" className="mb-1 block text-xs font-medium text-gray-600">
+          Motif
+        </label>
         <Input
+          id="loss-reason"
           type="text"
           placeholder="Ex : sac déchiré à la manutention"
           {...register("reason")}
@@ -191,8 +201,16 @@ export function RequestStockLossForm() {
         Déclarer la perte
       </Button>
 
-      {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {successMessage && (
+        <p role="status" className="text-sm text-green-700">
+          {successMessage}
+        </p>
+      )}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

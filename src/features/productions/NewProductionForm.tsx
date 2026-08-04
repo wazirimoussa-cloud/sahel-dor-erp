@@ -59,8 +59,11 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Magasin</label>
+        <label htmlFor="production-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+          Magasin
+        </label>
         <select
+          id="production-warehouseId"
           className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           {...register("warehouseId")}
         >
@@ -79,8 +82,14 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
       {fields.map((field, index) => (
         <div key={field.id} className="flex flex-wrap items-end gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Produit</label>
+            <label
+              htmlFor={`production-items-${index}-productId`}
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Produit
+            </label>
             <select
+              id={`production-items-${index}-productId`}
               className="rounded-md border border-gray-300 px-3 py-2 text-sm"
               {...register(`items.${index}.productId` as const)}
             >
@@ -97,15 +106,32 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">Quantité</label>
-            <Input type="number" step="0.001" {...register(`items.${index}.quantity` as const)} />
+            <label
+              htmlFor={`production-items-${index}-quantity`}
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              Quantité
+            </label>
+            <Input
+              id={`production-items-${index}-quantity`}
+              type="number"
+              step="0.001"
+              {...register(`items.${index}.quantity` as const)}
+            />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">
+            <label
+              htmlFor={`production-items-${index}-expiryDate`}
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
               Péremption (optionnelle)
             </label>
-            <Input type="date" {...register(`items.${index}.expiryDate` as const)} />
+            <Input
+              id={`production-items-${index}-expiryDate`}
+              type="date"
+              {...register(`items.${index}.expiryDate` as const)}
+            />
           </div>
 
           <Button type="button" variant="secondary" onClick={() => remove(index)}>
@@ -129,7 +155,11 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
         </Button>
       </div>
 
-      {serverError && <p className="text-sm text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-sm text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }

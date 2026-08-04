@@ -33,13 +33,17 @@ export function ChartOfAccountForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Code</label>
-        <Input {...register("code")} placeholder="ex. 601" />
+        <label htmlFor="account-code" className="mb-1 block text-xs font-medium text-gray-600">
+          Code
+        </label>
+        <Input id="account-code" {...register("code")} placeholder="ex. 601" />
         {errors.code && <p className="mt-1 text-xs text-red-600">{errors.code.message}</p>}
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-gray-600">Nom</label>
-        <Input {...register("name")} placeholder="ex. Achats de marchandises" />
+        <label htmlFor="account-name" className="mb-1 block text-xs font-medium text-gray-600">
+          Nom
+        </label>
+        <Input id="account-name" {...register("name")} placeholder="ex. Achats de marchandises" />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
       </div>
       <Button type="submit" disabled={isSubmitting}>

@@ -109,7 +109,11 @@ export function ProductsPage() {
         </Card>
       )}
 
-      {actionError && <p className="text-sm text-red-600">{actionError}</p>}
+      {actionError && (
+        <p role="alert" className="text-sm text-red-600">
+          {actionError}
+        </p>
+      )}
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
@@ -202,19 +206,22 @@ export function ProductsPage() {
                           noValidate
                         >
                           <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label
+                              htmlFor="newPrice"
+                              className="mb-1 block text-xs font-medium text-gray-600"
+                            >
                               Nouveau prix
                             </label>
-                            <Input type="number" step="0.01" {...register("newPrice")} />
+                            <Input id="newPrice" type="number" step="0.01" {...register("newPrice")} />
                             {errors.newPrice && (
                               <p className="mt-1 text-xs text-red-600">{errors.newPrice.message}</p>
                             )}
                           </div>
                           <div>
-                            <label className="mb-1 block text-xs font-medium text-gray-600">
+                            <label htmlFor="reason" className="mb-1 block text-xs font-medium text-gray-600">
                               Motif (rabais, augmentation…)
                             </label>
-                            <Input type="text" placeholder="Optionnel" {...register("reason")} />
+                            <Input id="reason" type="text" placeholder="Optionnel" {...register("reason")} />
                           </div>
                           <Button type="submit" disabled={updatePrice.isPending}>
                             Enregistrer
@@ -222,7 +229,11 @@ export function ProductsPage() {
                           <Button type="button" variant="secondary" onClick={() => setEditingId(null)}>
                             Annuler
                           </Button>
-                          {priceError && <p className="w-full text-xs text-red-600">{priceError}</p>}
+                          {priceError && (
+                            <p role="alert" className="w-full text-xs text-red-600">
+                              {priceError}
+                            </p>
+                          )}
                         </form>
                       </td>
                     </tr>

@@ -47,14 +47,19 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Email</label>
-          <Input type="email" {...register("email")} />
+          <label htmlFor="user-email" className="mb-1 block text-xs font-medium text-gray-600">
+            Email
+          </label>
+          <Input id="user-email" type="email" {...register("email")} />
           {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">Société</label>
+          <label htmlFor="user-companyId" className="mb-1 block text-xs font-medium text-gray-600">
+            Société
+          </label>
           <select
+            id="user-companyId"
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
             {...register("companyId")}
           >
@@ -73,7 +78,11 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
         </Button>
       </div>
 
-      {serverError && <p className="text-xs text-red-600">{serverError}</p>}
+      {serverError && (
+        <p role="alert" className="text-xs text-red-600">
+          {serverError}
+        </p>
+      )}
     </form>
   );
 }
