@@ -205,4 +205,195 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
     // dans countBefore) -- seule la transformation elle-même ne doit rien ajouter.
     expect(entriesAfter?.length ?? 0).toBe(countBefore);
   });
+
+  // 0045_transformation_prix_revient.sql : le coût des intrants consommés est réparti
+  // entre les extrants au prorata de leur VALEUR MARCHANDE (quantité × prix de vente
+  // courant), pas de leur quantité -- jamais vérifié directement jusqu'ici (le test
+  // ci-dessus ne porte que sur l'absence d'écriture comptable).
+  it("répartit le coût des intrants entre extrants multiples au prorata de la valeur marchande, pas de la quantité", async () => {
+    const { data: inputProduct, error: inputProductErr } = await gerant
+      .from("products")
+      .insert({
+        company_id: companyId,
+        name: `Intrant prorata ${tag}`,
+        price: 50,
+        stock: 0,
+        unit: "tonne",
+        vat_exempt: false,
+      })
+      .select("id")
+      .single();
+    expect(inputProductErr, JSON.stringify(inputProductErr)).toBeNull();
+
+    // Extrant A : prix élevé, faible quantité. Extrant B : prix faible, forte quantité.
+    // Valeur marchande : A = 3 × 1000 = 3000 ; B = 4 × 500 = 2000 -- un prorata par
+    // quantité donnerait 3/7 ≈ 43% à A, alors qu'un prorata par valeur donne 60%.
+    const { data: outputA } = await gerant
+      .from("products")
+      .insert({
+        company_id: companyId,
+        name: `Extrant A ${tag}`,
+        price: 1000,
+        stock: 0,
+        unit: "bidon",
+        vat_exempt: false,
+      })
+      .select("id")
+      .single();
+    const { data: outputB } = await gerant
+      .from("products")
+      .insert({
+        company_id: companyId,
+        name: `Extrant B ${tag}`,
+        price: 500,
+        stock: 0,
+        unit: "tonne",
+        vat_exempt: false,
+      })
+      .select("id")
+      .single();
+
+    // Stock d'intrant à coût connu et entièrement consommé par la transformation :
+    // 10 kg à 100 FCFA/kg = 1000 FCFA de coût total à répartir.
+    await gerant.rpc("create_production", {
+      payload: {
+        warehouse_id: warehouseId,
+        items: [{ product_id: inputProduct!.id, quantity: 10, unit_cost: 100 }],
+      },
+    });
+
+    const { data: transformation, error: transformationErr } = await gerant.rpc("create_transformation", {
+      payload: {
+        warehouse_id: warehouseId,
+        inputs: [{ product_id: inputProduct!.id, quantity: 10 }],
+        outputs: [
+          { product_id: outputA!.id, quantity: 3 },
+          { product_id: outputB!.id, quantity: 4 },
+        ],
+      },
+    });
+    expect(transformationErr).toBeNull();
+
+    const { data: outputs, error: outputsErr } = await gerant
+      .from("transformation_outputs")
+      .select("product_id, unit_cost")
+      .eq("transformation_id", transformation!.id);
+    expect(outputsErr).toBeNull();
+
+    const unitCostOf = (productId: string) =>
+      Number(outputs!.find((o) => o.product_id === productId)!.unit_cost);
+
+    // unit_cost = total_intrant_cost × prix_extrant / valeur_marchande_totale.
+    expect(unitCostOf(outputA!.id)).toBeCloseTo((1000 * 1000) / 5000, 6); // 200
+    expect(unitCostOf(outputB!.id)).toBeCloseTo((1000 * 500) / 5000, 6); // 100
+
+    // Le coût total réparti doit reconstituer exactement le coût des intrants consommés.
+    const totalAllocated = unitCostOf(outputA!.id) * 3 + unitCostOf(outputB!.id) * 4;
+    expect(totalAllocated).toBeCloseTo(1000, 6);
+  });
+
+  it("un extrant unique reçoit l'intégralité du coût des intrants, quel que soit son prix de vente", async () => {
+    const { data: inputProduct } = await gerant
+      .from("products")
+      .insert({
+        company_id: companyId,
+        name: `Intrant unique ${tag}`,
+        price: 50,
+        stock: 0,
+        unit: "tonne",
+        vat_exempt: false,
+      })
+      .select("id")
+      .single();
+    const { data: outputProduct } = await gerant
+      .from("products")
+      .insert({
+        company_id: companyId,
+        name: `Extrant unique ${tag}`,
+        price: 99999, // prix arbitraire, sans effet sur le résultat avec un seul extrant.
+        stock: 0,
+        unit: "bidon",
+        vat_exempt: false,
+      })
+      .select("id")
+      .single();
+
+    await gerant.rpc("create_production", {
+      payload: {
+        warehouse_id: warehouseId,
+        items: [{ product_id: inputProduct!.id, quantity: 8, unit_cost: 250 }],
+      },
+    });
+
+    const { data: transformation, error: transformationErr } = await gerant.rpc("create_transformation", {
+      payload: {
+        warehouse_id: warehouseId,
+        inputs: [{ product_id: inputProduct!.id, quantity: 8 }],
+        outputs: [{ product_id: outputProduct!.id, quantity: 2 }],
+      },
+    });
+    expect(transformationErr).toBeNull();
+
+    const { data: output } = await gerant
+      .from("transformation_outputs")
+      .select("unit_cost")
+      .eq("transformation_id", transformation!.id)
+      .single();
+
+    // 8 kg × 250 = 2000 FCFA de coût, réparti sur 2 unités = 1000/unité -- le prix de
+    // vente (99999) n'intervient nulle part puisqu'il représente 100% de la valeur.
+    expect(Number(output?.unit_cost)).toBeCloseTo(1000, 6);
+  });
+
+  it("si tous les extrants ont un prix de vente nul, le coût de repli est 0 (pas de division par zéro)", async () => {
+    const { data: inputProduct } = await gerant
+      .from("products")
+      .insert({
+        company_id: companyId,
+        name: `Intrant prix nul ${tag}`,
+        price: 50,
+        stock: 0,
+        unit: "tonne",
+        vat_exempt: false,
+      })
+      .select("id")
+      .single();
+    const { data: outputProduct } = await gerant
+      .from("products")
+      .insert({
+        company_id: companyId,
+        name: `Extrant prix nul ${tag}`,
+        price: 0,
+        stock: 0,
+        unit: "tonne",
+        vat_exempt: false,
+      })
+      .select("id")
+      .single();
+
+    await gerant.rpc("create_production", {
+      payload: {
+        warehouse_id: warehouseId,
+        items: [{ product_id: inputProduct!.id, quantity: 5, unit_cost: 400 }],
+      },
+    });
+
+    const { data: transformation, error: transformationErr } = await gerant.rpc("create_transformation", {
+      payload: {
+        warehouse_id: warehouseId,
+        inputs: [{ product_id: inputProduct!.id, quantity: 5 }],
+        outputs: [{ product_id: outputProduct!.id, quantity: 3 }],
+      },
+    });
+    expect(transformationErr).toBeNull();
+
+    const { data: output } = await gerant
+      .from("transformation_outputs")
+      .select("unit_cost")
+      .eq("transformation_id", transformation!.id)
+      .single();
+
+    expect(Number(output?.unit_cost)).toBe(0);
+    expect(Number.isNaN(Number(output?.unit_cost))).toBe(false);
+  });
 });
