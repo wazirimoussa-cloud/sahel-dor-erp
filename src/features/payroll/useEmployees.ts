@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export interface NewEmployee {
   companyId: string;
@@ -9,16 +10,17 @@ export interface NewEmployee {
   familyDependents: number;
 }
 
-export function useEmployees() {
+export function useEmployees(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["employees"],
+    queryKey: ["employees", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("employees")
         .select("id, full_name, position, base_salary, family_dependents, active, created_at")
-        .order("full_name", { ascending: true });
+        .order("full_name", { ascending: true })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

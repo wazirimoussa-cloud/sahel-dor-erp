@@ -3,10 +3,14 @@ import { useAuth } from "@/auth/useAuth";
 import { useTransformations } from "@/features/transformations/useTransformations";
 import { NewTransformationForm } from "@/features/transformations/NewTransformationForm";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function TransformationsPage() {
   const { hasAttribution } = useAuth();
-  const { data: transformations, isLoading, error } = useTransformations();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useTransformations(page, pageSize);
+  const transformations = data?.rows;
   const canCreate = hasAttribution("transformation.creer");
 
   return (
@@ -95,6 +99,14 @@ export function TransformationsPage() {
             )}
           </tbody>
         </table>
+        {transformations && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
+        )}
       </Card>
     </div>
   );

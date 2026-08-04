@@ -3,6 +3,8 @@ import { useAuth } from "@/auth/useAuth";
 import { usePurchases } from "@/features/purchases/usePurchases";
 import { NewPurchaseForm } from "@/features/purchases/NewPurchaseForm";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -18,7 +20,9 @@ const STATUS_CLASSES: Record<string, string> = {
 
 export function PurchasesPage() {
   const { hasAttribution } = useAuth();
-  const { data: purchases, isLoading, error } = usePurchases();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = usePurchases(page, pageSize);
+  const purchases = data?.rows;
   const canCreate = hasAttribution("achats.creer");
 
   return (
@@ -112,6 +116,14 @@ export function PurchasesPage() {
             )}
           </tbody>
         </table>
+        {purchases && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
+        )}
       </Card>
     </div>
   );

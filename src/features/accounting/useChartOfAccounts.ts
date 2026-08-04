@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export interface NewAccount {
   companyId: string;
@@ -7,16 +8,17 @@ export interface NewAccount {
   name: string;
 }
 
-export function useChartOfAccounts() {
+export function useChartOfAccounts(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["chart_of_accounts"],
+    queryKey: ["chart_of_accounts", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("chart_of_accounts")
         .select("id, code, name, company_id, created_at")
-        .order("code", { ascending: true });
+        .order("code", { ascending: true })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

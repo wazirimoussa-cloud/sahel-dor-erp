@@ -3,10 +3,14 @@ import { useAuth } from "@/auth/useAuth";
 import { useClients, useSetClientActive } from "@/features/clients/useClients";
 import { ClientForm } from "@/features/clients/ClientForm";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function ClientsPage() {
   const { hasAttribution } = useAuth();
-  const { data: clients, isLoading, error } = useClients();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useClients(page, pageSize);
+  const clients = data?.rows;
   const setClientActive = useSetClientActive();
   const canManage = hasAttribution("clients.gerer");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -96,6 +100,14 @@ export function ClientsPage() {
               )}
             </tbody>
           </table>
+        )}
+        {clients && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

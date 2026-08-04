@@ -2,10 +2,14 @@ import { useAuth } from "@/auth/useAuth";
 import { useChartOfAccounts } from "@/features/accounting/useChartOfAccounts";
 import { ChartOfAccountForm } from "@/features/accounting/ChartOfAccountForm";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function ChartOfAccountsPage() {
   const { hasAttribution } = useAuth();
-  const { data: accounts, isLoading, error } = useChartOfAccounts();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useChartOfAccounts(page, pageSize);
+  const accounts = data?.rows;
   const canManage = hasAttribution("comptabilite.gerer_plan_comptable");
 
   return (
@@ -50,6 +54,14 @@ export function ChartOfAccountsPage() {
               )}
             </tbody>
           </table>
+        )}
+        {accounts && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

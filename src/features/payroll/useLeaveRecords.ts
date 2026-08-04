@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/lib/database.types";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export type LeaveType = Database["public"]["Enums"]["leave_type"];
 
@@ -14,16 +15,17 @@ export interface NewLeaveRecord {
   reason?: string;
 }
 
-export function useLeaveRecords() {
+export function useLeaveRecords(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["leave_records"],
+    queryKey: ["leave_records", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("leave_records")
         .select("id, type, start_date, end_date, reason, employees(full_name)")
-        .order("start_date", { ascending: false });
+        .order("start_date", { ascending: false })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export interface NewSalaryAdvance {
   employeeId: string;
@@ -7,16 +8,17 @@ export interface NewSalaryAdvance {
   reason?: string;
 }
 
-export function useSalaryAdvances() {
+export function useSalaryAdvances(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["salary_advances"],
+    queryKey: ["salary_advances", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("salary_advances")
         .select("id, employee_id, amount, advance_date, reason, created_at, employees(full_name), payslips(id)")
-        .order("advance_date", { ascending: false });
+        .order("advance_date", { ascending: false })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

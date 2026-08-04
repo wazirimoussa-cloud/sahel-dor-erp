@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export interface ProductionItemInput {
   productId: string;
@@ -8,16 +9,17 @@ export interface ProductionItemInput {
   expiryDate?: string;
 }
 
-export function useProductions() {
+export function useProductions(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["productions"],
+    queryKey: ["productions", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("productions")
         .select("id, created_at, warehouses(name), production_items(quantity, unit_cost)")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

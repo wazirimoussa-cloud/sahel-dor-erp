@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export interface NewProduct {
   companyId: string;
@@ -10,13 +11,31 @@ export interface NewProduct {
   vatExempt: boolean;
 }
 
-export function useProducts() {
+export function useProducts(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["products"],
+    queryKey: ["products", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
         .select("id, name, price, stock, unit, vat_exempt, company_id, created_at, active")
+        .order("name", { ascending: true })
+        .range(...rangeFor(page, pageSize));
+      if (error) throw error;
+      return splitPage(data, pageSize);
+    },
+  });
+}
+
+// Réservé aux filtres qui doivent couvrir tout l'historique (ex. filtre "Produit" d'un
+// historique de mouvements de magasin) : une transaction passée peut référencer un
+// produit désormais archivé, contrairement à useActiveProducts qui l'exclurait.
+export function useAllProducts() {
+  return useQuery({
+    queryKey: ["products", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, price, stock, unit, vat_exempt")
         .order("name", { ascending: true });
       if (error) throw error;
       return data;

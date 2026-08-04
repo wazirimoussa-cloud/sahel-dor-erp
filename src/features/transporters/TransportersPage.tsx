@@ -2,10 +2,14 @@ import { useAuth } from "@/auth/useAuth";
 import { useTransporters } from "@/features/transporters/useTransporters";
 import { TransporterForm } from "@/features/transporters/TransporterForm";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function TransportersPage() {
   const { hasAttribution } = useAuth();
-  const { data: transporters, isLoading, error } = useTransporters();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useTransporters(page, pageSize);
+  const transporters = data?.rows;
   const canManage = hasAttribution("transporteurs.gerer");
 
   return (
@@ -49,6 +53,14 @@ export function TransportersPage() {
               )}
             </tbody>
           </table>
+        )}
+        {transporters && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

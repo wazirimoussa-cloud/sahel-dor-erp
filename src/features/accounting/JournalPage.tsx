@@ -1,6 +1,9 @@
-import { useJournalEntries } from "@/features/accounting/useJournalEntries";
+import { useState } from "react";
+import { useJournalEntries, fetchAllJournalEntries } from "@/features/accounting/useJournalEntries";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { generateJournalPdf } from "@/lib/pdf";
 
 const JOURNAL_LABELS: Record<string, string> = {
@@ -12,11 +15,24 @@ const JOURNAL_LABELS: Record<string, string> = {
 };
 
 export function JournalPage() {
-  const { data: entries, isLoading, error } = useJournalEntries();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useJournalEntries(page, pageSize);
+  const entries = data?.rows;
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   async function handleExportPdf() {
-    if (!entries) return;
-    const pdfEntries = entries.map((entry) => {
+    setExportError(null);
+    setIsExporting(true);
+    let allEntries;
+    try {
+      allEntries = await fetchAllJournalEntries();
+    } catch {
+      setExportError("Impossible de générer l'export PDF.");
+      setIsExporting(false);
+      return;
+    }
+    const pdfEntries = allEntries.map((entry) => {
       const lines = entry.journal_entry_lines as {
         id: string;
         debit: number;
@@ -39,6 +55,7 @@ export function JournalPage() {
     });
     const { doc, filename } = await generateJournalPdf(pdfEntries);
     doc.save(filename);
+    setIsExporting(false);
   }
 
   return (
@@ -46,8 +63,8 @@ export function JournalPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-bold text-forest-900">Journal comptable</h1>
         {entries && entries.length > 0 && (
-          <Button variant="secondary" onClick={() => void handleExportPdf()}>
-            Exporter en PDF
+          <Button variant="secondary" disabled={isExporting} onClick={() => void handleExportPdf()}>
+            {isExporting ? "Génération…" : "Exporter en PDF"}
           </Button>
         )}
       </div>
@@ -55,11 +72,17 @@ export function JournalPage() {
         Alimenté automatiquement par les achats, ventes et paiements — aucune saisie
         manuelle possible dans cette version. Périmètre limité aux flux avec tiers
         externes et à la trésorerie (Production/Transformation non couvertes, voir
-        README). À faire valider par un comptable avant tout usage officiel.
+        README). À faire valider par un comptable avant tout usage officiel. L'export
+        PDF couvre l'intégralité du journal, pas seulement la page affichée ci-dessous.
       </p>
 
       {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
       {error && <p className="text-sm text-red-600">Impossible de charger le journal comptable.</p>}
+      {exportError && (
+        <p role="alert" className="text-sm text-red-600">
+          {exportError}
+        </p>
+      )}
 
       {entries?.map((entry) => {
         const lines = entry.journal_entry_lines as {
@@ -122,6 +145,14 @@ export function JournalPage() {
         );
       })}
       {entries?.length === 0 && <p className="text-sm text-gray-500">Aucune écriture pour le moment.</p>}
+      {entries && (
+        <Pagination
+          page={page}
+          hasNextPage={data?.hasNextPage ?? false}
+          onPrevious={goToPrevious}
+          onNext={goToNext}
+        />
+      )}
     </div>
   );
 }

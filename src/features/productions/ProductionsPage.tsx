@@ -3,10 +3,14 @@ import { useAuth } from "@/auth/useAuth";
 import { useProductions } from "@/features/productions/useProductions";
 import { NewProductionForm } from "@/features/productions/NewProductionForm";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function ProductionsPage() {
   const { hasAttribution } = useAuth();
-  const { data: productions, isLoading, error } = useProductions();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useProductions(page, pageSize);
+  const productions = data?.rows;
   const canCreate = hasAttribution("production.creer");
 
   return (
@@ -66,6 +70,14 @@ export function ProductionsPage() {
             )}
           </tbody>
         </table>
+        {productions && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
+        )}
       </Card>
     </div>
   );

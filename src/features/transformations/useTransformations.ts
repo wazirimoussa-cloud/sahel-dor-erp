@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export interface TransformationInputInput {
   productId: string;
@@ -12,18 +13,19 @@ export interface TransformationOutputInput {
   expiryDate?: string;
 }
 
-export function useTransformations() {
+export function useTransformations(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["transformations"],
+    queryKey: ["transformations", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transformations")
         .select(
           "id, created_at, warehouses(name), transformation_inputs(quantity, products(unit)), transformation_outputs(quantity, unit_cost, products(unit))",
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

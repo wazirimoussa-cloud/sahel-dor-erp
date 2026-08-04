@@ -1,18 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
-export function useStockLossRequests() {
+export function useStockLossRequests(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["stock_loss_requests"],
+    queryKey: ["stock_loss_requests", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("stock_loss_requests")
         .select(
           "id, quantity, repackaged_quantity, reason, status, rejection_reason, created_at, reviewed_at, products(name, unit), warehouses(name), requester:users!requested_by(email), reviewer:users!reviewed_by(email), stock_lots(lot_number, expiry_date)",
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

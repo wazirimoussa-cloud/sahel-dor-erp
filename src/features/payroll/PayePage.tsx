@@ -8,6 +8,8 @@ import { useLeaveRecords, useDeleteLeaveRecord } from "@/features/payroll/useLea
 import { LeaveRecordForm, LEAVE_TYPE_LABELS } from "@/features/payroll/LeaveRecordForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 function relation<T>(value: T | T[] | null): T | undefined {
   return Array.isArray(value) ? value[0] : (value ?? undefined);
@@ -15,9 +17,26 @@ function relation<T>(value: T | T[] | null): T | undefined {
 
 export function PayePage() {
   const { hasAttribution } = useAuth();
-  const { data: payslips, isLoading, error } = usePayslips();
-  const { data: advances, isLoading: advancesLoading, error: advancesError } = useSalaryAdvances();
-  const { data: leaveRecords, isLoading: leaveLoading, error: leaveError } = useLeaveRecords();
+  const payslipsPagination = usePagination();
+  const { data: payslipsData, isLoading, error } = usePayslips(
+    payslipsPagination.page,
+    payslipsPagination.pageSize,
+  );
+  const payslips = payslipsData?.rows;
+  const advancesPagination = usePagination();
+  const {
+    data: advancesData,
+    isLoading: advancesLoading,
+    error: advancesError,
+  } = useSalaryAdvances(advancesPagination.page, advancesPagination.pageSize);
+  const advances = advancesData?.rows;
+  const leavePagination = usePagination();
+  const {
+    data: leaveData,
+    isLoading: leaveLoading,
+    error: leaveError,
+  } = useLeaveRecords(leavePagination.page, leavePagination.pageSize);
+  const leaveRecords = leaveData?.rows;
   const deleteLeaveRecord = useDeleteLeaveRecord();
   const canManage = hasAttribution("paie.gerer");
   const [leaveActionError, setLeaveActionError] = useState<string | null>(null);
@@ -83,6 +102,14 @@ export function PayePage() {
             </tbody>
           </table>
         )}
+        {payslips && (
+          <Pagination
+            page={payslipsPagination.page}
+            hasNextPage={payslipsData?.hasNextPage ?? false}
+            onPrevious={payslipsPagination.goToPrevious}
+            onNext={payslipsPagination.goToNext}
+          />
+        )}
       </Card>
 
       <h2 className="text-base font-bold text-forest-900">Avances sur salaire</h2>
@@ -129,6 +156,14 @@ export function PayePage() {
               )}
             </tbody>
           </table>
+        )}
+        {advances && (
+          <Pagination
+            page={advancesPagination.page}
+            hasNextPage={advancesData?.hasNextPage ?? false}
+            onPrevious={advancesPagination.goToPrevious}
+            onNext={advancesPagination.goToNext}
+          />
         )}
       </Card>
 
@@ -188,6 +223,14 @@ export function PayePage() {
               )}
             </tbody>
           </table>
+        )}
+        {leaveRecords && (
+          <Pagination
+            page={leavePagination.page}
+            hasNextPage={leaveData?.hasNextPage ?? false}
+            onPrevious={leavePagination.goToPrevious}
+            onNext={leavePagination.goToNext}
+          />
         )}
       </Card>
     </div>

@@ -4,10 +4,14 @@ import { useEmployees, useSetEmployeeActive } from "@/features/payroll/useEmploy
 import { EmployeeForm } from "@/features/payroll/EmployeeForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function EmployeesPage() {
   const { hasAttribution } = useAuth();
-  const { data: employees, isLoading, error } = useEmployees();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useEmployees(page, pageSize);
+  const employees = data?.rows;
   const setEmployeeActive = useSetEmployeeActive();
   const canManage = hasAttribution("paie.gerer");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -86,6 +90,14 @@ export function EmployeesPage() {
               )}
             </tbody>
           </table>
+        )}
+        {employees && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

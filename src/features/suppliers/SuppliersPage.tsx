@@ -3,10 +3,14 @@ import { useAuth } from "@/auth/useAuth";
 import { useSuppliers, useSetSupplierActive } from "@/features/suppliers/useSuppliers";
 import { SupplierForm } from "@/features/suppliers/SupplierForm";
 import { Card } from "@/components/ui/Card";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function SuppliersPage() {
   const { hasAttribution } = useAuth();
-  const { data: suppliers, isLoading, error } = useSuppliers();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useSuppliers(page, pageSize);
+  const suppliers = data?.rows;
   const setSupplierActive = useSetSupplierActive();
   const canManage = hasAttribution("fournisseurs.gerer");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -96,6 +100,14 @@ export function SuppliersPage() {
               )}
             </tbody>
           </table>
+        )}
+        {suppliers && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

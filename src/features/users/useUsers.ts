@@ -1,17 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { AttributionLevel } from "@/auth/AuthContext";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
-export function useUsers() {
+export function useUsers(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["users"],
+    queryKey: ["users", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
         .select("id, email, created_at, must_change_password, active, roles(name), companies(name)")
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }

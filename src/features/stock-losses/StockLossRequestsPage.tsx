@@ -9,6 +9,8 @@ import { RequestStockLossForm } from "@/features/stock-losses/RequestStockLossFo
 import { lotStatus } from "@/lib/stockDisplay";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -41,7 +43,9 @@ function relationLot(
 
 export function StockLossRequestsPage() {
   const { hasAttribution } = useAuth();
-  const { data: requests, isLoading, error } = useStockLossRequests();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useStockLossRequests(page, pageSize);
+  const requests = data?.rows;
   const approve = useApproveStockLoss();
   const reject = useRejectStockLoss();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -188,6 +192,14 @@ export function StockLossRequestsPage() {
             )}
           </tbody>
         </table>
+        {requests && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
+        )}
       </Card>
     </div>
   );

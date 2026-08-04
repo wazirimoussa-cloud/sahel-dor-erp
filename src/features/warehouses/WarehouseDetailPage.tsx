@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useWarehouse } from "@/features/warehouses/useWarehouses";
 import { useWarehouseTransactions, useWarehouseLots } from "@/features/warehouses/useWarehouseHistory";
-import { useProducts } from "@/features/products/useProducts";
+import { useAllProducts } from "@/features/products/useProducts";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { TRANSACTION_TYPE_LABELS, lotStatus } from "@/lib/stockDisplay";
@@ -11,7 +11,7 @@ import type { TransactionType } from "@/lib/database.types";
 export function WarehouseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data: warehouse, isLoading, error } = useWarehouse(id);
-  const { data: products } = useProducts();
+  const { data: products } = useAllProducts();
 
   const [productId, setProductId] = useState("");
   const [type, setType] = useState<TransactionType | "">("");

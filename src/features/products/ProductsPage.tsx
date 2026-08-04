@@ -13,6 +13,8 @@ import { ProductForm } from "@/features/products/ProductForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { isLowStock } from "@/lib/stockThreshold";
 
 const priceSchema = z.object({
@@ -51,7 +53,9 @@ function PriceHistoryRows({ productId }: { productId: string }) {
 
 export function ProductsPage() {
   const { hasAttribution } = useAuth();
-  const { data: products, isLoading, error } = useProducts();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useProducts(page, pageSize);
+  const products = data?.rows;
   const updatePrice = useUpdateProductPrice();
   const setProductActive = useSetProductActive();
   const canManage = hasAttribution("produits.gerer_catalogue");
@@ -256,6 +260,14 @@ export function ProductsPage() {
               )}
             </tbody>
           </table>
+        )}
+        {products && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

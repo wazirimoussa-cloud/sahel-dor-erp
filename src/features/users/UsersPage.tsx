@@ -4,11 +4,15 @@ import { UserForm } from "@/features/users/UserForm";
 import { UserAttributionsPanel } from "@/features/users/UserAttributionsPanel";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 import { ROLE_LABELS } from "@/lib/roles";
 import type { RoleName } from "@/lib/database.types";
 
 export function UsersPage() {
-  const { data: users, isLoading, error } = useUsers();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useUsers(page, pageSize);
+  const users = data?.rows;
   const resetPassword = useResetPassword();
   const setUserActive = useSetUserActive();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -160,6 +164,14 @@ export function UsersPage() {
               )}
             </tbody>
           </table>
+        )}
+        {users && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

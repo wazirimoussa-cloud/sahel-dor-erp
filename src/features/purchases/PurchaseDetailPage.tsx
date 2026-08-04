@@ -8,7 +8,7 @@ import {
   useCancelPurchase,
   usePurchaseLosses,
 } from "@/features/purchases/usePurchases";
-import { useTransporters } from "@/features/transporters/useTransporters";
+import { useAllTransporters } from "@/features/transporters/useTransporters";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -48,7 +48,7 @@ export function PurchaseDetailPage() {
   const { hasAttribution } = useAuth();
   const { data: purchase, isLoading, error } = usePurchase(id);
   const { data: losses } = usePurchaseLosses(id);
-  const { data: transporters } = useTransporters();
+  const { data: transporters } = useAllTransporters();
   const receivePurchase = useReceivePurchase();
   const cancelPurchase = useCancelPurchase();
   const [actionError, setActionError] = useState<string | null>(null);

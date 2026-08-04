@@ -5,10 +5,14 @@ import { useWarehouses, useSetWarehouseActive } from "@/features/warehouses/useW
 import { WarehouseForm } from "@/features/warehouses/WarehouseForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Pagination } from "@/components/ui/Pagination";
+import { usePagination } from "@/lib/usePagination";
 
 export function WarehousesPage() {
   const { hasAttribution } = useAuth();
-  const { data: warehouses, isLoading, error } = useWarehouses();
+  const { page, pageSize, goToPrevious, goToNext } = usePagination();
+  const { data, isLoading, error } = useWarehouses(page, pageSize);
+  const warehouses = data?.rows;
   const setWarehouseActive = useSetWarehouseActive();
   const canManage = hasAttribution("entrepots.gerer");
   const [actionError, setActionError] = useState<string | null>(null);
@@ -101,6 +105,14 @@ export function WarehousesPage() {
               )}
             </tbody>
           </table>
+        )}
+        {warehouses && (
+          <Pagination
+            page={page}
+            hasNextPage={data?.hasNextPage ?? false}
+            onPrevious={goToPrevious}
+            onNext={goToNext}
+          />
         )}
       </Card>
     </div>

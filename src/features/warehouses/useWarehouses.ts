@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { rangeFor, splitPage } from "@/lib/usePagination";
 
 export interface NewWarehouse {
   companyId: string;
@@ -7,16 +8,17 @@ export interface NewWarehouse {
   location?: string;
 }
 
-export function useWarehouses() {
+export function useWarehouses(page: number, pageSize: number) {
   return useQuery({
-    queryKey: ["warehouses"],
+    queryKey: ["warehouses", page, pageSize],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("warehouses")
         .select("id, name, location, company_id, created_at, active")
-        .order("name", { ascending: true });
+        .order("name", { ascending: true })
+        .range(...rangeFor(page, pageSize));
       if (error) throw error;
-      return data;
+      return splitPage(data, pageSize);
     },
   });
 }
