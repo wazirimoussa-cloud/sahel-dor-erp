@@ -368,4 +368,90 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     expect(validateErr).not.toBeNull();
     expect(validateErr?.message).toMatch(/non autorisé/i);
   });
+
+  // cancel_order n'avait jusqu'ici aucun test : une commande en attente n'a encore
+  // touché ni le stock ni la comptabilité (seule validate_order le fait), donc
+  // l'annulation doit se limiter à un changement de statut, sans effet de bord.
+  it("le Gérant peut annuler sa propre commande en attente, sans impact sur le stock", async () => {
+    const { data: stockBefore } = await gerant
+      .from("product_stocks")
+      .select("stock")
+      .eq("product_id", productId)
+      .eq("warehouse_id", warehouseId)
+      .single();
+
+    const { data: order, error: orderErr } = await gerant.rpc("create_order", {
+      payload: {
+        warehouse_id: warehouseId,
+        client_id: clientId,
+        items: [{ product_id: productId, quantity: 1 }],
+      },
+    });
+    expect(orderErr).toBeNull();
+    expect(order?.status).toBe("pending");
+
+    const { data: cancelled, error: cancelErr } = await gerant.rpc("cancel_order", {
+      order_id: order!.id,
+    });
+    expect(cancelErr).toBeNull();
+    expect(cancelled?.status).toBe("cancelled");
+
+    const { data: stockAfter } = await gerant
+      .from("product_stocks")
+      .select("stock")
+      .eq("product_id", productId)
+      .eq("warehouse_id", warehouseId)
+      .single();
+    expect(Number(stockAfter?.stock)).toBe(Number(stockBefore?.stock));
+
+    const { data: entries, error: entriesErr } = await gerant
+      .from("journal_entries")
+      .select("id")
+      .eq("order_id", order!.id);
+    expect(entriesErr).toBeNull();
+    expect(entries).toHaveLength(0);
+  });
+
+  it("refuse d'annuler une commande déjà validée (une fois le stock sorti, l'annulation n'a plus de sens)", async () => {
+    const { data: order, error: orderErr } = await gerant.rpc("create_order", {
+      payload: {
+        warehouse_id: warehouseId,
+        client_id: clientId,
+        items: [{ product_id: productId, quantity: 1 }],
+      },
+    });
+    expect(orderErr).toBeNull();
+
+    const { data: validated, error: validateErr } = await superviseur.rpc("validate_order", {
+      order_id: order!.id,
+    });
+    expect(validateErr).toBeNull();
+    expect(validated?.status).toBe("validated");
+
+    const { error: cancelErr } = await gerant.rpc("cancel_order", { order_id: order!.id });
+    expect(cancelErr).not.toBeNull();
+    expect(cancelErr?.message).toMatch(/attente/i);
+
+    // La tentative refusée ne doit pas avoir fait bouger le statut.
+    const { data: orderAfter } = await gerant.from("orders").select("status").eq("id", order!.id).single();
+    expect(orderAfter?.status).toBe("validated");
+  });
+
+  it("un Magasinier ne peut pas annuler une commande (droits insuffisants)", async () => {
+    const { data: order, error: orderErr } = await gerant.rpc("create_order", {
+      payload: {
+        warehouse_id: warehouseId,
+        client_id: clientId,
+        items: [{ product_id: productId, quantity: 1 }],
+      },
+    });
+    expect(orderErr).toBeNull();
+
+    const { error: cancelErr } = await magasinier.rpc("cancel_order", { order_id: order!.id });
+    expect(cancelErr).not.toBeNull();
+    expect(cancelErr?.message).toMatch(/non autorisé/i);
+
+    const { data: orderAfter } = await gerant.from("orders").select("status").eq("id", order!.id).single();
+    expect(orderAfter?.status).toBe("pending");
+  });
 });
