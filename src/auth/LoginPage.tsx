@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { EnvBanner } from "@/components/layout/EnvBanner";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),

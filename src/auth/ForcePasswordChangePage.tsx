@@ -3,7 +3,7 @@ import { useAuth } from "@/auth/useAuth";
 import { ChangePasswordForm } from "@/features/account/ChangePasswordForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 // Page minimale, sans AppShell/navigation, tant que le mot de passe par défaut n'a pas
 // été changé (voir must_change_password, ProtectedRoute.tsx) — empêche de contourner en

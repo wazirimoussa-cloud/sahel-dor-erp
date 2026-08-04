@@ -33,7 +33,7 @@ import { Button } from "@/components/ui/Button";
 import { AlertsBell } from "@/components/layout/AlertsBell";
 import { ROLE_LABELS } from "@/lib/roles";
 import { useLogPageVisit } from "@/lib/useLogPageVisit";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 const ENV_LABEL = (import.meta.env.VITE_APP_LABEL as string | undefined) || "Réel";
 

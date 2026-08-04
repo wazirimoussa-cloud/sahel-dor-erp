@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { EnvBanner } from "@/components/layout/EnvBanner";
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 
 // Page atteinte via le lien reçu par email ("mot de passe oublié", admin uniquement —
 // voir supabase/functions/request-password-reset). L'identité est déjà prouvée par le

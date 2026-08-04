@@ -6,10 +6,29 @@
     <title>Sahel d'Or — ERP</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Playfair Display ne sert qu'aux titres (voir tailwind.config.ts, font-serif) -- le
+    corps du texte reste en police système. Chargée en non-bloquant (preload + bascule
+    media, patron recommandé par Google Fonts) : la feuille de style Google Fonts n'a plus
+    besoin d'être récupérée avant le premier rendu ; le repli Georgia (index.css) s'affiche
+    entre-temps, remplacé dès que la police est prête (comportement déjà garanti par
+    display=swap, inchangé). <noscript> couvre le cas JS désactivé. -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
+    />
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
   </head>
   <body>
     <div id="root"></div>
