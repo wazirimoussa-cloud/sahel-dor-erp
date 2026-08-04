@@ -1216,6 +1216,25 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     somment exactement au coût d'acquisition. Nouveaux tests d'intégration
     (`stock-and-assets.test.ts`) : formule exponentielle vérifiée sur un actif cédé 18
     mois après acquisition, et validation de la cohérence méthode/coefficient.
+57. **Audit sécurité — retrait de l'accès public à deux fonctions internes**
+    (`0070_revoke_public_stock_lot_helpers.sql`) : `fn_consume_specific_lot` et
+    `fn_consume_stock_lots` (consommation FEFO/ciblée des lots de stock, appelées en
+    interne par `create_order`, `request_stock_loss`, `receive_purchase`, etc.) n'ont
+    jamais vérifié d'attribution ni de portée par société — un choix défendable pour des
+    fonctions purement internes, sauf que PostgreSQL accorde par défaut `EXECUTE` à
+    `PUBLIC` sur toute nouvelle fonction, et ce grant n'avait jamais été révoqué.
+    Conséquence vérifiée en conditions réelles (appel HTTP direct avec la seule clé
+    `anon` publique, sans session) : n'importe qui pouvait appeler ces fonctions via
+    PostgREST pour décrémenter `stock_lots.quantity_remaining` de n'importe quelle
+    société avec un `transaction_id` arbitraire, corrompant silencieusement le stock et
+    la piste d'audit FEFO/coût sans laisser de trace côté RPC métier. Corrigé par un
+    `revoke execute ... from public, anon, authenticated` sur les deux fonctions ; les
+    appels internes restent inchangés (les deux fonctions appartiennent à `postgres`,
+    comme tous les RPC du projet, donc un appel depuis une autre fonction
+    `security definer` du même propriétaire ignore ce grant). Revérifié après coup :
+    l'appel REST anonyme renvoie désormais `42501 permission denied`, et les 40 tests
+    d'intégration existants (dont FEFO, ciblage de lot, transferts) passent toujours
+    sans modification.
 
 ## Limites connues / pistes pour la suite
 
