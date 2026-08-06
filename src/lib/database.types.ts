@@ -363,6 +363,7 @@ export type Database = {
           payslip_id: string | null
           production_id: string | null
           purchase_id: string | null
+          transformation_id: string | null
         }
         Insert: {
           company_id: string
@@ -375,6 +376,7 @@ export type Database = {
           payslip_id?: string | null
           production_id?: string | null
           purchase_id?: string | null
+          transformation_id?: string | null
         }
         Update: {
           company_id?: string
@@ -387,6 +389,7 @@ export type Database = {
           payslip_id?: string | null
           production_id?: string | null
           purchase_id?: string | null
+          transformation_id?: string | null
         }
         Relationships: [
           {
@@ -422,6 +425,13 @@ export type Database = {
             columns: ["purchase_id"]
             isOneToOne: false
             referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journal_entries_transformation_id_fkey"
+            columns: ["transformation_id"]
+            isOneToOne: false
+            referencedRelation: "transformations"
             referencedColumns: ["id"]
           },
         ]

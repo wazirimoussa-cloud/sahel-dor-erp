@@ -1273,16 +1273,43 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     `AuthProvider.tsx` tague chaque erreur avec l'utilisateur (id/email) et la société
     concernés dès qu'un profil est chargé, effacés à la déconnexion — pour savoir qui est
     touché sans attendre qu'il le signale.
+60. **Écriture de reclassement pour les Transformations**
+    (`0071_reclassement_transformation.sql`) : demandée par le comptable du client — 0010
+    et 0051 documentaient jusqu'ici l'absence délibérée d'écriture ("reclassement de
+    stock déjà valorisé à l'achat, pas un nouveau mouvement de valeur"), qui reste vraie
+    ici : contrairement à la Production (débit 36 = crédit 73, de la valeur réellement
+    créée), aucune valeur nouvelle n'est reconnue pour une Transformation — l'écriture ne
+    fait que reprendre une charge déjà comptabilisée (601, à l'achat) et la reclasser en
+    stock, via un nouveau compte "Matières premières" (**31**, n'existait pas jusqu'ici).
+    Écriture à 4 lignes équilibrée : débit 31 / crédit 601 (reprise de la charge d'achat
+    pour la quantité transformée), puis débit 36 / crédit 31 (passage immédiat en
+    produits finis, la transformation étant instantanée dans l'app — pas de suivi
+    "en-cours" séparé). **Reconnu explicitement avec l'utilisateur : ceci améliore le
+    suivi analytique/la traçabilité des achats transformés, mais ne remplace pas une
+    comptabilité en stock complète** (inventaire permanent ou intermittent) — le compte
+    601 continue d'être débité en totalité à *chaque* achat, y compris pour la part qui
+    sera plus tard transformée ; cette écriture se contente de reclasser après coup la
+    fraction concernée. Sans effet sur le Bilan/Compte de résultat calculés par
+    `useFinancialStatements.ts`, qui ne lit jamais les comptes 31/36 (même précédent que
+    73 pour la Production, jamais lu non plus) — uniquement visible dans le Journal
+    comptable et le Plan comptable, sans risque de double comptage dans les totaux déjà
+    affichés ailleurs dans l'app. Test d'intégration mis à jour
+    (`production-ledger.test.ts`) pour vérifier les 4 lignes et confirmer qu'aucune
+    ligne ne touche le compte 73 (pas de valeur nouvelle reconnue).
 
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
-- **Comptabilité** : périmètre volontairement réduit (voir points 13-14, 43) —
-  Transformation reste hors du grand livre (choix assumé, pas un oubli : reclassement
-  de stock déjà valorisé, pas un nouveau mouvement de valeur). Ne pas utiliser en
-  l'état pour des déclarations fiscales ou un bilan officiel sans revue par un
-  comptable.
+- **Comptabilité** : périmètre volontairement réduit (voir points 13-14, 43). ~~Transformation
+  reste hors du grand livre~~ — **partiellement corrigée** (point 60,
+  `0071_reclassement_transformation.sql`) : génère désormais une écriture de reclassement
+  (comptes 31/36/601), à la demande du comptable du client. **Reconnu explicitement avec
+  l'utilisateur : ceci améliore le suivi analytique/la traçabilité, mais ne remplace pas
+  une comptabilité en stock complète** (inventaire permanent ou intermittent) — le compte
+  601 reste débité en totalité à chaque achat, y compris pour la part destinée à être
+  transformée. Ne pas utiliser en l'état pour des déclarations fiscales ou un bilan
+  officiel sans revue par un comptable.
 - **Immobilisations** (points 35, 56) : ~~amortissement linéaire uniquement (pas de
   dégressif)~~ — **corrigée** (point 56, `0069_amortissement_degressif.sql`) :
   amortissement dégressif disponible en option par actif, coefficient saisi

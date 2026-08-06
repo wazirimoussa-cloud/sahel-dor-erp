@@ -145,66 +145,91 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
     expect(Number(creditLine!.credit)).toBe(30000);
   });
 
-  it("une transformation ne génère toujours aucune écriture", async () => {
-    const { data: inputProduct } = await gerant
-      .from("products")
-      .insert({
-        company_id: companyId,
-        name: `Intrant ${tag}`,
-        price: 1000,
-        stock: 0,
-        unit: "unité",
-        vat_exempt: false,
-      })
-      .select("id")
-      .single();
-    const { data: outputProduct } = await gerant
-      .from("products")
-      .insert({
-        company_id: companyId,
-        name: `Extrant ${tag}`,
-        price: 1500,
-        stock: 0,
-        unit: "unité",
-        vat_exempt: false,
-      })
-      .select("id")
-      .single();
+  it(
+    "une transformation génère une écriture TRANSFORMATION de reclassement " +
+      "(débit 31 = crédit 601, débit 36 = crédit 31), sans valeur nouvelle reconnue (0071)",
+    async () => {
+      const { data: inputProduct } = await gerant
+        .from("products")
+        .insert({
+          company_id: companyId,
+          name: `Intrant ${tag}`,
+          price: 1000,
+          stock: 0,
+          unit: "unité",
+          vat_exempt: false,
+        })
+        .select("id")
+        .single();
+      const { data: outputProduct } = await gerant
+        .from("products")
+        .insert({
+          company_id: companyId,
+          name: `Extrant ${tag}`,
+          price: 1500,
+          stock: 0,
+          unit: "unité",
+          vat_exempt: false,
+        })
+        .select("id")
+        .single();
 
-    // Le Gérant doit d'abord détenir un peu de stock de l'intrant pour pouvoir le
-    // consommer -- une production rapide sert de fixture, pas l'objet du test.
-    await gerant.rpc("create_production", {
-      payload: {
-        warehouse_id: warehouseId,
-        items: [{ product_id: inputProduct!.id, quantity: 20, unit_cost: 1000 }],
-      },
-    });
+      // Le Gérant doit d'abord détenir un peu de stock de l'intrant pour pouvoir le
+      // consommer -- une production rapide sert de fixture, pas l'objet du test.
+      await gerant.rpc("create_production", {
+        payload: {
+          warehouse_id: warehouseId,
+          items: [{ product_id: inputProduct!.id, quantity: 20, unit_cost: 1000 }],
+        },
+      });
 
-    const { data: entriesBefore, error: entriesBeforeErr } = await comptable
-      .from("journal_entries")
-      .select("id")
-      .eq("company_id", companyId);
-    expect(entriesBeforeErr).toBeNull();
-    const countBefore = entriesBefore?.length ?? 0;
+      // 5 unités consommées à 1000 FCFA/unité (coût du lot ci-dessus) = 5000 FCFA reclassés.
+      const { data: transformation, error: transformationErr } = await gerant.rpc("create_transformation", {
+        payload: {
+          warehouse_id: warehouseId,
+          inputs: [{ product_id: inputProduct!.id, quantity: 5 }],
+          outputs: [{ product_id: outputProduct!.id, quantity: 3 }],
+        },
+      });
+      expect(transformationErr).toBeNull();
 
-    const { error: transformationErr } = await gerant.rpc("create_transformation", {
-      payload: {
-        warehouse_id: warehouseId,
-        inputs: [{ product_id: inputProduct!.id, quantity: 5 }],
-        outputs: [{ product_id: outputProduct!.id, quantity: 3 }],
-      },
-    });
-    expect(transformationErr).toBeNull();
+      const { data: entries, error: entriesErr } = await comptable
+        .from("journal_entries")
+        .select("id, journal_code, journal_entry_lines(debit, credit, chart_of_accounts(code))")
+        .eq("transformation_id", transformation!.id);
+      expect(entriesErr).toBeNull();
+      expect(entries).toHaveLength(1);
+      expect(entries![0].journal_code).toBe("TRANSFORMATION");
 
-    const { data: entriesAfter, error: entriesAfterErr } = await comptable
-      .from("journal_entries")
-      .select("id")
-      .eq("company_id", companyId);
-    expect(entriesAfterErr).toBeNull();
-    // La production de fixture ci-dessus a déjà généré sa propre écriture (comptée
-    // dans countBefore) -- seule la transformation elle-même ne doit rien ajouter.
-    expect(entriesAfter?.length ?? 0).toBe(countBefore);
-  });
+      const lines = entries![0].journal_entry_lines as unknown as {
+        debit: number;
+        credit: number;
+        chart_of_accounts: { code: string } | { code: string }[] | null;
+      }[];
+      expect(lines).toHaveLength(4);
+
+      const codeOf = (line: (typeof lines)[number]) => {
+        const coa = line.chart_of_accounts;
+        return Array.isArray(coa) ? coa[0]?.code : coa?.code;
+      };
+
+      // Deux lignes sur le compte 31 (débit puis crédit du même montant, en passage) --
+      // on les distingue par le sens plutôt que par position.
+      const account31Debit = lines.find((l) => codeOf(l) === "31" && Number(l.debit) > 0);
+      const account31Credit = lines.find((l) => codeOf(l) === "31" && Number(l.credit) > 0);
+      const account601Credit = lines.find((l) => codeOf(l) === "601");
+      const account36Debit = lines.find((l) => codeOf(l) === "36");
+
+      expect(Number(account31Debit?.debit)).toBe(5000);
+      expect(Number(account601Credit?.credit)).toBe(5000);
+      expect(Number(account36Debit?.debit)).toBe(5000);
+      expect(Number(account31Credit?.credit)).toBe(5000);
+
+      // Aucune valeur nouvelle reconnue : contrairement à la Production (débit 36 =
+      // crédit 73), aucune ligne ne touche le compte 73 ici.
+      expect(lines.some((l) => codeOf(l) === "73")).toBe(false);
+    },
+  );
 
   // 0045_transformation_prix_revient.sql : le coût des intrants consommés est réparti
   // entre les extrants au prorata de leur VALEUR MARCHANDE (quantité × prix de vente
