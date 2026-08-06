@@ -5,40 +5,23 @@
 // message générique, que ce profil existe ou non avec cet email, pour ne jamais révéler
 // qui a ce pouvoir par ce biais.
 //
-// redirectTo est validé contre une liste blanche pour éviter tout détournement de
-// redirection — corrige au passage le bug rencontré en session (lien de récupération
+// redirectTo est validé contre une liste blanche (ALLOWED_ORIGINS, partagée avec le CORS
+// des trois fonctions depuis l'audit sécurité du 2026-08-04) pour éviter tout détournement
+// de redirection — corrige au passage le bug rencontré en session (lien de récupération
 // pointant vers localhost:3000, faute de redirectTo explicite dans l'appel précédent).
 //
 // Déploiement : `npx supabase functions deploy request-password-reset --no-verify-jwt`
-// (réutilise le secret SUPABASE_SERVICE_ROLE_KEY déjà configuré pour create-user)
+// (réutilise les secrets SUPABASE_SERVICE_ROLE_KEY/DEFAULT_PASSWORD déjà configurés
+// pour create-user)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { ALLOWED_ORIGINS, corsHeaders } from "../_shared/constants.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const ALLOWED_REDIRECT_ORIGINS = [
-  "https://sahel-dor-erp.vercel.app",
-  "https://sahel-dor-erp-formation.vercel.app",
-  "http://localhost:5173",
-  "http://localhost:5174",
-];
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
 const GENERIC_MESSAGE =
   "Si ce compte peut réinitialiser son mot de passe par ce moyen, un lien vient d'être envoyé.";
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
 
 interface RequestResetPayload {
   email: string;
@@ -46,8 +29,12 @@ interface RequestResetPayload {
 }
 
 Deno.serve(async (req) => {
+  const headers = corsHeaders(req.headers.get("Origin"));
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers });
   }
 
   if (req.method !== "POST") {
@@ -66,7 +53,7 @@ Deno.serve(async (req) => {
     return json({ message: GENERIC_MESSAGE }, 200);
   }
 
-  if (!ALLOWED_REDIRECT_ORIGINS.includes(redirectOrigin)) {
+  if (!ALLOWED_ORIGINS.includes(redirectOrigin)) {
     return json({ message: GENERIC_MESSAGE }, 200);
   }
 

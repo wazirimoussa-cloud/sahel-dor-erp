@@ -315,9 +315,10 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
 16. **Politique de mots de passe** (`0013_password_policy.sql`,
     `supabase/functions/reset-password/`, `supabase/functions/request-password-reset/`) :
     tout compte créé par l'admin (`create-user`) ou réinitialisé par l'admin
-    (`reset-password`) reçoit le mot de passe par défaut partagé
-    (`supabase/functions/_shared/constants.ts`, `saheldor2026`) — jamais transmis ni
-    connu du frontend, jamais choisi par l'admin. `public.users.must_change_password`
+    (`reset-password`) reçoit le mot de passe par défaut partagé, lu depuis le secret
+    `DEFAULT_PASSWORD` (`supabase/functions/_shared/constants.ts` — voir aussi point 58)
+    — jamais transmis ni connu du frontend, jamais choisi par l'admin.
+    `public.users.must_change_password`
     (défaut `true` sur toute nouvelle ligne, `false` en rétroactif sur les comptes déjà
     actifs au moment de la migration) force le changement dès la première connexion
     (`ProtectedRoute.tsx` redirige vers `/force-password-change` tant que le flag est
@@ -1235,6 +1236,21 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     l'appel REST anonyme renvoie désormais `42501 permission denied`, et les 40 tests
     d'intégration existants (dont FEFO, ciblage de lot, transferts) passent toujours
     sans modification.
+58. **Audit sécurité — CORS resserré et mot de passe par défaut sorti du code source**
+    (`supabase/functions/_shared/constants.ts`) : les trois Edge Functions
+    (`create-user`, `reset-password`, `request-password-reset`) répondaient avec
+    `Access-Control-Allow-Origin: "*"`, permettant à n'importe quel site d'appeler ces
+    fonctions authentifiées depuis le navigateur d'un admin — atténué par la
+    vérification JWT + attribution déjà en place (le vrai garde-fou), mais pas la
+    meilleure pratique. `corsHeaders()` reflète désormais l'origine de la requête contre
+    la liste blanche déjà utilisée pour `redirectTo` (`ALLOWED_ORIGINS`, partagée entre
+    les trois fonctions). Par ailleurs, le mot de passe par défaut partagé par tous les
+    comptes (voir point 16) était une chaîne en dur dans le code source, donc visible de
+    quiconque a accès au dépôt — lu désormais depuis le secret `DEFAULT_PASSWORD`
+    (`npx supabase secrets set DEFAULT_PASSWORD=...`, voir `.env.example`), jamais commité.
+    Aucun changement de comportement pour les comptes existants (même valeur, seule la
+    source change) ; revérifié via le test d'intégration `archivage.test.ts` qui appelle
+    `create-user` pour de vrai.
 
 ## Limites connues / pistes pour la suite
 

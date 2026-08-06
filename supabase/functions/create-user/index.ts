@@ -6,25 +6,13 @@
 //
 // Déploiement : `npx supabase functions deploy create-user`
 //               `npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<clé service_role>`
+//               `npx supabase secrets set DEFAULT_PASSWORD=<mot de passe par défaut>`
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { DEFAULT_PASSWORD } from "../_shared/constants.ts";
+import { DEFAULT_PASSWORD, corsHeaders } from "../_shared/constants.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
-  });
-}
 
 interface CreateUserPayload {
   email: string;
@@ -32,10 +20,14 @@ interface CreateUserPayload {
 }
 
 Deno.serve(async (req) => {
+  const headers = corsHeaders(req.headers.get("Origin"));
+  const json = (body: unknown, status: number) =>
+    new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...headers } });
+
   // Requête de préflight CORS envoyée par le navigateur avant tout POST cross-origin
   // avec en-têtes personnalisés (Authorization, Content-Type) — doit répondre 2xx.
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response(null, { status: 204, headers });
   }
 
   if (req.method !== "POST") {
