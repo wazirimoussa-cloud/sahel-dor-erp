@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { setSentryUser, setSentryTag } from "@/lib/sentry";
 import { supabase } from "@/lib/supabase";
 import type { RoleName } from "@/lib/database.types";
 import { AuthContext, type Attribution, type AttributionLevel, type Profile } from "@/auth/AuthContext";
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
           setLoading(false);
         }
+        setSentryUser(null);
         return;
       }
 
@@ -80,6 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setDeactivatedMessage(DEACTIVATED_MESSAGE);
           setLoading(false);
         }
+        setSentryUser(null);
         return;
       }
 
@@ -88,6 +91,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setProfile(nextProfile);
         setDeactivatedMessage(null);
         setLoading(false);
+      }
+      // Contexte utilisateur pour la triage des erreurs Sentry -- id/email seulement,
+      // jamais de donnée métier sensible.
+      if (nextProfile) {
+        setSentryUser({ id: nextProfile.id, email: nextProfile.email });
+        setSentryTag("company_id", nextProfile.companyId ?? "none");
       }
     }
 

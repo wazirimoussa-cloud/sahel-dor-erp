@@ -1251,6 +1251,28 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     Aucun changement de comportement pour les comptes existants (même valeur, seule la
     source change) ; revérifié via le test d'intégration `archivage.test.ts` qui appelle
     `create-user` pour de vrai.
+59. **Suivi d'erreurs en production (Sentry)** (`src/lib/sentry.ts`,
+    `src/components/ErrorBoundary.tsx`, `main.tsx`, `AuthProvider.tsx`) : avant ce point,
+    une erreur en production (RPC en échec, plantage React) ne remontait à personne — le
+    premier signal était un client qui signale que "ça ne marche pas". Intégré via le
+    **Loader Script Sentry** (chargé depuis leur CDN, `SENTRY_LOADER_URL` dans
+    `sentry.ts`) plutôt que le SDK npm `@sentry/react` — choix de l'utilisateur, qui
+    évite d'avoir à localiser le DSN dans l'interface Sentry. `initSentry()` s'active
+    uniquement sur un build de production (`import.meta.env.PROD`) — no-op silencieux en
+    développement local, pour ne jamais polluer le quota Sentry avec des erreurs de code
+    en cours d'écriture ni faire dépendre une fonctionnalité de l'app de ce service (le
+    script étant chargé de façon asynchrone, `whenReady()` met en file les appels
+    `captureException`/`setUser`/`setTag` faits avant que `window.Sentry` ne soit prêt,
+    au lieu de les perdre silencieusement). Un tag personnalisé `deployment` reprend
+    `VITE_APP_LABEL` (même distinction Formation/Réel que la bannière de `AppShell.tsx`)
+    pour ne jamais confondre les deux dans le tableau de bord Sentry — pas la propriété
+    standard `environment` du SDK, non configurable après coup avec un script qui
+    s'auto-initialise depuis les réglages du projet Sentry, pas depuis ce code.
+    `ErrorBoundary` (composant maison, `main.tsx`) capture les plantages React et
+    affiche un écran de repli ("Recharger la page") au lieu d'une page blanche.
+    `AuthProvider.tsx` tague chaque erreur avec l'utilisateur (id/email) et la société
+    concernés dès qu'un profil est chargé, effacés à la déconnexion — pour savoir qui est
+    touché sans attendre qu'il le signale.
 
 ## Limites connues / pistes pour la suite
 
