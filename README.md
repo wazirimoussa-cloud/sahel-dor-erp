@@ -1297,6 +1297,23 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     (`production-ledger.test.ts`) pour vérifier les 4 lignes et confirmer qu'aucune
     ligne ne touche le compte 73 (pas de valeur nouvelle reconnue).
 
+61. **Correction d'une régression bloquant la page Bilan/Compte de résultat** (
+    `src/features/financials/useFinancialStatements.ts`) : le point 54
+    (`0067_pertes_stock_lot_cible.sql`) a ajouté `transactions.target_lot_id`, une
+    référence vers `stock_lots` qui s'ajoute à `stock_lots.source_transaction_id` (déjà
+    existante) — deux chemins de relation distincts entre les deux tables. La requête de
+    `useFinancialStatements.ts` embarquait `transactions` depuis `stock_lots` sans préciser
+    laquelle, ce que PostgREST refuse dès qu'une relation est ambiguë (`PGRST201`) : **la
+    page Bilan/Compte de résultat échouait pour tout utilisateur**, en Production comme en
+    Formation, depuis le déploiement du point 54. Découverte en écrivant un test
+    d'intégration bout en bout (achat → ... → bilan, `full-cycle-scenario.test.ts`) qui
+    calcule un vrai bilan à partir de données réelles plutôt que de fixtures ciblées — les
+    tests précédents n'exerçaient jamais ce chemin de requête. Corrigée en qualifiant
+    explicitement la relation voulue (`transactions!stock_lots_source_transaction_id_fkey`).
+    Vérifiée directement contre le backend partagé (l'ancienne requête échoue toujours en
+    `PGRST201`, la nouvelle réussit en 200) et confirmée dans le bundle JS déployé en
+    Production.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
