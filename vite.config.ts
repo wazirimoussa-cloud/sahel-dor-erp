@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      "@": path.resolve(import.meta.dirname, "./src"),
     },
   },
   build: {
@@ -22,11 +22,25 @@ export default defineConfig({
         // critique (App/LoginPage sont statiques, pas lazy). recharts n'y figure PAS : il
         // ne sert qu'au Tableau de bord (seul à l'importer) et reste dans le chunk lazy de
         // cette page (routes.tsx) pour ne jamais peser sur les pages qui ne l'utilisent pas.
-        manualChunks: {
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
-          "supabase-vendor": ["@supabase/supabase-js"],
-          "query-vendor": ["@tanstack/react-query"],
-          "form-vendor": ["react-hook-form", "zod", "@hookform/resolvers"],
+        // Fonction plutôt que l'ancienne forme objet (Rollup 5, via Vite 8) : le typage ne
+        // reconnaît plus les clés de chunk arbitraires dans ManualChunksFunction. react-router
+        // (v7) est désormais un paquet séparé de react-router-dom (avant : un seul paquet) --
+        // ajouté ici pour rester dans le même chunk vendor.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/.test(id)) {
+            return "react-vendor";
+          }
+          if (/[\\/]node_modules[\\/]@supabase[\\/]supabase-js[\\/]/.test(id)) {
+            return "supabase-vendor";
+          }
+          if (/[\\/]node_modules[\\/]@tanstack[\\/]react-query[\\/]/.test(id)) {
+            return "query-vendor";
+          }
+          if (/[\\/]node_modules[\\/](react-hook-form|zod|@hookform[\\/]resolvers)[\\/]/.test(id)) {
+            return "form-vendor";
+          }
+          return undefined;
         },
       },
     },

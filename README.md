@@ -1314,6 +1314,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     `PGRST201`, la nouvelle réussit en 200) et confirmée dans le bundle JS déployé en
     Production.
 
+62. **Mise à jour majeure `react-router-dom` (6→7) et `vite`/`vitest` (5/2→8/4)** :
+    corrige les CVE relevées par `npm audit` (redirection ouverte react-router avant 7.18,
+    path traversal Vite avant 6.4.3, vulnérabilités critiques `vitest`/`@vitest/coverage-v8`
+    avant 3.2.6). `react-router` (le cœur) est désormais un paquet séparé de
+    `react-router-dom` (avant : un seul paquet) — ajouté au chunk `react-vendor` de
+    `vite.config.ts`. `manualChunks` réécrit en fonction plutôt qu'en objet (Rollup 5, via
+    Vite 8, ne type plus la forme objet). `__dirname` remplacé par `import.meta.dirname`
+    dans les 3 configs Vite/Vitest (avertissement de dépréciation `configLoader: 'native'`).
+    Un CVE `react-router` reste signalé par `npm audit` (`GHSA-qwww-vcr4-c8h2`, fixé en
+    8.3.0, pas encore publié) mais **ne s'applique pas à cette app** : il ne concerne que le
+    mode RSC (React Server Components) non stable, jamais utilisé ici (l'app reste en mode
+    déclaratif classique — `BrowserRouter`/`Routes`/`Route`, aucun loader/action serveur).
+    Vérifié : typecheck/lint/build propres, 26 tests unitaires et 41 tests d'intégration
+    (Formation) toujours au vert, navigateur testé (redirection d'une route protégée à
+    paramètre dynamique vers `/login`, aucune erreur console, dev server Vite 8 propre).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
