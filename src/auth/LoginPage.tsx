@@ -12,7 +12,7 @@ import { EnvBanner } from "@/components/layout/EnvBanner";
 import logo from "@/assets/logo.webp";
 
 const loginSchema = z.object({
-  email: z.string().email("Adresse email invalide"),
+  identifier: z.string().min(1, "Identifiant ou email requis"),
   password: z.string().min(1, "Mot de passe requis"),
 });
 
@@ -50,12 +50,36 @@ export function LoginPage() {
     return <Navigate to={from} replace />;
   }
 
+  const GENERIC_LOGIN_ERROR = "Identifiants incorrects ou compte inexistant.";
+
   async function onSubmit(values: LoginFormValues) {
     setServerError(null);
     clearDeactivatedMessage();
-    const { error } = await supabase.auth.signInWithPassword(values);
+
+    const identifier = values.identifier.trim();
+    let email: string;
+
+    if (identifier.includes("@")) {
+      // Chemin admin : le seul compte à garder un email réel (voir README point 64).
+      email = identifier;
+    } else {
+      // Identifiant (login) : résolu en email interne synthétique avant authentification
+      // — resolve_login_email est publique (accessible avant toute session), voir
+      // 0072_identifiants_login.sql. Le type généré ne reflète pas la nullabilité réelle
+      // (fonction SQL scalaire) : un login inconnu renvoie bien `null` à l'exécution.
+      const { data: resolvedEmail } = await supabase.rpc("resolve_login_email", {
+        p_login: identifier,
+      });
+      if (!resolvedEmail) {
+        setServerError(GENERIC_LOGIN_ERROR);
+        return;
+      }
+      email = resolvedEmail;
+    }
+
+    const { error } = await supabase.auth.signInWithPassword({ email, password: values.password });
     if (error) {
-      setServerError("Identifiants incorrects ou compte inexistant.");
+      setServerError(GENERIC_LOGIN_ERROR);
     }
     // Si le compte est archivé, AuthProvider.bootstrap détecte `active: false` une fois
     // le profil chargé, déconnecte immédiatement et renseigne deactivatedMessage --
@@ -89,11 +113,13 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div>
-              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-                Email
+              <label htmlFor="identifier" className="mb-1 block text-sm font-medium text-gray-700">
+                Identifiant ou email
               </label>
-              <Input id="email" type="email" autoComplete="email" {...register("email")} />
-              {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+              <Input id="identifier" type="text" autoComplete="username" {...register("identifier")} />
+              {errors.identifier && (
+                <p className="mt-1 text-xs text-red-600">{errors.identifier.message}</p>
+              )}
             </div>
 
             <div>

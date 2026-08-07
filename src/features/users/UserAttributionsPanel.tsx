@@ -30,11 +30,11 @@ type LevelChoice = "aucun" | AttributionLevel;
 
 export function UserAttributionsPanel({
   userId,
-  userEmail,
+  userDisplayName,
   onClose,
 }: {
   userId: string;
-  userEmail: string;
+  userDisplayName: string;
   onClose: () => void;
 }) {
   const { data: catalog, isLoading: isLoadingCatalog } = useAttributionsCatalog();
@@ -94,7 +94,7 @@ export function UserAttributionsPanel({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-forest-900">Attributions de {userEmail}</h3>
+        <h3 className="text-sm font-semibold text-forest-900">Attributions de {userDisplayName}</h3>
         <button type="button" className="text-xs text-gray-500 hover:underline" onClick={onClose}>
           Fermer
         </button>

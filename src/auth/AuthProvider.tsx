@@ -17,7 +17,7 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id, email, company_id, must_change_password, active, roles(name), user_attributions!user_attributions_user_id_fkey(level, attributions(module, action_key))",
+      "id, email, login, company_id, must_change_password, active, roles(name), user_attributions!user_attributions_user_id_fkey(level, attributions(module, action_key))",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -37,6 +37,7 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   return {
     id: data.id,
     email: data.email,
+    login: data.login,
     role: roleName ?? null,
     companyId: data.company_id,
     mustChangePassword: data.must_change_password,

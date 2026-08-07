@@ -138,7 +138,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="text-sm text-gray-500">
             {profile ? (
               <>
-                <span className="font-medium text-gray-800">{profile.email}</span>
+                <span className="font-medium text-gray-800">{profile.login ?? profile.email}</span>
                 {profile.role && (
                   <span className="ml-2 rounded-full bg-forest-50 px-2 py-0.5 text-xs uppercase text-forest-700">
                     {ROLE_LABELS[profile.role]}

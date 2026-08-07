@@ -1346,10 +1346,61 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     et `stock_lots` avec leurs jointures — sans jamais échouer ni déclencher de
     limitation de débit). Aucun goulot d'étranglement identifié à cette échelle.
 
+64. **Identifiant (login) à la place de l'email, sauf pour l'administrateur réel**
+    (`0072_identifiants_login.sql`, `src/auth/LoginPage.tsx`) : demandé par le client, à
+    l'exception explicite du compte administrateur. Découverte en explorant le schéma en
+    direct : un seul compte dans toute la base a le rôle littéral `admin`
+    (`wazirimoussa@gmail.com`, Production) — les comptes nommés « admin »
+    (`admin@saheldor.demo`, `admin.formation@saheldor.demo`) n'ont **pas** ce rôle, ils
+    fonctionnent comme tous les autres via l'attribution `utilisateurs.gerer`. **Confirmé
+    avec l'utilisateur : seul le rôle admin réel garde email+mot de passe**, ces deux
+    comptes basculent donc en identifiant comme le reste.
+
+    Supabase Auth n'a pas de notion native de login (`signInWithPassword` n'accepte que
+    email/phone) : chaque compte non-admin garde un email interne **synthétique**
+    (`<login>@login.saheldor.internal`, jamais affiché) — `public.users.login` (unique
+    **globalement**, pas par société : la résolution se fait avant authentification, donc
+    sans connaître la société) sert de point d'entrée public via la RPC
+    `resolve_login_email` (`security definer`, `grant ... to anon`, ne résout jamais un
+    compte inactif). `LoginPage.tsx` a désormais un champ unique « Identifiant ou email » :
+    présence d'un `@` → tentative directe par email (chemin admin) ; sinon → résolution du
+    login puis connexion — même message d'erreur générique dans tous les cas d'échec, pour
+    ne rien révéler. `create-user` (Edge Function) prend désormais `login` au lieu
+    d'`email`, valide le format serveur et l'unicité avant de créer le compte Auth.
+    `request-password-reset` vérifie maintenant le **rôle** admin réel (plus l'attribution
+    `utilisateurs.gerer`) : sans ce correctif, `admin@saheldor.demo` aurait continué à
+    recevoir un vrai lien de réinitialisation par email après la bascule.
+
+    **Comptes non-admin existants migrés immédiatement** (décision confirmée avec
+    l'utilisateur, pas de transition progressive) via un outil ponctuel
+    (`supabase/functions/migrate-user-logins`, gated par un secret dédié, pas une session
+    utilisateur — à supprimer une fois l'exécution terminée partout) : login dérivé de la
+    partie locale de l'email actuel (ex. `gerant.formation@...` → `gerant.formation`),
+    email Auth basculé vers la forme synthétique via l'API Admin officielle (jamais de SQL
+    brut sur `auth.users`, pour rester cohérent avec la table `identities` interne de
+    GoTrue). **Formation migrée et vérifiée** (40 comptes, connexion réelle confirmée de
+    bout en bout — résolution puis authentification). **Production : migration différée**,
+    nécessite une confirmation séparée (le staff existant devra utiliser son nouvel
+    identifiant, prévisible à partir de son email actuel, à communiquer côté client).
+
+    Tests d'intégration : le helper `signInAs` (dupliqué dans 6 fichiers) extrait en module
+    partagé (`tests/integration/helpers/auth.ts`), réécrit pour résoudre login → email
+    comme le vrai parcours `LoginPage`. Nouveau fichier `auth-login.test.ts` (résolution
+    connue/inconnue, rejet d'un login mal formé/dupliqué par `create-user`) —
+    `request-password-reset` non testé en intégration : aucune façon d'observer depuis
+    l'API publique si un email a réellement été envoyé sans manipuler le mot de passe du
+    vrai compte admin, ce qu'un test automatisé ne doit jamais faire ; vérifié par
+    relecture de code.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
+- **Migration Production vers l'identifiant/login** (point 64) : les comptes non-admin de
+  Production (`gerant@saheldor.demo`, `magasinier@saheldor.demo`, etc.) ne sont **pas
+  encore** migrés — ils se connectent toujours par email pour l'instant. Migration
+  identique à celle déjà faite sur Formation, en attente d'une confirmation séparée
+  (impact réel sur le staff client, qui devra utiliser son nouvel identifiant).
 - **Comptabilité** : périmètre volontairement réduit (voir points 13-14, 43). ~~Transformation
   reste hors du grand livre~~ — **partiellement corrigée** (point 60,
   `0071_reclassement_transformation.sql`) : génère désormais une écriture de reclassement

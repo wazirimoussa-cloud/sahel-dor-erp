@@ -13,6 +13,7 @@ export interface Attribution {
 export interface Profile {
   id: string;
   email: string;
+  login: string | null;
   role: RoleName | null;
   companyId: string | null;
   mustChangePassword: boolean;

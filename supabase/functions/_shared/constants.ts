@@ -9,6 +9,16 @@
 // `npx supabase secrets set DEFAULT_PASSWORD=<valeur>` (voir .env.example).
 export const DEFAULT_PASSWORD = Deno.env.get("DEFAULT_PASSWORD")!;
 
+// Domaine synthétique pour l'email interne des comptes non-admin (identifiant/login à la
+// place de l'email, voir 0072_identifiants_login.sql) — jamais affiché, jamais connu de
+// l'utilisateur, uniquement l'ancre d'authentification Supabase Auth (qui n'a pas de
+// notion native de "login"). Seul l'administrateur réel (rôle 'admin') garde un email réel.
+export const LOGIN_EMAIL_DOMAIN = "login.saheldor.internal";
+
+// Même règle que la contrainte SQL users_login_format (0072) -- validée ici aussi en
+// défense en profondeur, jamais confiance dans un format client.
+export const LOGIN_FORMAT_REGEX = /^[a-z0-9](?:[a-z0-9._-]{1,28}[a-z0-9])?$/;
+
 // Origines autorisées pour CORS et pour la redirection après réinitialisation de mot de
 // passe (request-password-reset) — resserré depuis le "*" initial lors du même audit :
 // la clé anon publique suffisait pour appeler ces fonctions depuis n'importe quel site,

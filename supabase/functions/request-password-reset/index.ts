@@ -59,24 +59,22 @@ Deno.serve(async (req) => {
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+  // Réservé au rôle admin RÉEL (littéral 'admin' -- un seul compte dans toute la base,
+  // voir README point 64), pas à l'attribution utilisateurs.gerer : depuis
+  // l'identifiant/login (0072_identifiants_login.sql), tous les autres comptes -- même
+  // ceux nommés "admin" (ex. admin@saheldor.demo) -- n'ont plus d'email réel, donc plus
+  // aucune raison de recevoir un lien de réinitialisation par email.
   const { data: targetUser } = await adminClient
     .from("users")
-    .select("id")
+    .select("roles(name)")
     .eq("email", payload.email)
     .maybeSingle();
 
-  let canManageUsers = false;
-  if (targetUser) {
-    const { data: attributionRows } = await adminClient
-      .from("user_attributions")
-      .select("level, attributions!inner(action_key)")
-      .eq("user_id", targetUser.id)
-      .eq("attributions.action_key", "utilisateurs.gerer")
-      .eq("level", "operationnelle");
-    canManageUsers = (attributionRows?.length ?? 0) > 0;
-  }
+  const roleRelation = targetUser?.roles as { name: string } | { name: string }[] | null;
+  const roleName = Array.isArray(roleRelation) ? roleRelation[0]?.name : roleRelation?.name;
+  const isRealAdmin = roleName === "admin";
 
-  if (canManageUsers) {
+  if (isRealAdmin) {
     await adminClient.auth.resetPasswordForEmail(payload.email, {
       redirectTo: payload.redirectTo,
     });

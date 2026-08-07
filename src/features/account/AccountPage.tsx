@@ -11,7 +11,7 @@ export function AccountPage() {
 
       <Card className="max-w-sm">
         <p className="text-sm text-gray-500">Connecté en tant que</p>
-        <p className="text-sm font-medium text-gray-800">{profile?.email}</p>
+        <p className="text-sm font-medium text-gray-800">{profile?.login ?? profile?.email}</p>
       </Card>
 
       <Card>

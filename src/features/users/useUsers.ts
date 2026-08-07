@@ -9,7 +9,7 @@ export function useUsers(page: number, pageSize: number) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("users")
-        .select("id, email, created_at, must_change_password, active, roles(name), companies(name)")
+        .select("id, email, login, created_at, must_change_password, active, roles(name), companies(name)")
         .order("created_at", { ascending: false })
         .range(...rangeFor(page, pageSize));
       if (error) throw error;
@@ -43,7 +43,7 @@ export function useCompanies() {
 }
 
 export interface NewUser {
-  email: string;
+  login: string;
   companyId: string;
 }
 
@@ -55,12 +55,14 @@ export function useCreateUser() {
       // utilisateur normal ne peut jamais créer de compte Auth directement via l'API
       // REST (voir supabase/functions/create-user). Le mot de passe est toujours celui
       // par défaut, jamais choisi ici. Aucune attribution n'est assignée à la création —
-      // c'est une étape séparée (voir UserAttributionsPanel).
-      const { data, error } = await supabase.functions.invoke<{ id: string; email: string }>(
+      // c'est une étape séparée (voir UserAttributionsPanel). Identifiant (login) à la
+      // place de l'email (0072_identifiants_login.sql) -- seul l'admin réel garde un
+      // email, et ce formulaire ne sert jamais à créer un compte admin.
+      const { data, error } = await supabase.functions.invoke<{ id: string; login: string }>(
         "create-user",
         {
           body: {
-            email: user.email,
+            login: user.login,
             companyId: user.companyId,
           },
         },

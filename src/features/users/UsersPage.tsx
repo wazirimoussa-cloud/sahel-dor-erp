@@ -18,9 +18,9 @@ export function UsersPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [managingUserId, setManagingUserId] = useState<string | null>(null);
 
-  async function handleResetPassword(userId: string, email: string) {
+  async function handleResetPassword(userId: string, displayName: string) {
     const confirmed = window.confirm(
-      `Réinitialiser le mot de passe de ${email} à la valeur par défaut ? L'utilisateur devra le changer à sa prochaine connexion.`,
+      `Réinitialiser le mot de passe de ${displayName} à la valeur par défaut ? L'utilisateur devra le changer à sa prochaine connexion.`,
     );
     if (!confirmed) return;
     setActionError(null);
@@ -31,11 +31,11 @@ export function UsersPage() {
     }
   }
 
-  async function handleToggleActive(userId: string, email: string, active: boolean) {
+  async function handleToggleActive(userId: string, displayName: string, active: boolean) {
     const confirmed = window.confirm(
       active
-        ? `Réactiver ${email} ? Ce compte pourra de nouveau se connecter et agir dans l'application.`
-        : `Archiver ${email} ? Ce compte ne pourra plus se connecter ni agir dans l'application. L'historique déjà enregistré (actions, commandes, achats...) reste intact et consultable — archiver n'efface rien.`,
+        ? `Réactiver ${displayName} ? Ce compte pourra de nouveau se connecter et agir dans l'application.`
+        : `Archiver ${displayName} ? Ce compte ne pourra plus se connecter ni agir dans l'application. L'historique déjà enregistré (actions, commandes, achats...) reste intact et consultable — archiver n'efface rien.`,
     );
     if (!confirmed) return;
     setActionError(null);
@@ -63,7 +63,7 @@ export function UsersPage() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
-                <th scope="col" className="py-2">Email</th>
+                <th scope="col" className="py-2">Identifiant</th>
                 <th scope="col" className="py-2">Poste</th>
                 <th scope="col" className="py-2">Société</th>
                 <th scope="col" className="py-2">Créé le</th>
@@ -83,10 +83,11 @@ export function UsersPage() {
                 const companyName = Array.isArray(companyRelation)
                   ? companyRelation[0]?.name
                   : companyRelation?.name;
+                const displayName = user.login ?? user.email;
                 return (
                   <Fragment key={user.id}>
                     <tr className="border-b border-gray-100">
-                      <td className="py-2">{user.email}</td>
+                      <td className="py-2">{displayName}</td>
                       <td className="py-2">
                         {roleName ? (ROLE_LABELS[roleName as RoleName] ?? roleName) : "—"}
                       </td>
@@ -127,14 +128,14 @@ export function UsersPage() {
                           <Button
                             variant="secondary"
                             disabled={resetPassword.isPending}
-                            onClick={() => void handleResetPassword(user.id, user.email)}
+                            onClick={() => void handleResetPassword(user.id, displayName)}
                           >
                             Réinitialiser le mot de passe
                           </Button>
                           <Button
                             variant="secondary"
                             disabled={setUserActive.isPending}
-                            onClick={() => void handleToggleActive(user.id, user.email, !user.active)}
+                            onClick={() => void handleToggleActive(user.id, displayName, !user.active)}
                           >
                             {user.active ? "Archiver" : "Réactiver"}
                           </Button>
@@ -146,7 +147,7 @@ export function UsersPage() {
                         <td colSpan={7} className="py-3">
                           <UserAttributionsPanel
                             userId={user.id}
-                            userEmail={user.email}
+                            userDisplayName={displayName}
                             onClose={() => setManagingUserId(null)}
                           />
                         </td>

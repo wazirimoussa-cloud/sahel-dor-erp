@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { CREDENTIALS, hasCredentials, signInAs } from "./helpers/auth";
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const DEFAULT_PASSWORD = "saheldor2026";
 
 // Vérifie l'archivage (0048_archivage.sql) contre le vrai projet Supabase de Formation
 // (RLS + attributions réelles, zéro mock) -- même approche que
@@ -19,56 +24,6 @@ import type { Database } from "@/lib/database.types";
 // le test E plutôt que de dépendre d'un compte existant dont le mot de passe a pu
 // changer entre deux sessions de travail -- fragilité déjà rencontrée une fois sur les
 // comptes gerant.formation/admin.formation pendant cette même phase.
-
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-const DEFAULT_PASSWORD = "saheldor2026";
-
-const CREDENTIALS = {
-  gerant: {
-    email: process.env.TEST_GERANT_EMAIL,
-    password: process.env.TEST_GERANT_PASSWORD,
-  },
-  magasinier: {
-    email: process.env.TEST_MAGASINIER_EMAIL,
-    password: process.env.TEST_MAGASINIER_PASSWORD,
-  },
-  comptable: {
-    email: process.env.TEST_COMPTABLE_EMAIL,
-    password: process.env.TEST_COMPTABLE_PASSWORD,
-  },
-  admin: {
-    email: process.env.TEST_ADMIN_EMAIL,
-    password: process.env.TEST_ADMIN_PASSWORD,
-  },
-} as const;
-
-const hasCredentials =
-  Boolean(SUPABASE_URL) &&
-  Boolean(SUPABASE_ANON_KEY) &&
-  Object.values(CREDENTIALS).every((c) => c.email && c.password);
-
-if (!hasCredentials) {
-  console.warn(
-    "[integration] Comptes/URL Supabase absents de l'environnement -- suite ignorée. " +
-      "Voir .env.example (TEST_GERANT_EMAIL, TEST_GERANT_PASSWORD, etc.).",
-  );
-}
-
-async function signInAs(role: keyof typeof CREDENTIALS): Promise<SupabaseClient<Database>> {
-  const { email, password } = CREDENTIALS[role];
-  const client = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { error } = await client.auth.signInWithPassword({
-    email: email as string,
-    password: password as string,
-  });
-  if (error) {
-    throw new Error(`Connexion échouée pour le profil ${role} (${email}) : ${error.message}`);
-  }
-  return client;
-}
 
 describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
   let gerant: SupabaseClient<Database>;
@@ -89,7 +44,7 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
     const { data: gerantRow, error: gerantErr } = await gerant
       .from("users")
       .select("company_id")
-      .eq("email", CREDENTIALS.gerant.email as string)
+      .eq("login", CREDENTIALS.gerant.login as string)
       .single();
     if (gerantErr || !gerantRow?.company_id) {
       throw new Error(`Impossible de résoudre la société du Gérant : ${gerantErr?.message}`);
@@ -323,15 +278,31 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
   });
 
   it("un compte archivé perd tout accès (RLS + RPC), un compte réactivé le retrouve", async () => {
-    const email = `integration-archive-test-${Date.now()}@saheldor.demo`;
-    const { data: created, error: createErr } = await admin.functions.invoke<{ id: string }>(
+    const login = `arch-test-${Date.now()}`;
+    const { data: created, error: createErr } = await admin.functions.invoke<{ id: string; login: string }>(
       "create-user",
-      { body: { email, companyId } },
+      { body: { login, companyId } },
     );
     expect(createErr).toBeNull();
     const userId = created!.id;
 
-    // Compte encore actif : l'authentification et la lecture doivent fonctionner.
+    // Compte encore actif : l'authentification et la lecture doivent fonctionner. Email
+    // synthétique résolu UNE SEULE FOIS ici (pendant que le compte est encore actif) et
+    // réutilisé pour les trois tentatives de connexion directe ci-dessous -- une fois
+    // archivé, resolve_login_email ne résout plus (active = false, par construction,
+    // 0072_identifiants_login.sql), ce qui teste une chose différente (le vrai parcours
+    // LoginPage refuserait la connexion dès la résolution) et non le comportement RLS
+    // après authentification que ce test vérifie spécifiquement.
+    const resolveClient = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data: resolvedEmail, error: resolveErr } = await resolveClient.rpc("resolve_login_email", {
+      p_login: login,
+    });
+    expect(resolveErr).toBeNull();
+    expect(resolvedEmail).toBeTruthy();
+    const email = resolvedEmail as string;
+
     const before = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -354,6 +325,12 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
     expect(archiveErr).toBeNull();
     expect(archived).toHaveLength(1);
     expect(archived![0].active).toBe(false);
+
+    // Un compte archivé ne peut plus résoudre son identifiant (resolve_login_email exclut
+    // active = false, 0072_identifiants_login.sql) -- le vrai parcours LoginPage refuse
+    // donc la connexion dès cette étape, avant même signInWithPassword.
+    const { data: resolvedAfterArchive } = await resolveClient.rpc("resolve_login_email", { p_login: login });
+    expect(resolvedAfterArchive).toBeNull();
 
     // L'authentification Supabase réussit toujours (mot de passe inchangé), mais plus
     // aucun accès : current_company_id()/current_role_name() renvoient null, ce qui
@@ -394,7 +371,7 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
     const { data: gerantRow } = await gerant
       .from("users")
       .select("id")
-      .eq("email", CREDENTIALS.gerant.email as string)
+      .eq("login", CREDENTIALS.gerant.login as string)
       .single();
 
     const { data: attemptResult, error: attemptErr } = await gerant

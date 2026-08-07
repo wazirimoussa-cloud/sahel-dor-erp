@@ -1867,6 +1867,7 @@ export type Database = {
           created_at: string
           email: string
           id: string
+          login: string | null
           must_change_password: boolean
           role_id: number | null
         }
@@ -1876,6 +1877,7 @@ export type Database = {
           created_at?: string
           email: string
           id: string
+          login?: string | null
           must_change_password?: boolean
           role_id?: number | null
         }
@@ -1885,6 +1887,7 @@ export type Database = {
           created_at?: string
           email?: string
           id?: string
+          login?: string | null
           must_change_password?: boolean
           role_id?: number | null
         }
@@ -2341,6 +2344,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      resolve_login_email: { Args: { p_login: string }; Returns: string }
       set_user_attributions: {
         Args: { p_attributions: Json; p_user_id: string }
         Returns: undefined

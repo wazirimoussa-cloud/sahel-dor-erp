@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { CREDENTIALS, hasCredentials, signInAs } from "./helpers/auth";
 
 // Vérifie 0051_production_journal_entry.sql contre Formation (RLS + attributions
 // réelles, zéro mock) : une production génère désormais une écriture "production
@@ -10,47 +11,6 @@ import type { Database } from "@/lib/database.types";
 //
 // Nécessite les comptes provisoires Formation -- voir .env.example. Suite ignorée
 // (jamais en échec) si les identifiants sont absents.
-
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-
-const CREDENTIALS = {
-  gerant: {
-    email: process.env.TEST_GERANT_EMAIL,
-    password: process.env.TEST_GERANT_PASSWORD,
-  },
-  comptable: {
-    email: process.env.TEST_COMPTABLE_EMAIL,
-    password: process.env.TEST_COMPTABLE_PASSWORD,
-  },
-} as const;
-
-const hasCredentials =
-  Boolean(SUPABASE_URL) &&
-  Boolean(SUPABASE_ANON_KEY) &&
-  Object.values(CREDENTIALS).every((c) => c.email && c.password);
-
-if (!hasCredentials) {
-  console.warn(
-    "[integration] Comptes/URL Supabase absents de l'environnement -- suite ignorée. " +
-      "Voir .env.example (TEST_GERANT_EMAIL, TEST_GERANT_PASSWORD).",
-  );
-}
-
-async function signInAs(role: keyof typeof CREDENTIALS): Promise<SupabaseClient<Database>> {
-  const { email, password } = CREDENTIALS[role];
-  const client = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { error } = await client.auth.signInWithPassword({
-    email: email as string,
-    password: password as string,
-  });
-  if (error) {
-    throw new Error(`Connexion échouée pour le profil ${role} (${email}) : ${error.message}`);
-  }
-  return client;
-}
 
 describe.skipIf(!hasCredentials)("écriture comptable production (Formation, réel)", () => {
   let gerant: SupabaseClient<Database>;
@@ -69,7 +29,7 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
     const { data: gerantRow, error: gerantErr } = await gerant
       .from("users")
       .select("company_id")
-      .eq("email", CREDENTIALS.gerant.email as string)
+      .eq("login", CREDENTIALS.gerant.login as string)
       .single();
     if (gerantErr || !gerantRow?.company_id) {
       throw new Error(`Impossible de résoudre la société du Gérant : ${gerantErr?.message}`);

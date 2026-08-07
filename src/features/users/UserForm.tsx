@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
 const userSchema = z.object({
-  email: z.string().email("Adresse email invalide"),
+  login: z
+    .string()
+    .min(3, "3 caractères minimum")
+    .max(30, "30 caractères maximum")
+    .regex(
+      /^[a-z0-9](?:[a-z0-9._-]{1,28}[a-z0-9])?$/,
+      "Minuscules, chiffres, points ou tirets uniquement (pas d'espace ni de @)",
+    ),
   companyId: z.string().uuid("Choisissez une société"),
 });
 
@@ -31,10 +38,10 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
     setServerError(null);
     try {
       await createUser.mutateAsync(values);
-      reset({ email: "", companyId: values.companyId });
+      reset({ login: "", companyId: values.companyId });
       onCreated?.();
     } catch {
-      setServerError("Création refusée (email déjà utilisé, ou droits insuffisants).");
+      setServerError("Création refusée (identifiant déjà utilisé, format invalide, ou droits insuffisants).");
     }
   }
 
@@ -47,11 +54,11 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="user-email" className="mb-1 block text-xs font-medium text-gray-600">
-            Email
+          <label htmlFor="user-login" className="mb-1 block text-xs font-medium text-gray-600">
+            Identifiant
           </label>
-          <Input id="user-email" type="email" {...register("email")} />
-          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+          <Input id="user-login" type="text" {...register("login")} />
+          {errors.login && <p className="mt-1 text-xs text-red-600">{errors.login.message}</p>}
         </div>
 
         <div>

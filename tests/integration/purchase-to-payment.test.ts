@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { CREDENTIALS, hasCredentials, signInAs } from "./helpers/auth";
 
 // Ce test exerce la vraie chaîne métier (achat -> réception -> vente -> validation ->
 // paiement) contre le projet Supabase de Formation, exactement comme le fait
@@ -19,55 +20,6 @@ import type { Database } from "@/lib/database.types";
 // conception (voir README, "Limites connues"). Chaque exécution laisse un fournisseur,
 // un client et un produit taggués "Intégration <horodatage>" dans Formation -- c'est
 // l'environnement prévu pour ça (déjà rempli de données "QA Test" similaires).
-
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-
-const CREDENTIALS = {
-  gerant: {
-    email: process.env.TEST_GERANT_EMAIL,
-    password: process.env.TEST_GERANT_PASSWORD,
-  },
-  magasinier: {
-    email: process.env.TEST_MAGASINIER_EMAIL,
-    password: process.env.TEST_MAGASINIER_PASSWORD,
-  },
-  superviseur: {
-    email: process.env.TEST_SUPERVISEUR_EMAIL,
-    password: process.env.TEST_SUPERVISEUR_PASSWORD,
-  },
-  comptable: {
-    email: process.env.TEST_COMPTABLE_EMAIL,
-    password: process.env.TEST_COMPTABLE_PASSWORD,
-  },
-} as const;
-
-const hasCredentials =
-  Boolean(SUPABASE_URL) &&
-  Boolean(SUPABASE_ANON_KEY) &&
-  Object.values(CREDENTIALS).every((c) => c.email && c.password);
-
-if (!hasCredentials) {
-  console.warn(
-    "[integration] Comptes/URL Supabase absents de l'environnement -- suite ignorée. " +
-      "Voir .env.example (TEST_GERANT_EMAIL, TEST_GERANT_PASSWORD, etc.).",
-  );
-}
-
-async function signInAs(role: keyof typeof CREDENTIALS): Promise<SupabaseClient<Database>> {
-  const { email, password } = CREDENTIALS[role];
-  const client = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-  const { error } = await client.auth.signInWithPassword({
-    email: email as string,
-    password: password as string,
-  });
-  if (error) {
-    throw new Error(`Connexion échouée pour le profil ${role} (${email}) : ${error.message}`);
-  }
-  return client;
-}
 
 describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation, réel)", () => {
   let gerant: SupabaseClient<Database>;
@@ -91,7 +43,7 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     const { data: gerantRow, error: gerantErr } = await gerant
       .from("users")
       .select("company_id")
-      .eq("email", CREDENTIALS.gerant.email as string)
+      .eq("login", CREDENTIALS.gerant.login as string)
       .single();
     if (gerantErr || !gerantRow?.company_id) {
       throw new Error(`Impossible de résoudre la société du Gérant : ${gerantErr?.message}`);
