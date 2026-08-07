@@ -263,7 +263,9 @@ export function useFinancialStatements(startDate: string, endDate: string) {
         supabase.from("products").select("id, name, unit"),
         supabase
           .from("stock_lots")
-          .select("product_id, quantity_received, unit_cost, transactions!inner(purchase_id)")
+          .select(
+            "product_id, quantity_received, unit_cost, transactions!stock_lots_source_transaction_id_fkey!inner(purchase_id)",
+          )
           .not("transactions.purchase_id", "is", null),
         supabase
           .from("transactions")
