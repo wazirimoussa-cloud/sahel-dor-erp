@@ -1374,14 +1374,15 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     **Comptes non-admin existants migrés immédiatement** (décision confirmée avec
     l'utilisateur, pas de transition progressive) via un outil ponctuel
     (`supabase/functions/migrate-user-logins`, gated par un secret dédié, pas une session
-    utilisateur — à supprimer une fois l'exécution terminée partout) : login dérivé de la
-    partie locale de l'email actuel (ex. `gerant.formation@...` → `gerant.formation`),
-    email Auth basculé vers la forme synthétique via l'API Admin officielle (jamais de SQL
-    brut sur `auth.users`, pour rester cohérent avec la table `identities` interne de
-    GoTrue). **Formation migrée et vérifiée** (40 comptes, connexion réelle confirmée de
-    bout en bout — résolution puis authentification). **Production : migration différée**,
-    nécessite une confirmation séparée (le staff existant devra utiliser son nouvel
-    identifiant, prévisible à partir de son email actuel, à communiquer côté client).
+    utilisateur) : login dérivé de la partie locale de l'email actuel (ex.
+    `gerant.formation@...` → `gerant.formation`, `gerant@saheldor.demo` → `gerant`), email
+    Auth basculé vers la forme synthétique via l'API Admin officielle (jamais de SQL brut
+    sur `auth.users`, pour rester cohérent avec la table `identities` interne de GoTrue).
+    **Formation (40 comptes) et Production (10 comptes) migrées et vérifiées** — connexion
+    réelle confirmée de bout en bout sur Formation, résolution + intégrité de
+    `wazirimoussa@gmail.com` (seul compte conservé sur email) vérifiées directement sur
+    Production. L'outil de migration a été supprimé (fonction Edge + code source) une fois
+    les deux environnements migrés, n'étant plus qu'un vestige sans utilité future.
 
     Tests d'intégration : le helper `signInAs` (dupliqué dans 6 fichiers) extrait en module
     partagé (`tests/integration/helpers/auth.ts`), réécrit pour résoudre login → email
@@ -1396,11 +1397,6 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
-- **Migration Production vers l'identifiant/login** (point 64) : les comptes non-admin de
-  Production (`gerant@saheldor.demo`, `magasinier@saheldor.demo`, etc.) ne sont **pas
-  encore** migrés — ils se connectent toujours par email pour l'instant. Migration
-  identique à celle déjà faite sur Formation, en attente d'une confirmation séparée
-  (impact réel sur le staff client, qui devra utiliser son nouvel identifiant).
 - **Comptabilité** : périmètre volontairement réduit (voir points 13-14, 43). ~~Transformation
   reste hors du grand livre~~ — **partiellement corrigée** (point 60,
   `0071_reclassement_transformation.sql`) : génère désormais une écriture de reclassement
