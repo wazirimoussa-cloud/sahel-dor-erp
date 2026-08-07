@@ -1330,6 +1330,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     (Formation) toujours au vert, navigateur testé (redirection d'une route protégée à
     paramètre dynamique vers `/login`, aucune erreur console, dev server Vite 8 propre).
 
+63. **Test de charge en lecture seule** (`tests/load/read-only-load-test.mjs`,
+    `npm run test:load [concurrence] [durée_s]`) : script Node autonome (fetch natif,
+    aucune dépendance ajoutée) qui simule des utilisateurs concurrents naviguant
+    réellement dans l'app — chaque utilisateur virtuel se connecte une fois (round-robin
+    sur les 5 comptes de test Formation), puis boucle sur des scénarios calqués sur les
+    requêtes exactes des pages (Tableau de bord, Produits, Stock, Achats, Commandes,
+    Journal comptable, États financiers, Déclaration TVA), avec un temps de réflexion
+    aléatoire entre deux pages pour rester réaliste. **Toujours contre Formation, jamais
+    Production** (backend Supabase partagé). Lecture seule par choix : aucune écriture,
+    zéro risque de pollution des données Formation. Run de référence (18 utilisateurs
+    concurrents, 30 s, échelle correspondant à l'usage réel attendu côté client) : 1033
+    requêtes, **0 erreur**, débit ~34 req/s, latence P50 ~490 ms / P95 ~1,7 s / P99 ~3,8 s
+    (quelques pointes jusqu'à 6-7 s sur les requêtes les plus lourdes — `journal_entries`
+    et `stock_lots` avec leurs jointures — sans jamais échouer ni déclencher de
+    limitation de débit). Aucun goulot d'étranglement identifié à cette échelle.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:load": "node tests/load/read-only-load-test.mjs",
     "db:link": "supabase link",
     "db:push": "supabase db push",
     "db:diff": "supabase db diff -f",
