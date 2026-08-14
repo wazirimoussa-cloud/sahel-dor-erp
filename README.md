@@ -1393,6 +1393,36 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     vrai compte admin, ce qu'un test automatisé ne doit jamais faire ; vérifié par
     relecture de code.
 
+65. **Outil de remise à blanc de Formation** (`0073_reset_formation_data.sql`,
+    `public.reset_formation_data(p_dry_run boolean default true)`) : Formation avait
+    accumulé des mois de données de test (563 produits, 968 écritures comptables, 808
+    mouvements de stock, 37 comptes superflus...) — cette fonction la remet à zéro pour
+    démarrer une session de formation sur des données propres. `company_id` figé en dur
+    dans le corps de la fonction (jamais un paramètre) : rend structurellement impossible
+    de l'invoquer accidentellement contre Production. Supprime toutes les données métier
+    (produits, magasins, fournisseurs, clients, transporteurs, achats, commandes, stock,
+    écritures comptables, immobilisations, employés/paie) et tous les comptes utilisateurs
+    sauf les 5 profils de formation — garde la société, le plan comptable, les rôles/
+    attributions et les paramètres fiscaux (configuration, pas données saisies). `EXECUTE`
+    volontairement pas accordé à `anon`/`authenticated` : invocable uniquement via un accès
+    direct à la base, jamais depuis l'app.
+
+    Contourne les triggers d'immutabilité (`fn_block_mutation`, append-only par conception,
+    jamais affaibli en permanence — voir points sur la traçabilité) en les désactivant le
+    temps de la purge, à l'intérieur de la transaction implicite de la fonction : tout échec
+    annule tout, aucun état partiel possible (confirmé en pratique — deux ordres de
+    suppression incomplets détectés et corrigés via des `ROLLBACK` automatiques sans perte
+    de données). Réactivation des triggers **volontairement séparée** dans une fonction
+    distincte (`public.reenable_immutable_triggers()`), appelée juste après un run réel
+    réussi : PostgreSQL refuse de rebasculer l'état d'un trigger sur une table ayant reçu
+    des suppressions dans la même transaction (erreur 55006, "pending trigger events").
+
+    Toujours prévisualiser avec `p_dry_run = true` (défaut) avant un run réel. Exécuté et
+    vérifié : 37 comptes supprimés, 5 conservés (gerant/magasinier/superviseur/comptable/
+    admin.formation), toutes les tables métier à zéro, immutabilité confirmée réactivée
+    (tentative de suppression d'un log de test effectivement refusée), connexion réelle
+    d'un compte conservé confirmée après coup.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

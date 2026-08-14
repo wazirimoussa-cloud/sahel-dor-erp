@@ -2283,6 +2283,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      reenable_immutable_triggers: { Args: never; Returns: undefined }
       reject_stock_loss: {
         Args: { p_rejection_reason: string; p_request_id: string }
         Returns: {
@@ -2343,6 +2344,13 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      reset_formation_data: {
+        Args: { p_dry_run?: boolean }
+        Returns: {
+          rows_affected: number
+          table_name: string
+        }[]
       }
       resolve_login_email: { Args: { p_login: string }; Returns: string }
       set_user_attributions: {
