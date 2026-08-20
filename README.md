@@ -1423,6 +1423,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     (tentative de suppression d'un log de test effectivement refusée), connexion réelle
     d'un compte conservé confirmée après coup.
 
+66. **Correction d'une fuite de données inter-société sur la table `users`**
+    (`0074_users_select_write_company_scope.sql`) : `users_select` et `users_admin_write`
+    (0049, 0052) ne vérifiaient que `has_attribution('utilisateurs.gerer')`, jamais la
+    société — alors que 0052 (« retire vue admin cross-société ») a justement rescopé
+    toutes les *autres* policies select de cette même migration
+    (transactions/transformations/transporters/warehouses...) sur `company_id =
+    current_company_id()`, son propre nom l'annonçant. `users_select`/`users_admin_write`
+    ont été oubliées dans ce même passage : **n'importe quel compte avec
+    `utilisateurs.gerer` (ex. l'Administrateur de Formation) pouvait lire et modifier
+    (archiver/réactiver, `must_change_password`...) les comptes de toute société,
+    Production incluse.** Découvert en vérifiant la page Utilisateurs avec `admin.formation`
+    (17 comptes visibles au lieu des 5 de Formation). Corrigé en ajoutant `and company_id =
+    current_company_id()` aux deux policies, symétrique au reste du schéma. Vérifié : la
+    même session ne voit plus que les 5 comptes de Formation, l'écriture sur un compte de
+    la même société fonctionne toujours.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
