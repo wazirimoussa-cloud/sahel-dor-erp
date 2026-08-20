@@ -5,6 +5,7 @@ import { NewProductionForm } from "@/features/productions/NewProductionForm";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { formatNumber } from "@/lib/format";
 
 export function ProductionsPage() {
   const { hasAttribution } = useAuth();
@@ -52,7 +53,7 @@ export function ProductionsPage() {
                   <td className="py-2">{new Date(production.created_at).toLocaleString("fr-FR")}</td>
                   <td className="py-2">{warehouseName ?? "—"}</td>
                   <td className="py-2">{items.length}</td>
-                  <td className="py-2">{total.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(total)} FCFA</td>
                   <td className="py-2 text-right">
                     <Link to={`/productions/${production.id}`} className="text-brand-600 hover:underline">
                       Voir le détail

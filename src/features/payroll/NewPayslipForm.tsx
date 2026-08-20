@@ -8,6 +8,7 @@ import { useCreatePayslip } from "@/features/payroll/usePayslips";
 import { useOutstandingAdvances } from "@/features/payroll/useSalaryAdvances";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { formatNumber } from "@/lib/format";
 
 const payslipSchema = z.object({
   employeeId: z.string().uuid("Choisissez un employé"),
@@ -141,7 +142,7 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
             <option value="">— Aucune —</option>
             {outstandingAdvances?.map((advance) => (
               <option key={advance.id} value={advance.id}>
-                {advance.amount.toLocaleString("fr-FR")} FCFA ({new Date(advance.advance_date).toLocaleDateString("fr-FR")})
+                {formatNumber(advance.amount)} FCFA ({new Date(advance.advance_date).toLocaleDateString("fr-FR")})
               </option>
             ))}
           </select>
@@ -149,7 +150,7 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
         </div>
       </div>
       <p className="text-sm font-semibold text-forest-900">
-        Net à payer : {Number.isFinite(netPay) ? netPay.toLocaleString("fr-FR") : "—"} FCFA
+        Net à payer : {Number.isFinite(netPay) ? formatNumber(netPay) : "—"} FCFA
       </p>
       <Button type="submit" disabled={isSubmitting}>
         Créer le bulletin

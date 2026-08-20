@@ -3,6 +3,7 @@ import { useAllPurchaseLosses } from "@/features/purchases/usePurchases";
 import { generateCreditNotePdf } from "@/lib/pdf";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { formatNumber } from "@/lib/format";
 
 export function PurchaseLossesPage() {
   const { data: losses, isLoading, error } = useAllPurchaseLosses();
@@ -55,7 +56,7 @@ export function PurchaseLossesPage() {
                       {loss.quantity_lost} {productInfo?.unit ?? ""}
                     </td>
                     <td className="py-2">
-                      {(loss.quantity_lost * loss.unit_cost).toLocaleString("fr-FR")} FCFA
+                      {formatNumber((loss.quantity_lost * loss.unit_cost))} FCFA
                     </td>
                     <td className="py-2">
                       <Link

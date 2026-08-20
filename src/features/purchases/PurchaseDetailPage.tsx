@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { generatePurchasePdf, generateCreditNotePdf, generateReceptionPdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
+import { formatNumber } from "@/lib/format";
 
 interface ReceptionLine {
   quantityReceived: number;
@@ -303,9 +304,9 @@ export function PurchaseDetailPage() {
                   <td className="py-2">
                     {item.quantity} {productInfo?.unit ?? ""}
                   </td>
-                  <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(item.unit_cost)} FCFA</td>
                   <td className="py-2">
-                    {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
+                    {formatNumber((item.unit_cost * item.quantity))} FCFA
                   </td>
                   {purchase.status === "received" && canViewLandedCost && (
                     <td className="py-2">
@@ -324,14 +325,14 @@ export function PurchaseDetailPage() {
               <td colSpan={3} className="pt-3 text-right text-sm text-gray-600">
                 Sous-total HT
               </td>
-              <td className="pt-3 text-sm text-gray-800">{totalHT.toLocaleString("fr-FR")} FCFA</td>
+              <td className="pt-3 text-sm text-gray-800">{formatNumber(totalHT)} FCFA</td>
               {purchase.status === "received" && canViewLandedCost && <td className="pt-3" />}
             </tr>
             <tr>
               <td colSpan={3} className="text-right text-sm text-gray-600">
                 TVA ({vatRate ?? 0}%)
               </td>
-              <td className="text-sm text-gray-800">{vatAmount.toLocaleString("fr-FR")} FCFA</td>
+              <td className="text-sm text-gray-800">{formatNumber(vatAmount)} FCFA</td>
               {purchase.status === "received" && canViewLandedCost && <td />}
             </tr>
             <tr>
@@ -339,17 +340,17 @@ export function PurchaseDetailPage() {
                 Total TTC
               </td>
               <td className="text-sm font-semibold text-gray-900">
-                {totalTTC.toLocaleString("fr-FR")} FCFA
+                {formatNumber(totalTTC)} FCFA
               </td>
               {purchase.status === "received" && canViewLandedCost && <td />}
             </tr>
             {purchase.status === "received" && canViewLandedCost && (freightCost > 0 || handlingCost > 0) && (
               <tr>
                 <td colSpan={4} className="pt-2 text-right text-xs text-gray-500">
-                  Frais accessoires (compte 608) : transport {freightCost.toLocaleString("fr-FR")}{" "}
-                  FCFA + manutention {handlingCost.toLocaleString("fr-FR")} FCFA — répartis au
+                  Frais accessoires (compte 608) : transport {formatNumber(freightCost)}{" "}
+                  FCFA + manutention {formatNumber(handlingCost)} FCFA — répartis au
                   prorata de la valeur commandée (
-                  {totalOrderedValue.toLocaleString("fr-FR")} FCFA)
+                  {formatNumber(totalOrderedValue)} FCFA)
                 </td>
                 <td className="pt-2" />
               </tr>
@@ -565,7 +566,7 @@ export function PurchaseDetailPage() {
                       {loss.quantity_lost} {productInfo?.unit ?? ""}
                     </td>
                     <td className="py-2">
-                      {(loss.quantity_lost * loss.unit_cost).toLocaleString("fr-FR")} FCFA
+                      {formatNumber((loss.quantity_lost * loss.unit_cost))} FCFA
                     </td>
                     <td className="py-2">{transporter?.name ?? "—"}</td>
                     <td className="py-2 text-right">

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/Input";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { isLowStock } from "@/lib/stockThreshold";
+import { formatNumber } from "@/lib/format";
 
 const priceSchema = z.object({
   newPrice: z.coerce.number().min(0, "Le prix doit être positif"),
@@ -39,7 +40,7 @@ function PriceHistoryRows({ productId }: { productId: string }) {
             <tr key={h.id} className="border-b border-gray-100">
               <td className="py-1 pr-3">{new Date(h.created_at).toLocaleString("fr-FR")}</td>
               <td className="py-1 pr-3">
-                {h.old_price.toLocaleString("fr-FR")} → {h.new_price.toLocaleString("fr-FR")} FCFA
+                {formatNumber(h.old_price)} → {formatNumber(h.new_price)} FCFA
               </td>
               <td className="py-1 pr-3">{h.reason ?? "—"}</td>
               <td className="py-1">{userEmail ?? "—"}</td>
@@ -146,7 +147,7 @@ export function ProductsPage() {
                       )}
                     </td>
                     <td className="py-2">
-                      {product.price.toLocaleString("fr-FR")} FCFA / {product.unit}
+                      {formatNumber(product.price)} FCFA / {product.unit}
                     </td>
                     <td
                       className={`py-2 ${isLowStock(product.stock, product.unit) ? "font-semibold text-red-600" : ""}`}

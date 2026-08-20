@@ -5,6 +5,7 @@ import { NewPurchaseForm } from "@/features/purchases/NewPurchaseForm";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { formatNumber } from "@/lib/format";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -88,7 +89,7 @@ export function PurchasesPage() {
                   <td className="py-2">{supplierName ?? "—"}</td>
                   <td className="py-2">{warehouseName ?? "—"}</td>
                   <td className="py-2">{items.length}</td>
-                  <td className="py-2">{totalTTC.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(totalTTC)} FCFA</td>
                   <td className="py-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[purchase.status] ?? ""}`}

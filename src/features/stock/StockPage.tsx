@@ -8,6 +8,7 @@ import { TransferStockForm } from "@/features/stock/TransferStockForm";
 import { Card } from "@/components/ui/Card";
 import { isLowStock } from "@/lib/stockThreshold";
 import { TRANSACTION_TYPE_LABELS, lotStatus } from "@/lib/stockDisplay";
+import { formatNumber } from "@/lib/format";
 
 interface ProductStockGroup {
   productId: string;
@@ -105,7 +106,7 @@ export function StockPage() {
     totalsByUnit.set(row.product.unit, (totalsByUnit.get(row.product.unit) ?? 0) + row.stock);
   }
   const grandTotalLabel = [...totalsByUnit.entries()]
-    .map(([unit, total]) => `${total.toLocaleString("fr-FR")} ${unit}`)
+    .map(([unit, total]) => `${formatNumber(total)} ${unit}`)
     .join(" · ");
 
   return (
@@ -263,7 +264,7 @@ export function StockPage() {
                     <td className="py-2">
                       {lot.quantity_remaining} {productInfo?.unit ?? ""}
                     </td>
-                    <td className="py-2">{lot.unit_cost.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">{formatNumber(lot.unit_cost)} FCFA</td>
                     <td className="py-2">
                       {lot.expiry_date
                         ? new Date(lot.expiry_date).toLocaleDateString("fr-FR")

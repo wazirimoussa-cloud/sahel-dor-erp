@@ -13,9 +13,10 @@ import { DashboardHeader } from "@/features/dashboard/DashboardHeader";
 import { useFinancialStatements } from "@/features/financials/useFinancialStatements";
 import { useMonthlyActivity } from "@/features/dashboard/useMonthlyActivity";
 import { useLowStockProducts } from "@/features/dashboard/useLowStockProducts";
+import { formatNumber } from "@/lib/format";
 
 function formatFcfa(value: number | undefined) {
-  return `${Math.round(value ?? 0).toLocaleString("fr-FR")} FCFA`;
+  return `${formatNumber(Math.round(value ?? 0))} FCFA`;
 }
 
 // Admin / Contrôleur / Comptable : vue d'ensemble financière (bilan simplifié + activité

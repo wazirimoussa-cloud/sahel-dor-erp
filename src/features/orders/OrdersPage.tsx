@@ -3,6 +3,7 @@ import { useAuth } from "@/auth/useAuth";
 import { useOrders } from "@/features/orders/useOrders";
 import { NewOrderForm } from "@/features/orders/NewOrderForm";
 import { Card } from "@/components/ui/Card";
+import { formatNumber } from "@/lib/format";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -87,7 +88,7 @@ export function OrdersPage() {
                   <td className="py-2">{new Date(order.created_at).toLocaleString("fr-FR")}</td>
                   <td className="py-2">{clientName ?? "—"}</td>
                   <td className="py-2">{items.length}</td>
-                  <td className="py-2">{totalTTC.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(totalTTC)} FCFA</td>
                   <td className="py-2">
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}

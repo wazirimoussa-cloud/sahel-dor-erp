@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { generateJournalPdf } from "@/lib/pdf";
+import { formatNumber } from "@/lib/format";
 
 const JOURNAL_LABELS: Record<string, string> = {
   ACHATS: "Achats",
@@ -123,8 +124,8 @@ export function JournalPage() {
                   return (
                     <tr key={line.id} className="border-b border-gray-100">
                       <td className="py-1">{accountLabel ?? "—"}</td>
-                      <td className="py-1">{line.debit > 0 ? line.debit.toLocaleString("fr-FR") : ""}</td>
-                      <td className="py-1">{line.credit > 0 ? line.credit.toLocaleString("fr-FR") : ""}</td>
+                      <td className="py-1">{line.debit > 0 ? formatNumber(line.debit) : ""}</td>
+                      <td className="py-1">{line.credit > 0 ? formatNumber(line.credit) : ""}</td>
                     </tr>
                   );
                 })}
@@ -133,10 +134,10 @@ export function JournalPage() {
                 <tr>
                   <td className="pt-1 text-right text-xs font-medium text-gray-500">Total</td>
                   <td className="pt-1 text-xs font-semibold text-gray-700">
-                    {totalDebit.toLocaleString("fr-FR")} FCFA
+                    {formatNumber(totalDebit)} FCFA
                   </td>
                   <td className="pt-1 text-xs font-semibold text-gray-700">
-                    {totalDebit.toLocaleString("fr-FR")} FCFA
+                    {formatNumber(totalDebit)} FCFA
                   </td>
                 </tr>
               </tfoot>

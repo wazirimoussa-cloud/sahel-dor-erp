@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { formatNumber } from "@/lib/format";
 
 export function EmployeesPage() {
   const { hasAttribution } = useAuth();
@@ -63,7 +64,7 @@ export function EmployeesPage() {
                 <tr key={employee.id} className="border-b border-gray-100">
                   <td className="py-2">{employee.full_name}</td>
                   <td className="py-2">{employee.position ?? "—"}</td>
-                  <td className="py-2">{employee.base_salary.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(employee.base_salary)} FCFA</td>
                   <td className="py-2">{employee.family_dependents}</td>
                   <td className="py-2">{employee.active ? "Actif" : "Archivé"}</td>
                   {canManage && (

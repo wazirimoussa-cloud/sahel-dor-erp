@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { TRANSACTION_TYPE_LABELS, lotStatus } from "@/lib/stockDisplay";
 import type { TransactionType } from "@/lib/database.types";
+import { formatNumber } from "@/lib/format";
 
 export function WarehouseDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -153,7 +154,7 @@ export function WarehouseDetailPage() {
                       {tx.quantity} {productInfo?.unit ?? ""}
                     </td>
                     <td className="py-2">
-                      {tx.unit_cost != null ? `${tx.unit_cost.toLocaleString("fr-FR")} FCFA` : "—"}
+                      {tx.unit_cost != null ? `${formatNumber(tx.unit_cost)} FCFA` : "—"}
                     </td>
                     <td className="py-2">
                       {tx.expiry_date ? new Date(tx.expiry_date).toLocaleDateString("fr-FR") : "—"}
@@ -208,7 +209,7 @@ export function WarehouseDetailPage() {
                     <td className={`py-2 ${lot.quantity_remaining <= 0 ? "text-gray-500" : ""}`}>
                       {lot.quantity_remaining} {productInfo?.unit ?? ""}
                     </td>
-                    <td className="py-2">{lot.unit_cost.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">{formatNumber(lot.unit_cost)} FCFA</td>
                     <td className="py-2">
                       {lot.expiry_date
                         ? new Date(lot.expiry_date).toLocaleDateString("fr-FR")

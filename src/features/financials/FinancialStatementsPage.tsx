@@ -9,6 +9,7 @@ import { useCreateFixedAsset, useDisposeFixedAsset } from "@/features/financials
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { formatNumber } from "@/lib/format";
 
 const assetSchema = z
   .object({
@@ -33,7 +34,7 @@ const disposalSchema = z.object({
 type DisposalFormValues = z.infer<typeof disposalSchema>;
 
 function formatFCFA(value: number) {
-  return `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
+  return `${formatNumber(Math.round(value))} FCFA`;
 }
 
 function formatRatio(value: number | null, suffix: string) {

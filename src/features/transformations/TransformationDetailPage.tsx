@@ -3,6 +3,7 @@ import { useAuth } from "@/auth/useAuth";
 import { useTransformation } from "@/features/transformations/useTransformations";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { formatNumber } from "@/lib/format";
 
 export function TransformationDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -152,9 +153,9 @@ export function TransformationDetailPage() {
                 </td>
                 {canViewLandedCost && (
                   <>
-                    <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">{formatNumber(item.unit_cost)} FCFA</td>
                     <td className="py-2">
-                      {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
+                      {formatNumber((item.unit_cost * item.quantity))} FCFA
                     </td>
                   </>
                 )}
@@ -168,7 +169,7 @@ export function TransformationDetailPage() {
                   Total
                 </td>
                 <td colSpan={2} className="pt-3 text-sm font-semibold text-gray-900">
-                  {total.toLocaleString("fr-FR")} FCFA
+                  {formatNumber(total)} FCFA
                 </td>
               </tr>
             </tfoot>

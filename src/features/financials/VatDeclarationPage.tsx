@@ -3,9 +3,10 @@ import { useVatDeclaration } from "@/features/financials/useVatDeclaration";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { generateVatDeclarationPdf } from "@/lib/pdf";
+import { formatNumber } from "@/lib/format";
 
 function formatFCFA(value: number) {
-  return `${Math.round(value).toLocaleString("fr-FR")} FCFA`;
+  return `${formatNumber(Math.round(value))} FCFA`;
 }
 
 function currentMonth() {

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { generateOrderPdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
+import { formatNumber } from "@/lib/format";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -238,9 +239,9 @@ export function OrderDetailPage() {
                   <td className="py-2">
                     {item.quantity} {productInfo?.unit ?? ""}
                   </td>
-                  <td className="py-2">{item.unit_price.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(item.unit_price)} FCFA</td>
                   <td className="py-2">
-                    {(item.unit_price * item.quantity).toLocaleString("fr-FR")} FCFA
+                    {formatNumber((item.unit_price * item.quantity))} FCFA
                   </td>
                 </tr>
               );
@@ -251,27 +252,27 @@ export function OrderDetailPage() {
               <td colSpan={3} className="pt-3 text-right text-sm text-gray-600">
                 Sous-total HT
               </td>
-              <td className="pt-3 text-sm text-gray-800">{totalHT.toLocaleString("fr-FR")} FCFA</td>
+              <td className="pt-3 text-sm text-gray-800">{formatNumber(totalHT)} FCFA</td>
             </tr>
             <tr>
               <td colSpan={3} className="text-right text-sm text-gray-600">
                 TVA ({vatRate ?? 0}%)
               </td>
-              <td className="text-sm text-gray-800">{vatAmount.toLocaleString("fr-FR")} FCFA</td>
+              <td className="text-sm text-gray-800">{formatNumber(vatAmount)} FCFA</td>
             </tr>
             <tr>
               <td colSpan={3} className="text-right text-sm font-medium text-gray-700">
                 Total TTC
               </td>
               <td className="text-sm font-semibold text-gray-900">
-                {totalTTC.toLocaleString("fr-FR")} FCFA
+                {formatNumber(totalTTC)} FCFA
               </td>
             </tr>
             <tr>
               <td colSpan={3} className="text-right text-sm text-gray-600">
                 Reste à payer
               </td>
-              <td className="text-sm text-gray-800">{resteAPayer.toLocaleString("fr-FR")} FCFA</td>
+              <td className="text-sm text-gray-800">{formatNumber(resteAPayer)} FCFA</td>
             </tr>
           </tfoot>
         </table>
@@ -320,7 +321,7 @@ export function OrderDetailPage() {
         <Card>
           <h2 className="mb-3 text-sm font-medium text-gray-700">Enregistrer un paiement</h2>
           <p className="mb-2 text-xs text-gray-500">
-            Reste à payer : {resteAPayer.toLocaleString("fr-FR")} FCFA
+            Reste à payer : {formatNumber(resteAPayer)} FCFA
           </p>
           <form
             onSubmit={handlePaymentSubmit(onPaymentSubmit)}
@@ -364,7 +365,7 @@ export function OrderDetailPage() {
                 return (
                   <tr key={payment.id} className="border-b border-gray-100">
                     <td className="py-2">{new Date(payment.created_at).toLocaleString("fr-FR")}</td>
-                    <td className="py-2">{payment.amount.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">{formatNumber(payment.amount)} FCFA</td>
                     <td className="py-2">{userEmail ?? "—"}</td>
                   </tr>
                 );

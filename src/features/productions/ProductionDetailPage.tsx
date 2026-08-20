@@ -2,6 +2,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useProduction } from "@/features/productions/useProductions";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { formatNumber } from "@/lib/format";
 
 export function ProductionDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -73,9 +74,9 @@ export function ProductionDetailPage() {
                   <td className="py-2">
                     {item.quantity} {productInfo?.unit ?? ""}
                   </td>
-                  <td className="py-2">{item.unit_cost.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(item.unit_cost)} FCFA</td>
                   <td className="py-2">
-                    {(item.unit_cost * item.quantity).toLocaleString("fr-FR")} FCFA
+                    {formatNumber((item.unit_cost * item.quantity))} FCFA
                   </td>
                 </tr>
               );
@@ -87,7 +88,7 @@ export function ProductionDetailPage() {
                 Total
               </td>
               <td className="pt-3 text-sm font-semibold text-gray-900">
-                {total.toLocaleString("fr-FR")} FCFA
+                {formatNumber(total)} FCFA
               </td>
             </tr>
           </tfoot>

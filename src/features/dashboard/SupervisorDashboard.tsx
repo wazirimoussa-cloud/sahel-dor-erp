@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/Card";
 import { DashboardHeader } from "@/features/dashboard/DashboardHeader";
+import { formatNumber } from "@/lib/format";
 
 function useSupervisorDashboardData() {
   return useQuery({
@@ -43,7 +44,7 @@ export function SupervisorDashboard() {
         <Card accent="forest">
           <p className="text-xs uppercase text-gray-500">Montant total HT en attente</p>
           <p className="mt-1 font-mono text-2xl font-semibold text-gray-800">
-            {isLoading ? "…" : `${Math.round(totalPendingValue).toLocaleString("fr-FR")} FCFA`}
+            {isLoading ? "…" : `${formatNumber(Math.round(totalPendingValue))} FCFA`}
           </p>
         </Card>
       </div>
@@ -71,7 +72,7 @@ export function SupervisorDashboard() {
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-mono text-xs text-gray-600">
-                      {Math.round(total).toLocaleString("fr-FR")} FCFA
+                      {formatNumber(Math.round(total))} FCFA
                     </span>
                     <Link to={`/orders/${o.id}`} className="text-brand-600 hover:underline">
                       Voir

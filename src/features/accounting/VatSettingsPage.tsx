@@ -8,6 +8,7 @@ import type { Tables } from "@/lib/database.types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { formatNumber } from "@/lib/format";
 
 const percentField = (max = 100) =>
   z.coerce.number().min(0, "Le taux doit être positif").max(max, `Le taux ne peut pas dépasser ${max}${max === 100 ? "%" : "‰"}`);
@@ -420,7 +421,7 @@ export function VatSettingsPage() {
                 <div key={field.name}>
                   <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
                   <dd className="text-lg font-semibold text-forest-900">
-                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                    {formatNumber(company[field.column])} {field.suffix}
                   </dd>
                 </div>
               ))}
@@ -428,13 +429,13 @@ export function VatSettingsPage() {
             <div className="mt-4 border-t border-gray-100 pt-4">
               <p className="text-xs font-medium text-gray-500">Montant estimé (référence, non déclaratif)</p>
               <p className="text-lg font-semibold text-forest-900">
-                {computeTaxeProfessionnelle({
+                {formatNumber(computeTaxeProfessionnelle({
                   taxeProfessionnelleDroitFixePourMille: company.taxe_professionnelle_droit_fixe_pour_mille,
                   taxeProfessionnellePlancher: company.taxe_professionnelle_plancher,
                   taxeProfessionnelleDroitProportionnelRate: company.taxe_professionnelle_droit_proportionnel_rate,
                   taxeProfessionnelleCaAnnuel: company.taxe_professionnelle_ca_annuel,
                   taxeProfessionnelleValeurLocative: company.taxe_professionnelle_valeur_locative,
-                }).total.toLocaleString("fr-FR")}{" "}
+                }).total)}{" "}
                 FCFA
               </p>
             </div>
@@ -471,7 +472,7 @@ export function VatSettingsPage() {
                 <div key={field.name}>
                   <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
                   <dd className="text-lg font-semibold text-forest-900">
-                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                    {formatNumber(company[field.column])} {field.suffix}
                   </dd>
                 </div>
               ))}
@@ -489,7 +490,7 @@ export function VatSettingsPage() {
                 <div key={field.name}>
                   <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
                   <dd className="text-lg font-semibold text-forest-900">
-                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                    {formatNumber(company[field.column])} {field.suffix}
                   </dd>
                 </div>
               ))}
@@ -507,7 +508,7 @@ export function VatSettingsPage() {
                 <div key={field.name}>
                   <dt className="text-xs font-medium text-gray-500">{field.label}</dt>
                   <dd className="text-lg font-semibold text-forest-900">
-                    {company[field.column].toLocaleString("fr-FR")} {field.suffix}
+                    {formatNumber(company[field.column])} {field.suffix}
                   </dd>
                 </div>
               ))}
@@ -573,7 +574,7 @@ export function VatSettingsPage() {
             <div className="mt-4 border-t border-gray-100 pt-4">
               <p className="text-xs font-medium text-gray-500">Montant estimé (référence, non déclaratif)</p>
               <p className="text-lg font-semibold text-forest-900">
-                {Number.isFinite(estimation.total) ? estimation.total.toLocaleString("fr-FR") : "—"} FCFA
+                {Number.isFinite(estimation.total) ? formatNumber(estimation.total) : "—"} FCFA
               </p>
             </div>
           </Card>

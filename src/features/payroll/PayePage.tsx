@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { formatNumber } from "@/lib/format";
 
 function relation<T>(value: T | T[] | null): T | undefined {
   return Array.isArray(value) ? value[0] : (value ?? undefined);
@@ -85,11 +86,11 @@ export function PayePage() {
                     {new Date(payslip.period).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
                   </td>
                   <td className="py-2">{relation(payslip.employees)?.full_name}</td>
-                  <td className="py-2">{payslip.gross_salary.toLocaleString("fr-FR")} FCFA</td>
-                  <td className="py-2">{payslip.pension_withholding.toLocaleString("fr-FR")} FCFA</td>
-                  <td className="py-2">{payslip.its_withholding.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2">{formatNumber(payslip.gross_salary)} FCFA</td>
+                  <td className="py-2">{formatNumber(payslip.pension_withholding)} FCFA</td>
+                  <td className="py-2">{formatNumber(payslip.its_withholding)} FCFA</td>
                   <td className="py-2">{payslip.advance_repaid_id ? "Oui" : "—"}</td>
-                  <td className="py-2 font-semibold">{payslip.net_pay.toLocaleString("fr-FR")} FCFA</td>
+                  <td className="py-2 font-semibold">{formatNumber(payslip.net_pay)} FCFA</td>
                 </tr>
               ))}
               {payslips.length === 0 && (
@@ -141,7 +142,7 @@ export function PayePage() {
                   <tr key={advance.id} className="border-b border-gray-100">
                     <td className="py-2">{new Date(advance.advance_date).toLocaleDateString("fr-FR")}</td>
                     <td className="py-2">{relation(advance.employees)?.full_name}</td>
-                    <td className="py-2">{advance.amount.toLocaleString("fr-FR")} FCFA</td>
+                    <td className="py-2">{formatNumber(advance.amount)} FCFA</td>
                     <td className="py-2">{advance.reason ?? "—"}</td>
                     <td className="py-2">{repaidBy ? "Remboursée" : "En attente"}</td>
                   </tr>
