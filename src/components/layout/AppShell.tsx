@@ -138,6 +138,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="text-sm text-gray-500">
             {profile ? (
               <>
+                {profile.companyName && (
+                  <span
+                    className={clsx(
+                      "mr-2 rounded-full px-2 py-0.5 text-xs font-bold uppercase tracking-wide",
+                      profile.companyName.includes("Formation")
+                        ? "bg-brand-100 text-brand-700"
+                        : "bg-forest-700 text-cream-50",
+                    )}
+                    title={profile.companyName}
+                  >
+                    {profile.companyName.includes("Formation") ? "Formation" : "Production"}
+                  </span>
+                )}
                 <span className="font-medium text-gray-800">{profile.login ?? profile.email}</span>
                 {profile.role && (
                   <span className="ml-2 rounded-full bg-forest-50 px-2 py-0.5 text-xs uppercase text-forest-700">

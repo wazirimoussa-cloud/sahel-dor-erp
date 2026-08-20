@@ -17,7 +17,7 @@ async function loadProfile(userId: string): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("users")
     .select(
-      "id, email, login, company_id, must_change_password, active, roles(name), user_attributions!user_attributions_user_id_fkey(level, attributions(module, action_key))",
+      "id, email, login, company_id, must_change_password, active, roles(name), companies(name), user_attributions!user_attributions_user_id_fkey(level, attributions(module, action_key))",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -26,6 +26,9 @@ async function loadProfile(userId: string): Promise<Profile | null> {
 
   const roleRelation = data.roles as { name: RoleName } | { name: RoleName }[] | null;
   const roleName = Array.isArray(roleRelation) ? roleRelation[0]?.name : roleRelation?.name;
+
+  const companyRelation = data.companies as { name: string } | { name: string }[] | null;
+  const companyName = Array.isArray(companyRelation) ? companyRelation[0]?.name : companyRelation?.name;
 
   const rawAttributions = (data.user_attributions ?? []) as RawAttributionRow[];
   const attributions: Attribution[] = rawAttributions.flatMap((row) => {
@@ -40,6 +43,7 @@ async function loadProfile(userId: string): Promise<Profile | null> {
     login: data.login,
     role: roleName ?? null,
     companyId: data.company_id,
+    companyName: companyName ?? null,
     mustChangePassword: data.must_change_password,
     active: data.active,
     attributions,

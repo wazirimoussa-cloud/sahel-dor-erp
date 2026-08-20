@@ -16,6 +16,7 @@ export interface Profile {
   login: string | null;
   role: RoleName | null;
   companyId: string | null;
+  companyName: string | null;
   mustChangePassword: boolean;
   active: boolean;
   attributions: Attribution[];
