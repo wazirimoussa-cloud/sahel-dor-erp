@@ -98,18 +98,23 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
         {errors.handlingCost && <p className="mt-1 text-xs text-red-600">{errors.handlingCost.message}</p>}
       </div>
       <div>
-        <label htmlFor="product-selling-price" className="mb-1 block text-xs font-medium text-gray-600">
-          Prix de vente
-        </label>
-        <Input id="product-selling-price" type="number" step="0.01" {...register("sellingPrice")} />
-        {errors.sellingPrice && <p className="mt-1 text-xs text-red-600">{errors.sellingPrice.message}</p>}
-      </div>
-      <div>
         <label htmlFor="product-stock" className="mb-1 block text-xs font-medium text-gray-600">
           Stock initial
         </label>
         <Input id="product-stock" type="number" step="0.001" {...register("stock")} />
         {errors.stock && <p className="mt-1 text-xs text-red-600">{errors.stock.message}</p>}
+      </div>
+      <p className="w-full text-xs text-gray-500">
+        Prix de revient unitaire estimé : {formatNumber(previewUnitCost)} FCFA (fixé
+        définitivement à la création du produit) — à titre de repère pour fixer le prix de
+        vente ci-dessous.
+      </p>
+      <div>
+        <label htmlFor="product-selling-price" className="mb-1 block text-xs font-medium text-gray-600">
+          Prix de vente
+        </label>
+        <Input id="product-selling-price" type="number" step="0.01" {...register("sellingPrice")} />
+        {errors.sellingPrice && <p className="mt-1 text-xs text-red-600">{errors.sellingPrice.message}</p>}
       </div>
       <div>
         <label htmlFor="product-unit" className="mb-1 block text-xs font-medium text-gray-600">
@@ -133,10 +138,6 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
           Exonéré de TVA (céréales, sel)
         </label>
       </div>
-      <p className="w-full text-xs text-gray-500">
-        Prix de revient unitaire estimé : {formatNumber(previewUnitCost)} FCFA (fixé
-        définitivement à la création du produit)
-      </p>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le produit
       </Button>
