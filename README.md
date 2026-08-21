@@ -1521,6 +1521,31 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     retrouve au passage son nom de fichier d'origine (`bon-achat-<id>.pdf`), qui n'avait
     jamais changé avant le point 68.
 
+70. **Module Ventes ("Commandes") renommé "Bons de commande"** (`0082_renomme_commande_bon_commande.sql`) :
+    le terme libéré par le point 69 est repris ici pour le module Ventes plutôt
+    qu'Achats — navigation, titres, formulaire, messages, tableaux de bord Vente/
+    Superviseur, alerte du clochette (compteurs "N bon(s) de commande en attente/
+    impayé(s)"), libellés d'attribution (`ventes.creer_commande`/`valider_commande`/
+    `annuler_commande`, ex. "Créer une commande" → "Créer un bon de commande").
+    Accord grammatical à revoir à **chaque** occurrence (« commande » féminin →
+    « bon de commande » masculin), pas un simple remplacement de texte — repéré en
+    testant en conditions réelles plutôt qu'en se fiant au seul grep par mot-clé
+    ("Créée le" → "Créé le" n'a jamais contenu le mot "commande" et n'est apparu qu'à
+    l'écran ; idem pour les badges de statut "Validée"/"Annulée" → "Validé"/"Annulé").
+    Restent inchangés : les identifiants internes (route `/orders`, attributions
+    `ventes.*`), le libellé du **module** dans le panneau des attributions ("Ventes",
+    pas renommé — il couvre aussi `ventes.encaisser_paiement`, un encaissement n'étant
+    pas un concept de bon de commande), et le titre de la facture PDF générée
+    ("Facture de vente", document déjà distinct qui ne mentionnait jamais "commande").
+
+71. **Champ "Contact" retiré de Fournisseurs, Clients et Transporteurs** : redondant avec
+    Téléphone/Email dans les trois modules — retiré des formulaires et tableaux (la
+    colonne `contact_name` reste en base, inutilisée). Au passage, corrige un texte
+    d'archivage/réactivation des Fournisseurs resté au féminin/à l'ancien terme depuis
+    le point 69 ("pourra de nouveau être choisi pour un nouvel achat" →
+    "... pour un nouveau bon d'achat") — même type d'oubli que le point 70, un texte
+    qui ne contenait pas le mot recherché lors du grep initial.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

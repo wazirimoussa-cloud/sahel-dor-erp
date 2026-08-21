@@ -18,8 +18,8 @@ export function ClientsPage() {
   async function handleToggleActive(clientId: string, name: string, active: boolean) {
     const confirmed = window.confirm(
       active
-        ? `Réactiver ${name} ? Ce client pourra de nouveau être choisi pour une nouvelle commande.`
-        : `Archiver ${name} ? Ce client ne sera plus proposé pour une nouvelle commande. L'historique déjà enregistré reste intact et consultable.`,
+        ? `Réactiver ${name} ? Ce client pourra de nouveau être choisi pour un nouveau bon de commande.`
+        : `Archiver ${name} ? Ce client ne sera plus proposé pour un nouveau bon de commande. L'historique déjà enregistré reste intact et consultable.`,
     );
     if (!confirmed) return;
     setActionError(null);

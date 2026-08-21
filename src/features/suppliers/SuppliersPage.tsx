@@ -18,8 +18,8 @@ export function SuppliersPage() {
   async function handleToggleActive(supplierId: string, name: string, active: boolean) {
     const confirmed = window.confirm(
       active
-        ? `Réactiver ${name} ? Ce fournisseur pourra de nouveau être choisi pour un nouvel achat.`
-        : `Archiver ${name} ? Ce fournisseur ne sera plus proposé pour un nouvel achat. L'historique déjà enregistré reste intact et consultable.`,
+        ? `Réactiver ${name} ? Ce fournisseur pourra de nouveau être choisi pour un nouveau bon d'achat.`
+        : `Archiver ${name} ? Ce fournisseur ne sera plus proposé pour un nouveau bon d'achat. L'historique déjà enregistré reste intact et consultable.`,
     );
     if (!confirmed) return;
     setActionError(null);

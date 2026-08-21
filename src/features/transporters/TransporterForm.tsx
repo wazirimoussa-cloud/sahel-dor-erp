@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/Input";
 
 const transporterSchema = z.object({
   name: z.string().min(1, "Nom requis"),
-  contactName: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email("Email invalide").optional().or(z.literal("")),
   address: z.string().optional(),
@@ -41,12 +40,6 @@ export function TransporterForm({ onCreated }: { onCreated?: () => void }) {
         </label>
         <Input id="transporter-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
-      </div>
-      <div>
-        <label htmlFor="transporter-contactName" className="mb-1 block text-xs font-medium text-gray-600">
-          Contact
-        </label>
-        <Input id="transporter-contactName" {...register("contactName")} />
       </div>
       <div>
         <label htmlFor="transporter-phone" className="mb-1 block text-xs font-medium text-gray-600">

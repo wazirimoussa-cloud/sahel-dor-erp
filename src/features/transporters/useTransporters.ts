@@ -5,7 +5,6 @@ import { rangeFor, splitPage } from "@/lib/usePagination";
 export interface NewTransporter {
   companyId: string;
   name: string;
-  contactName?: string;
   phone?: string;
   email?: string;
   address?: string;
@@ -17,7 +16,7 @@ export function useTransporters(page: number, pageSize: number) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transporters")
-        .select("id, name, contact_name, phone, email, address, company_id, created_at")
+        .select("id, name, phone, email, address, company_id, created_at")
         .order("name", { ascending: true })
         .range(...rangeFor(page, pageSize));
       if (error) throw error;
@@ -49,7 +48,6 @@ export function useCreateTransporter() {
       const { error } = await supabase.from("transporters").insert({
         company_id: transporter.companyId,
         name: transporter.name,
-        contact_name: transporter.contactName || null,
         phone: transporter.phone || null,
         email: transporter.email || null,
         address: transporter.address || null,
