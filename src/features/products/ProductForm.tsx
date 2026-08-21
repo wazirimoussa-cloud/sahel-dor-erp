@@ -5,16 +5,25 @@ import { useAuth } from "@/auth/useAuth";
 import { useCreateProduct } from "@/features/products/useProducts";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { formatNumber } from "@/lib/format";
 
 const UNITS = ["tonne", "carton", "bidon", "unité"] as const;
 
-const productSchema = z.object({
-  name: z.string().min(1, "Nom requis"),
-  price: z.coerce.number().min(0, "Le prix doit être positif"),
-  stock: z.coerce.number().min(0, "Le stock initial doit être positif"),
-  unit: z.enum(UNITS),
-  vatExempt: z.boolean(),
-});
+const productSchema = z
+  .object({
+    name: z.string().min(1, "Nom requis"),
+    purchaseCost: z.coerce.number().min(0, "Le prix global d'achat doit être positif"),
+    freightCost: z.coerce.number().min(0, "Les frais de transport doivent être positifs"),
+    handlingCost: z.coerce.number().min(0, "Les frais de manutention doivent être positifs"),
+    sellingPrice: z.coerce.number().min(0, "Le prix de vente doit être positif"),
+    stock: z.coerce.number().min(0, "Le stock initial doit être positif"),
+    unit: z.enum(UNITS),
+    vatExempt: z.boolean(),
+  })
+  .refine((values) => values.purchaseCost === 0 || values.stock > 0, {
+    message: "Le stock initial doit être supérieur à 0 pour calculer le prix de revient",
+    path: ["stock"],
+  });
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -25,11 +34,31 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { stock: 0, unit: "unité", vatExempt: false },
+    defaultValues: {
+      stock: 0,
+      unit: "unité",
+      vatExempt: false,
+      purchaseCost: 0,
+      freightCost: 0,
+      handlingCost: 0,
+      sellingPrice: 0,
+    },
   });
+
+  const [purchaseCost, freightCost, handlingCost, stock] = watch([
+    "purchaseCost",
+    "freightCost",
+    "handlingCost",
+    "stock",
+  ]);
+  const previewUnitCost =
+    Number(stock) > 0
+      ? (Number(purchaseCost) + Number(freightCost) + Number(handlingCost)) / Number(stock)
+      : 0;
 
   async function onSubmit(values: ProductFormValues) {
     if (!profile?.companyId) return;
@@ -48,11 +77,32 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
       </div>
       <div>
-        <label htmlFor="product-price" className="mb-1 block text-xs font-medium text-gray-600">
-          Prix
+        <label htmlFor="product-purchase-cost" className="mb-1 block text-xs font-medium text-gray-600">
+          Prix global d'achat
         </label>
-        <Input id="product-price" type="number" step="0.01" {...register("price")} />
-        {errors.price && <p className="mt-1 text-xs text-red-600">{errors.price.message}</p>}
+        <Input id="product-purchase-cost" type="number" step="0.01" {...register("purchaseCost")} />
+        {errors.purchaseCost && <p className="mt-1 text-xs text-red-600">{errors.purchaseCost.message}</p>}
+      </div>
+      <div>
+        <label htmlFor="product-freight-cost" className="mb-1 block text-xs font-medium text-gray-600">
+          Frais de transport
+        </label>
+        <Input id="product-freight-cost" type="number" step="0.01" {...register("freightCost")} />
+        {errors.freightCost && <p className="mt-1 text-xs text-red-600">{errors.freightCost.message}</p>}
+      </div>
+      <div>
+        <label htmlFor="product-handling-cost" className="mb-1 block text-xs font-medium text-gray-600">
+          Frais de manutention
+        </label>
+        <Input id="product-handling-cost" type="number" step="0.01" {...register("handlingCost")} />
+        {errors.handlingCost && <p className="mt-1 text-xs text-red-600">{errors.handlingCost.message}</p>}
+      </div>
+      <div>
+        <label htmlFor="product-selling-price" className="mb-1 block text-xs font-medium text-gray-600">
+          Prix de vente
+        </label>
+        <Input id="product-selling-price" type="number" step="0.01" {...register("sellingPrice")} />
+        {errors.sellingPrice && <p className="mt-1 text-xs text-red-600">{errors.sellingPrice.message}</p>}
       </div>
       <div>
         <label htmlFor="product-stock" className="mb-1 block text-xs font-medium text-gray-600">
@@ -83,6 +133,10 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
           Exonéré de TVA (céréales, sel)
         </label>
       </div>
+      <p className="w-full text-xs text-gray-500">
+        Prix de revient unitaire estimé : {formatNumber(previewUnitCost)} FCFA (fixé
+        définitivement à la création du produit)
+      </p>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le produit
       </Button>

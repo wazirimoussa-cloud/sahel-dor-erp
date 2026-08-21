@@ -962,33 +962,45 @@ export type Database = {
           active: boolean
           company_id: string
           created_at: string
+          freight_cost: number
+          handling_cost: number
           id: string
           name: string
-          price: number
+          purchase_cost: number
+          selling_price: number
           stock: number
           unit: string
+          unit_cost: number
           vat_exempt: boolean
         }
         Insert: {
           active?: boolean
           company_id: string
           created_at?: string
+          freight_cost?: number
+          handling_cost?: number
           id?: string
           name: string
-          price: number
+          purchase_cost: number
+          selling_price?: number
           stock?: number
           unit?: string
+          unit_cost?: number
           vat_exempt?: boolean
         }
         Update: {
           active?: boolean
           company_id?: string
           created_at?: string
+          freight_cost?: number
+          handling_cost?: number
           id?: string
           name?: string
-          price?: number
+          purchase_cost?: number
+          selling_price?: number
           stock?: number
           unit?: string
+          unit_cost?: number
           vat_exempt?: boolean
         }
         Relationships: [
@@ -2372,11 +2384,15 @@ export type Database = {
           active: boolean
           company_id: string
           created_at: string
+          freight_cost: number
+          handling_cost: number
           id: string
           name: string
-          price: number
+          purchase_cost: number
+          selling_price: number
           stock: number
           unit: string
+          unit_cost: number
           vat_exempt: boolean
         }
         SetofOptions: {

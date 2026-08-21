@@ -81,8 +81,8 @@ export function PurchaseDetailPage() {
     quantity: number;
     unit_cost: number;
     products:
-      | { id: string; name: string; unit: string; vat_exempt: boolean }
-      | { id: string; name: string; unit: string; vat_exempt: boolean }[]
+      | { id: string; name: string; unit: string; vat_exempt: boolean; unit_cost: number }
+      | { id: string; name: string; unit: string; vat_exempt: boolean; unit_cost: number }[]
       | null;
   }[];
   function productInfoOf(item: (typeof items)[number]) {
@@ -102,11 +102,6 @@ export function PurchaseDetailPage() {
   const totalTTC = totalHT + vatAmount;
   const freightCost = purchase.freight_cost ?? 0;
   const handlingCost = purchase.handling_cost ?? 0;
-  const ancillaryTotal = freightCost + handlingCost;
-  const totalOrderedValue = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
-  function ancillaryPerUnitFor(item: { unit_cost: number }) {
-    return totalOrderedValue > 0 ? (ancillaryTotal * item.unit_cost) / totalOrderedValue : 0;
-  }
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
@@ -309,12 +304,7 @@ export function PurchaseDetailPage() {
                     {formatNumber((item.unit_cost * item.quantity))} FCFA
                   </td>
                   {purchase.status === "received" && canViewLandedCost && (
-                    <td className="py-2">
-                      {(item.unit_cost + ancillaryPerUnitFor(item)).toLocaleString("fr-FR", {
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      FCFA
-                    </td>
+                    <td className="py-2">{formatNumber(productInfo?.unit_cost ?? 0)} FCFA</td>
                   )}
                 </tr>
               );
@@ -348,9 +338,8 @@ export function PurchaseDetailPage() {
               <tr>
                 <td colSpan={4} className="pt-2 text-right text-xs text-gray-500">
                   Frais accessoires (compte 608) : transport {formatNumber(freightCost)}{" "}
-                  FCFA + manutention {formatNumber(handlingCost)} FCFA — répartis au
-                  prorata de la valeur commandée (
-                  {formatNumber(totalOrderedValue)} FCFA)
+                  FCFA + manutention {formatNumber(handlingCost)} FCFA — n'affectent plus le
+                  prix de revient du stock, désormais fixé au niveau du produit
                 </td>
                 <td className="pt-2" />
               </tr>

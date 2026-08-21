@@ -61,6 +61,7 @@ export function ProductsPage() {
   const setProductActive = useSetProductActive();
   const canManage = hasAttribution("produits.gerer_catalogue");
   const canEditPrice = hasAttribution("produits.modifier_prix");
+  const canViewCost = hasAttribution("comptabilite.consulter_prix_revient", "consultative");
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [historyId, setHistoryId] = useState<string | null>(null);
@@ -128,7 +129,8 @@ export function ProductsPage() {
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
                 <th scope="col" className="py-2">Nom</th>
-                <th scope="col" className="py-2">Prix</th>
+                <th scope="col" className="py-2">Prix de vente</th>
+                {canViewCost && <th scope="col" className="py-2">Prix de revient</th>}
                 <th scope="col" className="py-2">Stock</th>
                 <th scope="col" className="py-2">Statut</th>
                 <th scope="col" className="py-2" />
@@ -147,8 +149,13 @@ export function ProductsPage() {
                       )}
                     </td>
                     <td className="py-2">
-                      {formatNumber(product.price)} FCFA / {product.unit}
+                      {formatNumber(product.selling_price)} FCFA / {product.unit}
                     </td>
+                    {canViewCost && (
+                      <td className="py-2">
+                        {formatNumber(product.unit_cost)} FCFA / {product.unit}
+                      </td>
+                    )}
                     <td
                       className={`py-2 ${isLowStock(product.stock, product.unit) ? "font-semibold text-red-600" : ""}`}
                     >
@@ -174,7 +181,7 @@ export function ProductsPage() {
                             onClick={() => {
                               setEditingId(editingId === product.id ? null : product.id);
                               setPriceError(null);
-                              reset({ newPrice: product.price, reason: "" });
+                              reset({ newPrice: product.selling_price, reason: "" });
                             }}
                           >
                             Modifier le prix
@@ -204,7 +211,7 @@ export function ProductsPage() {
                   </tr>
                   {editingId === product.id && (
                     <tr className="border-b border-gray-100 bg-gray-50">
-                      <td colSpan={5} className="py-2">
+                      <td colSpan={canViewCost ? 6 : 5} className="py-2">
                         <form
                           onSubmit={handleSubmit((values) => onSubmitPrice(product.id, values))}
                           className="flex flex-wrap items-end gap-3"
@@ -245,7 +252,7 @@ export function ProductsPage() {
                   )}
                   {historyId === product.id && (
                     <tr className="border-b border-gray-100">
-                      <td colSpan={5} className="py-2">
+                      <td colSpan={canViewCost ? 6 : 5} className="py-2">
                         <PriceHistoryRows productId={product.id} />
                       </td>
                     </tr>
@@ -254,7 +261,7 @@ export function ProductsPage() {
               ))}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-gray-500">
+                  <td colSpan={canViewCost ? 6 : 5} className="py-4 text-center text-gray-500">
                     Aucun produit pour le moment.
                   </td>
                 </tr>

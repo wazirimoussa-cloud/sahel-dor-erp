@@ -5,7 +5,10 @@ import { rangeFor, splitPage } from "@/lib/usePagination";
 export interface NewProduct {
   companyId: string;
   name: string;
-  price: number;
+  purchaseCost: number;
+  freightCost: number;
+  handlingCost: number;
+  sellingPrice: number;
   stock: number;
   unit: string;
   vatExempt: boolean;
@@ -17,7 +20,9 @@ export function useProducts(page: number, pageSize: number) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, stock, unit, vat_exempt, company_id, created_at, active")
+        .select(
+          "id, name, selling_price, purchase_cost, freight_cost, handling_cost, unit_cost, stock, unit, vat_exempt, company_id, created_at, active",
+        )
         .order("name", { ascending: true })
         .range(...rangeFor(page, pageSize));
       if (error) throw error;
@@ -35,7 +40,7 @@ export function useAllProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, stock, unit, vat_exempt")
+        .select("id, name, selling_price, unit_cost, stock, unit, vat_exempt")
         .order("name", { ascending: true });
       if (error) throw error;
       return data;
@@ -54,7 +59,7 @@ export function useActiveProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, price, stock, unit, vat_exempt")
+        .select("id, name, selling_price, unit_cost, stock, unit, vat_exempt")
         .eq("active", true)
         .order("name", { ascending: true });
       if (error) throw error;
@@ -83,7 +88,10 @@ export function useCreateProduct() {
       const { error } = await supabase.from("products").insert({
         company_id: product.companyId,
         name: product.name,
-        price: product.price,
+        purchase_cost: product.purchaseCost,
+        freight_cost: product.freightCost,
+        handling_cost: product.handlingCost,
+        selling_price: product.sellingPrice,
         stock: product.stock,
         unit: product.unit,
         vat_exempt: product.vatExempt,
