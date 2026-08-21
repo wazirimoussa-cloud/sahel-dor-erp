@@ -13,9 +13,9 @@ export function PurchaseLossesPage() {
       <div>
         <h1 className="text-lg font-bold text-forest-900">Pertes transport</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Pertes constatées à la réception des bons de commande, avant l'entrée en stock —
+          Pertes constatées à la réception des bons d'achat, avant l'entrée en stock —
           facturées en avoir au transporteur responsable. Enregistrées depuis la page de détail
-          d'un bon de commande, au moment de la réception.
+          d'un bon d'achat, au moment de la réception.
         </p>
       </div>
 
@@ -31,7 +31,7 @@ export function PurchaseLossesPage() {
                 <th scope="col" className="py-2">Produit</th>
                 <th scope="col" className="py-2">Quantité perdue</th>
                 <th scope="col" className="py-2">Valeur</th>
-                <th scope="col" className="py-2">Bon de commande</th>
+                <th scope="col" className="py-2">Bon d'achat</th>
                 <th scope="col" className="py-2" />
               </tr>
             </thead>
@@ -63,7 +63,7 @@ export function PurchaseLossesPage() {
                         to={`/purchases/${loss.purchase_id}`}
                         className="text-brand-600 hover:underline"
                       >
-                        Voir le bon de commande
+                        Voir le bon d'achat
                       </Link>
                     </td>
                     <td className="py-2 text-right">

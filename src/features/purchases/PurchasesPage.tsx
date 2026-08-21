@@ -29,7 +29,7 @@ export function PurchasesPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-bold text-forest-900">
-        {hasAttribution("achats.receptionner") ? "Réceptions" : "Bons de commande"}
+        {hasAttribution("achats.receptionner") ? "Réceptions" : "Bons d'achat"}
       </h1>
 
       {canCreate && (
@@ -40,7 +40,7 @@ export function PurchasesPage() {
 
       <Card>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
-        {error && <p className="text-sm text-red-600">Impossible de charger les bons de commande.</p>}
+        {error && <p className="text-sm text-red-600">Impossible de charger les bons d'achat.</p>}
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-gray-500">
@@ -111,7 +111,7 @@ export function PurchasesPage() {
             {purchases?.length === 0 && (
               <tr>
                 <td colSpan={7} className="py-4 text-center text-gray-500">
-                  Aucun bon de commande pour le moment.
+                  Aucun bon d'achat pour le moment.
                 </td>
               </tr>
             )}

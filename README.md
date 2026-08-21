@@ -1497,14 +1497,15 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       rendu l'annulation impossible pour quiconque. Contrôle ciblé sur l'enregistrement à
       la place (`cancel_purchase()` compare `purchases.user_id` à `auth.uid()`), reflété
       côté interface par un message explicatif à la place du bouton.
-    - **Renommage du module** (0080) : "Achats" devient "Bons de commande" partout dans
-      l'interface (navigation, titres, formulaire, messages, PDF généré, libellés du
-      panneau des attributions) — les identifiants internes (route `/purchases`,
-      attributions `achats.*`, fonctions `create_purchase`/`receive_purchase`/
-      `cancel_purchase`) restent inchangés, seul le texte affiché change. La terminologie
-      comptable (journal `ACHATS`, "Achats HT" en déclaration TVA, compte 601 "Achats de
-      marchandises") reste intacte : ce sont des termes comptables distincts du module de
-      suivi, pas le même concept.
+    - **Renommage du module** (0080) — **le nom choisi ici a depuis été révisé, voir
+      point 69** : "Achats" devient "Bons de commande" partout dans l'interface
+      (navigation, titres, formulaire, messages, PDF généré, libellés du panneau des
+      attributions) — les identifiants internes (route `/purchases`, attributions
+      `achats.*`, fonctions `create_purchase`/`receive_purchase`/`cancel_purchase`)
+      restent inchangés, seul le texte affiché change. La terminologie comptable (journal
+      `ACHATS`, "Achats HT" en déclaration TVA, compte 601 "Achats de marchandises") reste
+      intacte : ce sont des termes comptables distincts du module de suivi, pas le même
+      concept.
     - **Deux régressions corrigées au passage** (0077, 0078), découvertes en faisant
       tourner la suite d'intégration contre Formation après 0075 plutôt qu'en se fiant
       au seul typecheck : `create_purchase()` avait perdu ses garde-fous
@@ -1512,6 +1513,13 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       antérieure à leur ajout par 0048) ; `approve_stock_loss()` lisait encore
       `products.price` (colonne renommée par 0075) dans le flux de reconditionnement, un
       identifiant nu invisible aux recherches par nom de colonne qualifié.
+
+69. **"Bon(s) de commande" renommé "Bon(s) d'achat"** (`0081_renomme_bon_commande_bon_achat.sql`) :
+    le client revient sur le nom choisi au point 68 — même portée exacte (interface,
+    formulaire, messages, titre et nom de fichier du PDF généré, libellés du panneau des
+    attributions), mêmes identifiants internes inchangés. Le PDF individuel d'un achat
+    retrouve au passage son nom de fichier d'origine (`bon-achat-<id>.pdf`), qui n'avait
+    jamais changé avant le point 68.
 
 ## Limites connues / pistes pour la suite
 
