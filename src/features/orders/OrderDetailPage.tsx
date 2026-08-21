@@ -20,8 +20,8 @@ import { formatNumber } from "@/lib/format";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
-  validated: "Validée",
-  cancelled: "Annulée",
+  validated: "Validé",
+  cancelled: "Annulé",
 };
 
 const STATUS_CLASSES: Record<string, string> = {
@@ -74,9 +74,9 @@ export function OrderDetailPage() {
   if (error || !order) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-red-600">Commande introuvable ou accès refusé.</p>
+        <p className="text-sm text-red-600">Bon de commande introuvable ou accès refusé.</p>
         <Link to="/orders" className="text-sm text-brand-600 hover:underline">
-          ← Retour aux commandes
+          ← Retour aux bons de commande
         </Link>
       </div>
     );
@@ -149,7 +149,7 @@ export function OrderDetailPage() {
   async function handleValidate() {
     if (
       !window.confirm(
-        "Valider cette commande ? Le stock sortira à ce moment et l'écriture comptable sera générée — action irréversible.",
+        "Valider ce bon de commande ? Le stock sortira à ce moment et l'écriture comptable sera générée — action irréversible.",
       )
     )
       return;
@@ -157,17 +157,17 @@ export function OrderDetailPage() {
     try {
       await validateOrder.mutateAsync(orderId);
     } catch {
-      setActionError("Action refusée (droits insuffisants ou commande déjà traitée).");
+      setActionError("Action refusée (droits insuffisants ou bon de commande déjà traité).");
     }
   }
 
   async function handleCancel() {
-    if (!window.confirm("Annuler cette commande ?")) return;
+    if (!window.confirm("Annuler ce bon de commande ?")) return;
     setActionError(null);
     try {
       await cancelOrder.mutateAsync(orderId);
     } catch {
-      setActionError("Action refusée (droits insuffisants ou commande déjà traitée).");
+      setActionError("Action refusée (droits insuffisants ou bon de commande déjà traité).");
     }
   }
 
@@ -187,15 +187,15 @@ export function OrderDetailPage() {
     <div className="space-y-6">
       <div>
         <Link to="/orders" className="text-sm text-brand-600 hover:underline">
-          ← Retour aux commandes
+          ← Retour aux bons de commande
         </Link>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-forest-900">Commande #{order.id.slice(0, 8)}</h1>
+          <h1 className="text-lg font-bold text-forest-900">Bon de commande #{order.id.slice(0, 8)}</h1>
           <p className="text-sm text-gray-500">
-            Créée le {new Date(order.created_at).toLocaleString("fr-FR")} par{" "}
+            Créé le {new Date(order.created_at).toLocaleString("fr-FR")} par{" "}
             {creatorEmail ?? "utilisateur inconnu"} — Client : {clientName ?? "—"}
           </p>
         </div>
@@ -299,7 +299,7 @@ export function OrderDetailPage() {
         <div className="flex gap-3">
           {canValidate && (
             <Button disabled={validateOrder.isPending} onClick={() => void handleValidate()}>
-              Valider la commande
+              Valider le bon de commande
             </Button>
           )}
           {canCancel && (
@@ -308,7 +308,7 @@ export function OrderDetailPage() {
               disabled={cancelOrder.isPending}
               onClick={() => void handleCancel()}
             >
-              Annuler la commande
+              Annuler le bon de commande
             </Button>
           )}
           <Button variant="secondary" onClick={() => navigate("/orders")}>

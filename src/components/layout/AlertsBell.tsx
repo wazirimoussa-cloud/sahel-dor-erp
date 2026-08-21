@@ -61,14 +61,14 @@ export function AlertsBell() {
             {pendingOrdersCount > 0 && (
               <li>
                 <Link to="/orders" onClick={() => setOpen(false)} className="text-brand-600 hover:underline">
-                  {pendingOrdersCount} commande{pendingOrdersCount > 1 ? "s" : ""} en attente
+                  {pendingOrdersCount} bon{pendingOrdersCount > 1 ? "s" : ""} de commande en attente
                 </Link>
               </li>
             )}
             {unpaidOrdersCount > 0 && (
               <li>
                 <Link to="/orders" onClick={() => setOpen(false)} className="text-brand-600 hover:underline">
-                  {unpaidOrdersCount} commande{unpaidOrdersCount > 1 ? "s" : ""} impayée
+                  {unpaidOrdersCount} bon{unpaidOrdersCount > 1 ? "s" : ""} de commande impayé
                   {unpaidOrdersCount > 1 ? "s" : ""}
                 </Link>
               </li>

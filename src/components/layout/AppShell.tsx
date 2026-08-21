@@ -75,7 +75,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/transformations", label: "Transformation", icon: Layers, module: "transformation" },
   { to: "/stock", label: "Mouvements de stock", icon: ArrowLeftRight },
   { to: "/clients", label: "Clients", icon: Users, module: "clients" },
-  { to: "/orders", label: "Commandes", icon: ShoppingCart, module: "ventes" },
+  { to: "/orders", label: "Bons de commande", icon: ShoppingCart, module: "ventes" },
   { to: "/chart-of-accounts", label: "Plan comptable", icon: BookOpen, module: "comptabilite" },
   { to: "/journal-comptable", label: "Journal comptable", icon: NotebookText, module: "journal_comptable" },
   { to: "/etats-financiers", label: "États financiers", icon: LineChart, module: "etats_financiers" },

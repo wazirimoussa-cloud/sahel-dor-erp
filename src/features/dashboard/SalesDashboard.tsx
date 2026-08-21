@@ -31,8 +31,8 @@ function useSalesDashboardData() {
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
-  validated: "Validée",
-  cancelled: "Annulée",
+  validated: "Validé",
+  cancelled: "Annulé",
 };
 
 // Opérateur de vente : ses commandes et l'état de leur validation/paiement — pas de
@@ -42,17 +42,17 @@ export function SalesDashboard() {
 
   return (
     <div className="space-y-6">
-      <DashboardHeader subtitle="Commandes et clients" />
+      <DashboardHeader subtitle="Bons de commande et clients" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card accent="gold">
-          <p className="text-xs uppercase text-gray-500">Commandes en attente</p>
+          <p className="text-xs uppercase text-gray-500">Bons de commande en attente</p>
           <p className="mt-1 text-2xl font-semibold text-gray-800">
             {isLoading ? "…" : data?.pendingCount}
           </p>
         </Card>
         <Card accent="red">
-          <p className="text-xs uppercase text-gray-500">Commandes impayées</p>
+          <p className="text-xs uppercase text-gray-500">Bons de commande impayés</p>
           <p className="mt-1 text-2xl font-semibold text-gray-800">
             {isLoading ? "…" : data?.unpaidCount}
           </p>
@@ -67,7 +67,7 @@ export function SalesDashboard() {
 
       <Card>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-          Commandes récentes
+          Bons de commande récents
         </p>
         {isLoading ? (
           <p className="text-sm text-gray-500">Chargement…</p>
@@ -97,7 +97,7 @@ export function SalesDashboard() {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">Aucune commande pour le moment.</p>
+          <p className="text-sm text-gray-500">Aucun bon de commande pour le moment.</p>
         )}
       </Card>
     </div>

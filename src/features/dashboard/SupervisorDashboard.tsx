@@ -32,11 +32,11 @@ export function SupervisorDashboard() {
 
   return (
     <div className="space-y-6">
-      <DashboardHeader subtitle="Commandes en attente de validation" />
+      <DashboardHeader subtitle="Bons de commande en attente de validation" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card accent="gold">
-          <p className="text-xs uppercase text-gray-500">Commandes à valider</p>
+          <p className="text-xs uppercase text-gray-500">Bons de commande à valider</p>
           <p className="mt-1 text-2xl font-semibold text-gray-800">
             {isLoading ? "…" : pendingOrders?.length ?? 0}
           </p>
@@ -83,7 +83,7 @@ export function SupervisorDashboard() {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">Aucune commande en attente de validation.</p>
+          <p className="text-sm text-gray-500">Aucun bon de commande en attente de validation.</p>
         )}
       </Card>
     </div>

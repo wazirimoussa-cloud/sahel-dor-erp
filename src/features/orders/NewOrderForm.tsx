@@ -55,7 +55,7 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
       reset({ warehouseId: values.warehouseId, clientId: values.clientId, items: [{ productId: "", quantity: 1 }] });
       onCreated?.();
     } catch {
-      setServerError("Commande refusée (stock insuffisant, produit/magasin/client invalide, ou rôle non autorisé).");
+      setServerError("Bon de commande refusé (stock insuffisant, produit/magasin/client invalide, ou rôle non autorisé).");
     }
   }
 
@@ -157,7 +157,7 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
           + Ajouter une ligne
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          Créer la commande
+          Créer le bon de commande
         </Button>
       </div>
 
