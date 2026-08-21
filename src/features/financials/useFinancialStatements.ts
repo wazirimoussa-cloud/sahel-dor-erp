@@ -65,8 +65,11 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
   const productUnitById = new Map(products.map((p) => [p.id, p.unit]));
 
   // CUMP global par produit, à partir des lots créés par une réception d'achat —
-  // stock_lots.unit_cost porte désormais le prix de revient (achat + quote-part
-  // transport/manutention, voir migration 0043), pas seulement le prix d'achat brut.
+  // stock_lots.unit_cost porte le prix de revient du produit, fixé une fois pour
+  // toutes à sa création (voir migration 0075), pas le prix d'achat brut de cet
+  // achat précis. D'anciens lots (avant 0075) gardent leur coût atterri prorata
+  // d'origine, jamais réécrit — la moyenne mélange donc les deux historiquement,
+  // cohérent avec le principe d'immuabilité du projet.
   const cump = new Map<string, { qty: number; cost: number }>();
   for (const lot of purchaseLots) {
     const entry = cump.get(lot.product_id) ?? { qty: 0, cost: 0 };

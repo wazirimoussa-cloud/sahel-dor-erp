@@ -1439,6 +1439,40 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     même session ne voit plus que les 5 comptes de Formation, l'écriture sur un compte de
     la même société fonctionne toujours.
 
+67. **Prix de revient calculé une fois pour toutes à la création du produit, remplace le
+    calcul par achat** (`0075_prix_de_revient_produit.sql`, module Produits) : demande
+    client, confirmée après discussion sur les alternatives — le calcul par achat/réception
+    (points 36, 55) était jugé trop indirect pour fixer un prix de vente cohérent au moment
+    de créer le produit. `products.price` (prix de vente) est renommé `purchase_cost` (prix
+    global d'achat, un coût) ; un nouveau champ séparé `selling_price` reprend le rôle de
+    prix de vente utilisé par `create_order()`. Le formulaire de création gagne trois
+    champs — prix global d'achat, frais de transport, frais de manutention — et calcule
+    `unit_cost` (prix de revient unitaire) une seule fois via un trigger `BEFORE INSERT` :
+    `(purchase_cost + freight_cost + handling_cost) / stock initial`, affiché en aperçu
+    live avant le champ Prix de vente pour servir de repère au moment de le fixer. Ce coût
+    est ensuite **figé** : jamais recalculé, même si le produit est réapprovisionné
+    plusieurs fois par la suite à des coûts différents.
+    - `receive_purchase()` ne calcule plus de prorata par ligne (l'ancien mécanisme du
+      point 55) : chaque lot reçu reprend directement `products.unit_cost` pour
+      `transactions.unit_cost`/`stock_lots.unit_cost`. Les frais de transport/manutention
+      restent saisis à la création de l'achat (point 38, inchangé) et continuent de générer
+      l'écriture 608/521 sur leur montant réel — **la comptabilité n'est pas affectée**, seul
+      change ce qui valorise le stock. `PurchaseDetailPage.tsx` (colonne "Prix de revient /
+      unité") lit désormais ce coût fixe du produit au lieu de le recalculer côté client.
+    - `create_purchase()`/`create_production()` : le fallback appliqué quand une ligne
+      n'indique pas de coût utilisait par erreur de conception le prix de vente
+      (`v_product.price`) — corrigé pour utiliser le vrai coût d'achat
+      (`v_product.purchase_cost`).
+    - Produits existants : `selling_price` et `unit_cost` sont initialisés à l'ancien
+      `price` lors de la migration (aucun changement de comportement au déploiement) ;
+      aucun moyen de recalculer `unit_cost` après coup depuis l'interface — un produit créé
+      avant cette migration garde ce coût de repli tant qu'il n'est pas archivé/recréé.
+    - Vérifié en conditions réelles sur Formation (pas seulement par appel direct à l'API) :
+      création d'un produit via le vrai formulaire (aperçu du prix de revient conforme au
+      calcul), création puis réception d'un achat sur ce produit via les vrais comptes
+      Gérant/Magasinier (séparation des tâches respectée), lot reçu valorisé au coût fixe du
+      produit, écritures 601/608 conformes aux montants réels de l'achat.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
@@ -1470,12 +1504,13 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   `0067_pertes_stock_lot_cible.sql`) : la déclaration d'une perte peut désormais désigner
   un lot précis, dont l'approbation échoue explicitement (pas de repli FEFO) si sa
   quantité restante s'avère insuffisante entre-temps.
-- **Prix de revient** (point 36) : ~~la répartition des frais de transport/manutention
-  est au prorata de la quantité, pas de la valeur~~ — **corrigé** (point 55,
-  `0068_prix_de_revient_prorata_valeur.sql`) : répartie au prorata de la valeur
-  commandée depuis lors. Reste inchangé : aucune TVA modélisée sur ces frais, périmètre
-  volontairement limité à achat + transport + manutention (les pertes et le
-  reconditionnement n'y ajoutent jamais de coût, voir point 36).
+- **Prix de revient** (points 36, 55) : ~~calculé par achat/réception, au prorata de la
+  valeur commandée~~ — **remplacé** (point 67, `0075_prix_de_revient_produit.sql`) : le
+  calcul par achat n'existe plus, le prix de revient est désormais figé une seule fois à
+  la création du produit (achat + frais transport + frais manutention saisis au niveau du
+  produit, divisés par le stock initial). Reste inchangé : aucune TVA modélisée sur ces
+  frais ; un produit créé avant cette migration garde son ancien `price` comme coût de
+  repli, sans moyen de le recalculer après coup depuis l'interface.
 - **Prix de revient des transformations** (point 37) : la répartition entre extrants
   multiples utilise le **prix de vente courant** comme clé de valeur marchande — un
   produit mal tarifé (prix à 0 ou obsolète) fausse sa part relative du coût total.
