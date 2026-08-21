@@ -34,7 +34,7 @@ export function WarehouseForm({ onCreated }: { onCreated?: () => void }) {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
         <label htmlFor="warehouse-name" className="mb-1 block text-xs font-medium text-gray-600">
-          Nom
+          Nom du magasin
         </label>
         <Input id="warehouse-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}

@@ -50,7 +50,6 @@ export function SuppliersPage() {
             <thead>
               <tr className="border-b border-gray-200 text-gray-500">
                 <th scope="col" className="py-2">Nom</th>
-                <th scope="col" className="py-2">Contact</th>
                 <th scope="col" className="py-2">Téléphone</th>
                 <th scope="col" className="py-2">Email</th>
                 <th scope="col" className="py-2">Statut</th>
@@ -61,7 +60,6 @@ export function SuppliersPage() {
               {suppliers.map((supplier) => (
                 <tr key={supplier.id} className="border-b border-gray-100">
                   <td className="py-2">{supplier.name}</td>
-                  <td className="py-2">{supplier.contact_name ?? "—"}</td>
                   <td className="py-2">{supplier.phone ?? "—"}</td>
                   <td className="py-2">{supplier.email ?? "—"}</td>
                   <td className="py-2">
@@ -93,7 +91,7 @@ export function SuppliersPage() {
               ))}
               {suppliers.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="py-4 text-center text-gray-500">
+                  <td colSpan={5} className="py-4 text-center text-gray-500">
                     Aucun fournisseur pour le moment.
                   </td>
                 </tr>

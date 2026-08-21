@@ -5,7 +5,6 @@ import { rangeFor, splitPage } from "@/lib/usePagination";
 export interface NewClient {
   companyId: string;
   name: string;
-  contactName?: string;
   phone?: string;
   email?: string;
   address?: string;
@@ -17,7 +16,7 @@ export function useClients(page: number, pageSize: number) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("clients")
-        .select("id, name, contact_name, phone, email, address, company_id, created_at, active")
+        .select("id, name, phone, email, address, company_id, created_at, active")
         .order("name", { ascending: true })
         .range(...rangeFor(page, pageSize));
       if (error) throw error;
@@ -51,7 +50,6 @@ export function useCreateClient() {
       const { error } = await supabase.from("clients").insert({
         company_id: client.companyId,
         name: client.name,
-        contact_name: client.contactName || null,
         phone: client.phone || null,
         email: client.email || null,
         address: client.address || null,

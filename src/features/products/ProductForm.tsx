@@ -71,7 +71,7 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-wrap items-end gap-3" noValidate>
       <div>
         <label htmlFor="product-name" className="mb-1 block text-xs font-medium text-gray-600">
-          Nom
+          Nom du produit
         </label>
         <Input id="product-name" {...register("name")} />
         {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
