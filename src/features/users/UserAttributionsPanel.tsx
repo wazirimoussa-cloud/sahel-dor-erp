@@ -12,7 +12,7 @@ const MODULE_LABELS: Record<string, string> = {
   entrepots: "Entrepôts",
   fournisseurs: "Fournisseurs",
   clients: "Clients",
-  achats: "Achats",
+  achats: "Bons de commande",
   ventes: "Ventes",
   stock: "Stock",
   pertes_stock: "Pertes de stock",

@@ -57,7 +57,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/suppliers", label: "Fournisseurs", icon: Truck, module: "fournisseurs" },
   {
     to: "/purchases",
-    label: "Achats",
+    label: "Bons de commande",
     icon: ClipboardList,
     visible: ({ hasModuleAccess, hasAttribution }) =>
       hasModuleAccess("achats") && !hasAttribution("achats.receptionner"),

@@ -68,9 +68,9 @@ export function PurchaseDetailPage() {
   if (error || !purchase) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-red-600">Achat introuvable ou accès refusé.</p>
+        <p className="text-sm text-red-600">Bon de commande introuvable ou accès refusé.</p>
         <Link to="/purchases" className="text-sm text-brand-600 hover:underline">
-          ← Retour aux achats
+          ← Retour aux bons de commande
         </Link>
       </div>
     );
@@ -104,7 +104,7 @@ export function PurchaseDetailPage() {
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
     : creatorRelation?.email;
-  // Le créateur d'un achat ne peut pas annuler son propre achat (séparation des
+  // Le créateur d'un bon de commande ne peut pas annuler son propre bon de commande (séparation des
   // tâches, même si achats.annuler est détenu) -- reflète le contrôle serveur de
   // cancel_purchase().
   const canCancelThisPurchase = canCancel && purchase.user_id !== profile?.id;
@@ -156,7 +156,7 @@ export function PurchaseDetailPage() {
 
   async function handleSharePdf() {
     const { doc, filename } = await buildPurchasePdf();
-    await shareOrDownloadPdf(doc, filename, `Bon d'achat #${purchaseId.slice(0, 8)}`);
+    await shareOrDownloadPdf(doc, filename, `Bon de commande #${purchaseId.slice(0, 8)}`);
   }
 
   async function onReceptionSubmit(values: ReceptionFormValues) {
@@ -198,7 +198,7 @@ export function PurchaseDetailPage() {
         observation: values.observation,
       });
     } catch {
-      setActionError("Action refusée (droits insuffisants, achat déjà traité, ou perte invalide).");
+      setActionError("Action refusée (droits insuffisants, bon de commande déjà traité, ou perte invalide).");
     }
   }
 
@@ -238,13 +238,13 @@ export function PurchaseDetailPage() {
   }
 
   async function handleCancel() {
-    const confirmed = window.confirm("Annuler cet achat ?");
+    const confirmed = window.confirm("Annuler ce bon de commande ?");
     if (!confirmed) return;
     setActionError(null);
     try {
       await cancelPurchase.mutateAsync(purchaseId);
     } catch {
-      setActionError("Action refusée (droits insuffisants ou achat déjà traité).");
+      setActionError("Action refusée (droits insuffisants ou bon de commande déjà traité).");
     }
   }
 
@@ -252,13 +252,13 @@ export function PurchaseDetailPage() {
     <div className="space-y-6">
       <div>
         <Link to="/purchases" className="text-sm text-brand-600 hover:underline">
-          ← Retour aux achats
+          ← Retour aux bons de commande
         </Link>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-forest-900">Achat #{purchase.id.slice(0, 8)}</h1>
+          <h1 className="text-lg font-bold text-forest-900">Bon de commande #{purchase.id.slice(0, 8)}</h1>
           <p className="text-sm text-gray-500">
             Créé le {new Date(purchase.created_at).toLocaleString("fr-FR")} par{" "}
             {creatorEmail ?? "utilisateur inconnu"} — Fournisseur : {supplierName ?? "—"} — Magasin
@@ -364,7 +364,7 @@ export function PurchaseDetailPage() {
 
       {purchase.status === "pending" && canReceive && (
         <Card>
-          <h2 className="mb-3 text-sm font-medium text-gray-700">Réceptionner l'achat</h2>
+          <h2 className="mb-3 text-sm font-medium text-gray-700">Réceptionner le bon de commande</h2>
           <p className="mb-3 text-xs text-gray-500">
             Par défaut, la quantité reçue est égale à la quantité commandée. Réduisez-la si une
             perte est constatée à la livraison — un transporteur devient alors requis pour cette
@@ -509,7 +509,7 @@ export function PurchaseDetailPage() {
             </div>
 
             <Button type="submit" disabled={receivePurchase.isPending}>
-              Recevoir l'achat
+              Recevoir le bon de commande
             </Button>
           </form>
         </Card>
@@ -589,7 +589,7 @@ export function PurchaseDetailPage() {
                 disabled={cancelPurchase.isPending}
                 onClick={() => void handleCancel()}
               >
-                Annuler l'achat
+                Annuler le bon de commande
               </Button>
             )}
             <Button variant="secondary" onClick={() => navigate("/purchases")}>
@@ -598,7 +598,7 @@ export function PurchaseDetailPage() {
           </div>
           {!canCancelThisPurchase && (
             <p className="text-xs text-gray-500">
-              Le créateur d'un achat ne peut pas annuler son propre achat.
+              Le créateur d'un bon de commande ne peut pas annuler son propre bon de commande.
             </p>
           )}
         </div>

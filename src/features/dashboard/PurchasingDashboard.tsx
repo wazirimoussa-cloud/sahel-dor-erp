@@ -40,11 +40,11 @@ export function PurchasingDashboard() {
 
   return (
     <div className="space-y-6">
-      <DashboardHeader subtitle="Achats et fournisseurs" />
+      <DashboardHeader subtitle="Bons de commande et fournisseurs" />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Card accent="gold">
-          <p className="text-xs uppercase text-gray-500">Achats en attente de réception</p>
+          <p className="text-xs uppercase text-gray-500">Bons de commande en attente de réception</p>
           <p className="mt-1 text-2xl font-semibold text-gray-800">
             {isLoading ? "…" : data?.pendingCount}
           </p>
@@ -59,7 +59,7 @@ export function PurchasingDashboard() {
 
       <Card>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-          Achats récents
+          Bons de commande récents
         </p>
         {isLoading ? (
           <p className="text-sm text-gray-500">Chargement…</p>
@@ -89,7 +89,7 @@ export function PurchasingDashboard() {
             })}
           </ul>
         ) : (
-          <p className="text-sm text-gray-500">Aucun achat pour le moment.</p>
+          <p className="text-sm text-gray-500">Aucun bon de commande pour le moment.</p>
         )}
       </Card>
     </div>

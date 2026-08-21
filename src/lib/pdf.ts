@@ -208,7 +208,7 @@ export interface PurchasePdfInput {
 }
 
 export async function generatePurchasePdf(input: PurchasePdfInput) {
-  const { doc, autoTable } = await newDocument(`Bon d'achat #${input.id.slice(0, 8)}`);
+  const { doc, autoTable } = await newDocument(`Bon de commande #${input.id.slice(0, 8)}`);
 
   doc.setFontSize(10);
   doc.text(`Date : ${new Date(input.createdAt).toLocaleString("fr-FR")}`, 14, 42);
@@ -230,7 +230,7 @@ export async function generatePurchasePdf(input: PurchasePdfInput) {
     (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 60;
   addTotalsBlock(doc, finalY + 10, input.totals);
 
-  return { doc, filename: `bon-achat-${input.id.slice(0, 8)}.pdf` };
+  return { doc, filename: `bon-de-commande-${input.id.slice(0, 8)}.pdf` };
 }
 
 export interface JournalPdfEntry {
@@ -405,7 +405,7 @@ export interface CreditNotePdfInput {
 
 export async function generateCreditNotePdf(input: CreditNotePdfInput) {
   const { doc, autoTable } = await newDocument(
-    `Facture d'avoir — Transporteur (achat #${input.purchaseId.slice(0, 8)})`,
+    `Facture d'avoir — Transporteur (bon de commande #${input.purchaseId.slice(0, 8)})`,
   );
 
   doc.setFontSize(10);

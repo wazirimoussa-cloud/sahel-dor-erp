@@ -59,7 +59,7 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
       });
       onCreated?.();
     } catch {
-      setServerError("Achat refusé (fournisseur/magasin/produit invalide, ou rôle non autorisé).");
+      setServerError("Bon de commande refusé (fournisseur/magasin/produit invalide, ou rôle non autorisé).");
     }
   }
 
@@ -167,7 +167,7 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
           + Ajouter une ligne
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          Créer l'achat
+          Créer le bon de commande
         </Button>
       </div>
 
