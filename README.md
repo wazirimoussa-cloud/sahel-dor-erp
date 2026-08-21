@@ -692,7 +692,11 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     attribution `comptabilite.gerer_immobilisations`.
 
 36. **Prix de revient automatique** (`0043_prix_de_revient.sql`, formulaire de création
-    d'achat) : le coût unitaire capitalisé dans `stock_lots.unit_cost` à la réception
+    d'achat) — **le calcul décrit ici a depuis été remplacé** (point 67) par un prix de
+    revient fixé une fois pour toutes à la création du produit ; les frais de
+    transport/manutention décrits au point 38 ci-dessous ont eux-mêmes été retirés de
+    l'achat (point 68). Conservé pour l'historique. Le coût unitaire capitalisé dans
+    `stock_lots.unit_cost` à la réception
     d'un achat n'est plus le seul prix d'achat, mais un prix de revient =
     prix d'achat + quote-part des frais de transport/manutention saisis à la
     **création** de l'achat (voir point 38), répartis ~~au prorata de la quantité
@@ -744,7 +748,10 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     (`comptabilite.consulter_prix_revient`).
 
 38. **Frais de transport/manutention déplacés vers la création de l'achat**
-    (`0046_frais_a_la_creation.sql`) : initialement saisis à la réception (Magasinier),
+    (`0046_frais_a_la_creation.sql`) — **ces deux montants ont depuis été retirés de
+    l'achat entièrement** (point 68) ; ils se saisissent désormais uniquement à la
+    création du produit (point 67). Conservé pour l'historique. Initialement saisis à
+    la réception (Magasinier),
     ces deux montants sont désormais saisis par le **Gérant** au moment de créer l'achat
     — il négocie déjà le prix avec le fournisseur, généralement en même temps que les
     conditions de transport. `purchases.freight_cost`/`handling_cost` sont donc fixés
@@ -1473,6 +1480,39 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       Gérant/Magasinier (séparation des tâches respectée), lot reçu valorisé au coût fixe du
       produit, écritures 601/608 conformes aux montants réels de l'achat.
 
+68. **Module "Achats" renommé "Bons de commande" ; frais retirés de l'achat ; le créateur
+    ne peut plus annuler son propre bon** (`0076_retrait_frais_achat.sql` à
+    `0080_renomme_module_achats_bons_commande.sql`) : suite directe du point 67, demandée
+    par le client une fois le prix de revient déplacé au niveau du produit.
+    - **Frais de transport/manutention retirés de l'achat** (0076) : devenus sans objet
+      une fois saisis à la création du produit — retirés du formulaire, de la table
+      `purchases` et de l'écriture comptable 608/521 dans `receive_purchase()`. Cette
+      écriture ne se déclenche donc plus pour les nouveaux achats ; les écritures déjà
+      passées restent intactes (`journal_entries` append-only).
+    - **Le créateur d'un bon de commande ne peut plus l'annuler lui-même** (0079) : même
+      logique de séparation des tâches que la réception (`achats.creer` /
+      `achats.receptionner`, en conflit d'attribution) ou la validation de commande —
+      mais `achats.annuler` n'a jamais été mise en conflit avec `achats.creer` (le Gérant
+      détient historiquement les deux à la fois), donc un conflit d'attribution aurait
+      rendu l'annulation impossible pour quiconque. Contrôle ciblé sur l'enregistrement à
+      la place (`cancel_purchase()` compare `purchases.user_id` à `auth.uid()`), reflété
+      côté interface par un message explicatif à la place du bouton.
+    - **Renommage du module** (0080) : "Achats" devient "Bons de commande" partout dans
+      l'interface (navigation, titres, formulaire, messages, PDF généré, libellés du
+      panneau des attributions) — les identifiants internes (route `/purchases`,
+      attributions `achats.*`, fonctions `create_purchase`/`receive_purchase`/
+      `cancel_purchase`) restent inchangés, seul le texte affiché change. La terminologie
+      comptable (journal `ACHATS`, "Achats HT" en déclaration TVA, compte 601 "Achats de
+      marchandises") reste intacte : ce sont des termes comptables distincts du module de
+      suivi, pas le même concept.
+    - **Deux régressions corrigées au passage** (0077, 0078), découvertes en faisant
+      tourner la suite d'intégration contre Formation après 0075 plutôt qu'en se fiant
+      au seul typecheck : `create_purchase()` avait perdu ses garde-fous
+      fournisseur/magasin/produit actif (0075 avait été réécrite depuis une version
+      antérieure à leur ajout par 0048) ; `approve_stock_loss()` lisait encore
+      `products.price` (colonne renommée par 0075) dans le flux de reconditionnement, un
+      identifiant nu invisible aux recherches par nom de colonne qualifié.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
@@ -1510,7 +1550,9 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
   la création du produit (achat + frais transport + frais manutention saisis au niveau du
   produit, divisés par le stock initial). Reste inchangé : aucune TVA modélisée sur ces
   frais ; un produit créé avant cette migration garde son ancien `price` comme coût de
-  repli, sans moyen de le recalculer après coup depuis l'interface.
+  repli, sans moyen de le recalculer après coup depuis l'interface. Les champs frais de
+  transport/manutention de l'achat lui-même, devenus sans objet, ont depuis été retirés
+  entièrement (point 68, `0076_retrait_frais_achat.sql`).
 - **Prix de revient des transformations** (point 37) : la répartition entre extrants
   multiples utilise le **prix de vente courant** comme clé de valeur marchande — un
   produit mal tarifé (prix à 0 ou obsolète) fausse sa part relative du coût total.
