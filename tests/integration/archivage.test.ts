@@ -89,7 +89,8 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
       .insert({
         company_id: companyId,
         name: `Produit ${tag} A`,
-        price: 1000,
+        purchase_cost: 1000,
+        selling_price: 1000,
         stock: 0,
         unit: "unité",
         vat_exempt: false,
@@ -143,7 +144,8 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
       .insert({
         company_id: companyId,
         name: `Produit ${tag} B`,
-        price: 1000,
+        purchase_cost: 1000,
+        selling_price: 1000,
         stock: 0,
         unit: "unité",
         vat_exempt: false,
@@ -185,7 +187,8 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
       .insert({
         company_id: companyId,
         name: `Produit ${tag} C`,
-        price: 1000,
+        purchase_cost: 1000,
+        selling_price: 1000,
         stock: 0,
         unit: "unité",
         vat_exempt: false,
@@ -237,7 +240,8 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
       .insert({
         company_id: companyId,
         name: `Produit ${tag} D`,
-        price: 1000,
+        purchase_cost: 1000,
+        selling_price: 1000,
         stock: 0,
         unit: "unité",
         vat_exempt: false,

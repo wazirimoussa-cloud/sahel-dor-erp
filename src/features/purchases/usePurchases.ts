@@ -33,7 +33,7 @@ export function usePurchase(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, freight_cost, handling_cost, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt, unit_cost))",
+          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt, unit_cost))",
         )
         .eq("id", purchaseId as string)
         .single();
@@ -50,8 +50,6 @@ export function useCreatePurchase() {
       supplierId: string;
       warehouseId: string;
       items: PurchaseItemInput[];
-      freightCost?: number;
-      handlingCost?: number;
     }) => {
       const { error } = await supabase.rpc("create_purchase", {
         payload: {
@@ -62,8 +60,6 @@ export function useCreatePurchase() {
             quantity: item.quantity,
             unit_cost: item.unitCost,
           })),
-          freight_cost: params.freightCost ?? 0,
-          handling_cost: params.handlingCost ?? 0,
         },
       });
       if (error) throw error;

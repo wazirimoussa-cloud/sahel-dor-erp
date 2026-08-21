@@ -25,7 +25,8 @@ async function seedStock(
     .insert({
       company_id: companyId,
       name: `Produit ${tag}`,
-      price: unitCost,
+      purchase_cost: unitCost,
+      selling_price: unitCost,
       stock: 0,
       unit: "unité",
       vat_exempt: false,

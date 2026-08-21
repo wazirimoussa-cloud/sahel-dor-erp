@@ -124,9 +124,21 @@ describe.skipIf(!hasCredentials)("scénario complet achat -> bilan (Formation, r
     ];
     const products: Record<string, string> = {};
     for (const p of productPayloads) {
+      // purchase_cost/selling_price au même montant : ce scénario ne teste pas le prix
+      // de revient (voir purchase-to-payment.test.ts pour ça), seulement la chaîne
+      // achat/vente -- stock à 0 à la création, la valorisation vient des mouvements
+      // réels (achat, production, transformation) qui suivent.
       const { data, error } = await gerant
         .from("products")
-        .insert({ company_id: companyId, name: p.name, price: p.price, stock: 0, unit: p.unit, vat_exempt: false })
+        .insert({
+          company_id: companyId,
+          name: p.name,
+          purchase_cost: p.price,
+          selling_price: p.price,
+          stock: 0,
+          unit: p.unit,
+          vat_exempt: false,
+        })
         .select("id")
         .single();
       expect(error).toBeNull();
@@ -138,7 +150,7 @@ describe.skipIf(!hasCredentials)("scénario complet achat -> bilan (Formation, r
     const riz = products[`Sac de riz ${tag}`];
     const miel = products[`Miel brut ${tag}`];
 
-    // --- 1. Achat multi-lignes avec frais de transport/manutention ---------------------
+    // --- 1. Achat multi-lignes ---------------------------------------------------------
 
     const { data: purchase, error: purchaseErr } = await gerant.rpc("create_purchase", {
       payload: {
@@ -148,8 +160,6 @@ describe.skipIf(!hasCredentials)("scénario complet achat -> bilan (Formation, r
           { product_id: arachide, quantity: 50, unit_cost: 90000 },
           { product_id: riz, quantity: 30, unit_cost: 12000 },
         ],
-        freight_cost: 50000,
-        handling_cost: 20000,
       },
     });
     expect(purchaseErr).toBeNull();

@@ -59,7 +59,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Produit ${tag}`,
-        price: 2000,
+        purchase_cost: 2000,
+        selling_price: 2000,
         stock: 0,
         unit: "unité",
         vat_exempt: false,
@@ -114,7 +115,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
         .insert({
           company_id: companyId,
           name: `Intrant ${tag}`,
-          price: 1000,
+          purchase_cost: 1000,
+          selling_price: 1000,
           stock: 0,
           unit: "unité",
           vat_exempt: false,
@@ -126,7 +128,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
         .insert({
           company_id: companyId,
           name: `Extrant ${tag}`,
-          price: 1500,
+          purchase_cost: 1500,
+          selling_price: 1500,
           stock: 0,
           unit: "unité",
           vat_exempt: false,
@@ -201,7 +204,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Intrant prorata ${tag}`,
-        price: 50,
+        purchase_cost: 50,
+        selling_price: 50,
         stock: 0,
         unit: "tonne",
         vat_exempt: false,
@@ -218,7 +222,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Extrant A ${tag}`,
-        price: 1000,
+        purchase_cost: 1000,
+        selling_price: 1000,
         stock: 0,
         unit: "bidon",
         vat_exempt: false,
@@ -230,7 +235,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Extrant B ${tag}`,
-        price: 500,
+        purchase_cost: 500,
+        selling_price: 500,
         stock: 0,
         unit: "tonne",
         vat_exempt: false,
@@ -283,7 +289,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Intrant unique ${tag}`,
-        price: 50,
+        purchase_cost: 50,
+        selling_price: 50,
         stock: 0,
         unit: "tonne",
         vat_exempt: false,
@@ -295,7 +302,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Extrant unique ${tag}`,
-        price: 99999, // prix arbitraire, sans effet sur le résultat avec un seul extrant.
+        purchase_cost: 99999, // prix arbitraire, sans effet sur le résultat avec un seul extrant.
+        selling_price: 99999,
         stock: 0,
         unit: "bidon",
         vat_exempt: false,
@@ -336,7 +344,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Intrant prix nul ${tag}`,
-        price: 50,
+        purchase_cost: 50,
+        selling_price: 50,
         stock: 0,
         unit: "tonne",
         vat_exempt: false,
@@ -348,7 +357,8 @@ describe.skipIf(!hasCredentials)("écriture comptable production (Formation, ré
       .insert({
         company_id: companyId,
         name: `Extrant prix nul ${tag}`,
-        price: 0,
+        purchase_cost: 0,
+        selling_price: 0,
         stock: 0,
         unit: "tonne",
         vat_exempt: false,

@@ -46,7 +46,7 @@ const STATUS_CLASSES: Record<string, string> = {
 export function PurchaseDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { hasAttribution } = useAuth();
+  const { hasAttribution, profile } = useAuth();
   const { data: purchase, isLoading, error } = usePurchase(id);
   const { data: losses } = usePurchaseLosses(id);
   const { data: transporters } = useAllTransporters();
@@ -100,12 +100,14 @@ export function PurchaseDetailPage() {
     : companyRelation?.vat_rate;
   const vatAmount = vatRate ? Math.round(taxableHT * vatRate) / 100 : 0;
   const totalTTC = totalHT + vatAmount;
-  const freightCost = purchase.freight_cost ?? 0;
-  const handlingCost = purchase.handling_cost ?? 0;
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
     : creatorRelation?.email;
+  // Le créateur d'un achat ne peut pas annuler son propre achat (séparation des
+  // tâches, même si achats.annuler est détenu) -- reflète le contrôle serveur de
+  // cancel_purchase().
+  const canCancelThisPurchase = canCancel && purchase.user_id !== profile?.id;
   const supplierRelation = purchase.suppliers as
     | { name: string; address: string | null }
     | { name: string; address: string | null }[]
@@ -334,16 +336,6 @@ export function PurchaseDetailPage() {
               </td>
               {purchase.status === "received" && canViewLandedCost && <td />}
             </tr>
-            {purchase.status === "received" && canViewLandedCost && (freightCost > 0 || handlingCost > 0) && (
-              <tr>
-                <td colSpan={4} className="pt-2 text-right text-xs text-gray-500">
-                  Frais accessoires (compte 608) : transport {formatNumber(freightCost)}{" "}
-                  FCFA + manutention {formatNumber(handlingCost)} FCFA — n'affectent plus le
-                  prix de revient du stock, désormais fixé au niveau du produit
-                </td>
-                <td className="pt-2" />
-              </tr>
-            )}
           </tfoot>
         </table>
       </Card>
@@ -589,19 +581,26 @@ export function PurchaseDetailPage() {
       )}
 
       {purchase.status === "pending" && canCancel && (
-        <div className="flex gap-3">
-          {canCancel && (
-            <Button
-              variant="danger"
-              disabled={cancelPurchase.isPending}
-              onClick={() => void handleCancel()}
-            >
-              Annuler l'achat
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-3">
+            {canCancelThisPurchase && (
+              <Button
+                variant="danger"
+                disabled={cancelPurchase.isPending}
+                onClick={() => void handleCancel()}
+              >
+                Annuler l'achat
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => navigate("/purchases")}>
+              Retour
             </Button>
+          </div>
+          {!canCancelThisPurchase && (
+            <p className="text-xs text-gray-500">
+              Le créateur d'un achat ne peut pas annuler son propre achat.
+            </p>
           )}
-          <Button variant="secondary" onClick={() => navigate("/purchases")}>
-            Retour
-          </Button>
         </div>
       )}
     </div>

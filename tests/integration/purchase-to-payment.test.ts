@@ -32,6 +32,7 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
   let supplierId: string;
   let clientId: string;
   let productId: string;
+  let productUnitCost: number;
   const unitPrice = 5000;
 
   beforeAll(async () => {
@@ -79,13 +80,19 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     if (clientErr || !client) throw new Error(`Création client échouée : ${clientErr?.message}`);
     clientId = client.id;
 
+    // purchase_cost/frais/stock choisis pour un prix de revient rond et connu à
+    // l'avance : (700 + 200 + 100) / 10 = 100 -- vérifié figé au moment de la
+    // réception d'un achat, quel que soit le coût saisi sur cet achat (0075/0076).
     const { data: product, error: productErr } = await gerant
       .from("products")
       .insert({
         company_id: companyId,
         name: `Produit ${tag}`,
-        price: unitPrice,
-        stock: 0,
+        purchase_cost: 700,
+        freight_cost: 200,
+        handling_cost: 100,
+        selling_price: unitPrice,
+        stock: 10,
         unit: "unité",
         vat_exempt: false,
       })
@@ -93,6 +100,7 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
       .single();
     if (productErr || !product) throw new Error(`Création produit échouée : ${productErr?.message}`);
     productId = product.id;
+    productUnitCost = 100;
   });
 
   afterAll(async () => {
@@ -105,21 +113,19 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
   });
 
   it("exécute la chaîne complète et calcule correctement coût de revient, stock et paiement", async () => {
-    // 1. Le Gérant crée l'achat avec les frais de transport/manutention (saisis à la
-    //    création depuis le 30/07/2026 -- voir README point 38).
+    // 1. Le Gérant crée l'achat. Plus de frais de transport/manutention saisis ici
+    //    depuis 0076 -- seul le coût de la ligne (purchase_items.unit_cost, sert à
+    //    l'écriture 601) reste saisi à l'achat ; il n'influence plus la valorisation
+    //    du stock (voir étape 3).
     const { data: purchase, error: purchaseErr } = await gerant.rpc("create_purchase", {
       payload: {
         supplier_id: supplierId,
         warehouse_id: warehouseId,
         items: [{ product_id: productId, quantity: 10, unit_cost: 1000 }],
-        freight_cost: 500,
-        handling_cost: 300,
       },
     });
     expect(purchaseErr).toBeNull();
     expect(purchase?.status).toBe("pending");
-    expect(Number(purchase?.freight_cost)).toBe(500);
-    expect(Number(purchase?.handling_cost)).toBe(300);
 
     // 2. Le Magasinier réceptionne -- il ne saisit plus les frais, seulement les
     //    informations de livraison.
@@ -134,11 +140,11 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     expect(receiveErr).toBeNull();
     expect(received?.status).toBe("received");
 
-    // 3. Le prix de revient doit être achat + quote-part frais au prorata de la valeur
-    //    commandée (0068) : une seule ligne ici, donc le résultat est identique à
-    //    l'ancien prorata par quantité (100% de la valeur = 100% de la quantité) --
-    //    1000 + (500 + 300) / 10 = 1080. Le test dédié à la répartition multi-lignes est
-    //    plus bas ("répartit les frais accessoires au prorata de la valeur...").
+    // 3. Le prix de revient du lot reçu est le coût FIXE du produit (products.unit_cost
+    //    = 100, voir beforeAll), pas le coût de la ligne d'achat (1000 ci-dessus) --
+    //    0075/0076 remplacent le calcul par achat par un prix de revient figé à la
+    //    création du produit. Le test dédié à cette indépendance est plus bas ("le lot
+    //    reçu reprend le prix de revient fixé à la création du produit...").
     const { data: lot, error: lotErr } = await magasinier
       .from("stock_lots")
       .select("quantity_remaining, unit_cost")
@@ -147,10 +153,10 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
       .single();
     expect(lotErr).toBeNull();
     expect(Number(lot?.quantity_remaining)).toBe(10);
-    expect(Number(lot?.unit_cost)).toBeCloseTo(1080, 2);
+    expect(Number(lot?.unit_cost)).toBeCloseTo(productUnitCost, 2);
 
-    // 4. Le Gérant crée la commande client (prix repris depuis products.price au
-    //    moment de la création -- 5000 tel que défini par le produit de test).
+    // 4. Le Gérant crée la commande client (prix repris depuis products.selling_price
+    //    au moment de la création -- 5000 tel que défini par le produit de test).
     const { data: order, error: orderErr } = await gerant.rpc("create_order", {
       payload: {
         warehouse_id: warehouseId,
@@ -214,42 +220,59 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
       .or(`purchase_id.eq.${purchase!.id},order_id.eq.${order!.id}`);
     expect(entriesErr).toBeNull();
     const journalCodes = (entries ?? []).map((e) => e.journal_code).sort();
-    expect(journalCodes).toEqual(["ACHATS", "BANQUE", "BANQUE", "FRAIS", "VENTES"]);
+    expect(journalCodes).toEqual(["ACHATS", "BANQUE", "BANQUE", "VENTES"]);
   });
 
-  it("répartit les frais accessoires au prorata de la valeur commandée, pas de la quantité (0068)", async () => {
-    const tag = `Intégration prorata ${new Date().toISOString()}`;
+  it("le lot reçu reprend le prix de revient fixé à la création du produit, pas un recalcul par achat (0075/0076)", async () => {
+    const tag = `Intégration prix de revient fixe ${new Date().toISOString()}`;
 
-    // Produit A : grosse quantité, faible valeur unitaire (ex. céréales en vrac).
+    // Deux produits à prix de revient connu et volontairement très différent du coût
+    // qui sera saisi sur la ligne d'achat plus bas -- si le lot reçu prend malgré tout
+    // ce prix de revient (et non le coût de la ligne), c'est la preuve que le calcul
+    // par achat (ancien point 55/0068) n'existe plus.
     const { data: productA, error: productAErr } = await gerant
       .from("products")
-      .insert({ company_id: companyId, name: `${tag} A`, price: 10, stock: 0, unit: "tonne", vat_exempt: false })
+      .insert({
+        company_id: companyId,
+        name: `${tag} A`,
+        purchase_cost: 900,
+        freight_cost: 100,
+        handling_cost: 0,
+        selling_price: 0,
+        stock: 10,
+        unit: "tonne",
+        vat_exempt: false,
+      })
       .select("id")
       .single();
-    expect(productAErr).toBeNull();
+    expect(productAErr).toBeNull(); // unit_cost = (900 + 100 + 0) / 10 = 100
 
-    // Produit B : faible quantité, forte valeur unitaire (ex. un équipement).
     const { data: productB, error: productBErr } = await gerant
       .from("products")
-      .insert({ company_id: companyId, name: `${tag} B`, price: 200, stock: 0, unit: "unité", vat_exempt: false })
+      .insert({
+        company_id: companyId,
+        name: `${tag} B`,
+        purchase_cost: 4000,
+        freight_cost: 800,
+        handling_cost: 200,
+        selling_price: 0,
+        stock: 5,
+        unit: "unité",
+        vat_exempt: false,
+      })
       .select("id")
       .single();
-    expect(productBErr).toBeNull();
+    expect(productBErr).toBeNull(); // unit_cost = (4000 + 800 + 200) / 5 = 1000
 
-    // Valeur commandée : A = 100 × 10 = 1000 ; B = 5 × 200 = 1000 -- les deux lignes
-    // pèsent EXACTEMENT le même poids en valeur (50/50), malgré des quantités
-    // physiques très différentes (100 vs 5). Un prorata par quantité donnerait
-    // 100/105 ≈ 95% à A et 5/105 ≈ 5% à B -- un prorata par valeur donne 50/50.
+    // Coûts de ligne délibérément sans rapport avec le prix de revient ci-dessus.
     const { data: purchase, error: purchaseErr } = await gerant.rpc("create_purchase", {
       payload: {
         supplier_id: supplierId,
         warehouse_id: warehouseId,
         items: [
-          { product_id: productA!.id, quantity: 100, unit_cost: 10 },
-          { product_id: productB!.id, quantity: 5, unit_cost: 200 },
+          { product_id: productA!.id, quantity: 20, unit_cost: 1 },
+          { product_id: productB!.id, quantity: 3, unit_cost: 1 },
         ],
-        freight_cost: 150,
-        handling_cost: 50,
       },
     });
     expect(purchaseErr).toBeNull();
@@ -264,16 +287,13 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     });
     expect(receiveErr).toBeNull();
 
-    // Frais totaux = 200, répartis 50/50 par valeur = 100 chacun.
-    // A : 100 / 100 unités = 1/unité -> prix de revient = 10 + 1 = 11.
-    // B : 100 / 5 unités = 20/unité -> prix de revient = 200 + 20 = 220.
     const { data: lotA } = await magasinier
       .from("stock_lots")
       .select("unit_cost")
       .eq("product_id", productA!.id)
       .eq("warehouse_id", warehouseId)
       .single();
-    expect(Number(lotA?.unit_cost)).toBeCloseTo(11, 2);
+    expect(Number(lotA?.unit_cost)).toBeCloseTo(100, 2);
 
     const { data: lotB } = await magasinier
       .from("stock_lots")
@@ -281,7 +301,7 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
       .eq("product_id", productB!.id)
       .eq("warehouse_id", warehouseId)
       .single();
-    expect(Number(lotB?.unit_cost)).toBeCloseTo(220, 2);
+    expect(Number(lotB?.unit_cost)).toBeCloseTo(1000, 2);
   });
 
   it("refuse au Gérant la réception de son propre achat (séparation des tâches)", async () => {
@@ -304,6 +324,29 @@ describe.skipIf(!hasCredentials)("chaîne achat -> vente -> paiement (Formation,
     });
     expect(receiveErr).not.toBeNull();
     expect(receiveErr?.message).toMatch(/non autorisé/i);
+  });
+
+  it("refuse au Gérant l'annulation de son propre achat (0079)", async () => {
+    const { data: purchase, error: purchaseErr } = await gerant.rpc("create_purchase", {
+      payload: {
+        supplier_id: supplierId,
+        warehouse_id: warehouseId,
+        items: [{ product_id: productId, quantity: 1, unit_cost: 1000 }],
+      },
+    });
+    expect(purchaseErr).toBeNull();
+
+    const { error: cancelErr } = await gerant.rpc("cancel_purchase", { purchase_id: purchase!.id });
+    expect(cancelErr).not.toBeNull();
+    expect(cancelErr?.message).toMatch(/propre achat/i);
+
+    // La tentative refusée ne doit pas avoir fait bouger le statut.
+    const { data: purchaseAfter } = await gerant
+      .from("purchases")
+      .select("status")
+      .eq("id", purchase!.id)
+      .single();
+    expect(purchaseAfter?.status).toBe("pending");
   });
 
   it("refuse au Gérant de valider sa propre commande (séparation des tâches)", async () => {
