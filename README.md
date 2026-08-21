@@ -1546,6 +1546,17 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     "... pour un nouveau bon d'achat") — même type d'oubli que le point 70, un texte
     qui ne contenait pas le mot recherché lors du grep initial.
 
+72. **Stock initial rendu obligatoire à la création d'un produit** (`ProductForm.tsx`) :
+    jusqu'ici pré-rempli à 0 par défaut et accepté tel quel, ce qui permettait
+    d'enregistrer un produit sans vraiment renseigner sa quantité — désormais une valeur
+    strictement positive est exigée (`z.coerce.number().positive(...)`, choix confirmé
+    avec l'utilisateur plutôt qu'un simple "non vide" qui aurait laissé passer 0). Le
+    champ n'a plus de valeur par défaut : il démarre vide, forçant une saisie explicite.
+    Purement une validation côté formulaire — la colonne `products.stock` elle-même
+    reste `>= 0` en base (elle est aussi le compteur de stock **courant**, mis à jour en
+    continu par `fn_apply_transaction_stock` à chaque mouvement ; une contrainte `> 0` au
+    niveau de la table interdirait à tort un produit totalement épuisé par la suite).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

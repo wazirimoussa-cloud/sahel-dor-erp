@@ -9,21 +9,16 @@ import { formatNumber } from "@/lib/format";
 
 const UNITS = ["tonne", "carton", "bidon", "unité"] as const;
 
-const productSchema = z
-  .object({
-    name: z.string().min(1, "Nom requis"),
-    purchaseCost: z.coerce.number().min(0, "Le prix global d'achat doit être positif"),
-    freightCost: z.coerce.number().min(0, "Les frais de transport doivent être positifs"),
-    handlingCost: z.coerce.number().min(0, "Les frais de manutention doivent être positifs"),
-    sellingPrice: z.coerce.number().min(0, "Le prix de vente doit être positif"),
-    stock: z.coerce.number().min(0, "Le stock initial doit être positif"),
-    unit: z.enum(UNITS),
-    vatExempt: z.boolean(),
-  })
-  .refine((values) => values.purchaseCost === 0 || values.stock > 0, {
-    message: "Le stock initial doit être supérieur à 0 pour calculer le prix de revient",
-    path: ["stock"],
-  });
+const productSchema = z.object({
+  name: z.string().min(1, "Nom requis"),
+  purchaseCost: z.coerce.number().min(0, "Le prix global d'achat doit être positif"),
+  freightCost: z.coerce.number().min(0, "Les frais de transport doivent être positifs"),
+  handlingCost: z.coerce.number().min(0, "Les frais de manutention doivent être positifs"),
+  sellingPrice: z.coerce.number().min(0, "Le prix de vente doit être positif"),
+  stock: z.coerce.number().positive("Le stock initial est obligatoire et doit être supérieur à 0"),
+  unit: z.enum(UNITS),
+  vatExempt: z.boolean(),
+});
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
@@ -39,7 +34,6 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
-      stock: 0,
       unit: "unité",
       vatExempt: false,
       purchaseCost: 0,
