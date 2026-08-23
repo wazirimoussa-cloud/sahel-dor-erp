@@ -1,113 +1,98 @@
-import { Fragment, useMemo, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/auth/useAuth";
-import { useTransactions } from "@/features/stock/useTransactions";
-import { useProductStocks } from "@/features/stock/useProductStocks";
-import { useStockLots } from "@/features/stock/useStockLots";
+import { useStockMovements, type StockMovementFilters } from "@/features/stock/useStockMovements";
+import { useAllProducts } from "@/features/products/useProducts";
+import { useAllWarehouses } from "@/features/warehouses/useWarehouses";
 import { StockMovementForm } from "@/features/stock/StockMovementForm";
 import { TransferStockForm } from "@/features/stock/TransferStockForm";
 import { Card } from "@/components/ui/Card";
-import { isLowStock } from "@/lib/stockThreshold";
-import { TRANSACTION_TYPE_LABELS, lotStatus } from "@/lib/stockDisplay";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { movementDirectionLabel, lotStatus } from "@/lib/stockDisplay";
 import { formatNumber } from "@/lib/format";
-
-interface ProductStockGroup {
-  productId: string;
-  productName: string;
-  unit: string;
-  total: number;
-  byWarehouse: { warehouseName: string; stock: number }[];
-}
+import { exportRowsToExcel } from "@/lib/xlsx";
 
 export function StockPage() {
   const { hasAttribution } = useAuth();
-  const { data: transactions, isLoading, error } = useTransactions();
-  const {
-    data: productStocks,
-    isLoading: isLoadingStocks,
-    error: stocksError,
-  } = useProductStocks();
   const canRecordMovement = hasAttribution("stock.mouvement_manuel");
   const canTransfer = hasAttribution("stock.transfert");
-  const { data: lots, isLoading: isLoadingLots, error: lotsError } = useStockLots();
 
-  const [productFilter, setProductFilter] = useState("all");
-  const [warehouseFilter, setWarehouseFilter] = useState("all");
+  const { data: products } = useAllProducts();
+  const { data: warehouses } = useAllWarehouses();
 
-  const normalizedRows = useMemo(
-    () =>
-      (productStocks ?? []).flatMap((row) => {
-        const product = row.products as
-          | { id: string; name: string; unit: string }
-          | { id: string; name: string; unit: string }[]
-          | null;
-        const productInfo = Array.isArray(product) ? product[0] : product;
-        const warehouse = row.warehouses as
-          { id: string; name: string } | { id: string; name: string }[] | null;
-        const warehouseInfo = Array.isArray(warehouse) ? warehouse[0] : warehouse;
-        if (!productInfo || !warehouseInfo) return [];
-        return [{ product: productInfo, warehouse: warehouseInfo, stock: row.stock }];
-      }),
-    [productStocks],
-  );
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [lotNumber, setLotNumber] = useState("");
+  const [productId, setProductId] = useState("");
+  const [warehouseId, setWarehouseId] = useState("");
+  const [direction, setDirection] = useState<"" | "IN" | "OUT">("");
+  const [minAvailable, setMinAvailable] = useState("");
+  const [expiryFrom, setExpiryFrom] = useState("");
+  const [expiryTo, setExpiryTo] = useState("");
+  const [provenance, setProvenance] = useState("");
+  const [destination, setDestination] = useState("");
 
-  const productOptions = useMemo(
-    () =>
-      [...new Map(normalizedRows.map((r) => [r.product.id, r.product])).values()].sort((a, b) =>
-        a.name.localeCompare(b.name, "fr"),
-      ),
-    [normalizedRows],
-  );
-  const warehouseOptions = useMemo(
-    () =>
-      [...new Map(normalizedRows.map((r) => [r.warehouse.id, r.warehouse])).values()].sort((a, b) =>
-        a.name.localeCompare(b.name, "fr"),
-      ),
-    [normalizedRows],
-  );
+  const filters: StockMovementFilters = {
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+    lotNumber: lotNumber || undefined,
+    productId: productId || undefined,
+    warehouseId: warehouseId || undefined,
+    direction: direction || undefined,
+    minAvailable: minAvailable !== "" ? Number(minAvailable) : undefined,
+    expiryFrom: expiryFrom || undefined,
+    expiryTo: expiryTo || undefined,
+    provenance: provenance || undefined,
+    destination: destination || undefined,
+  };
+  const isFiltered = Object.values(filters).some((value) => value !== undefined);
 
-  const filteredRows = normalizedRows.filter(
-    (r) =>
-      (productFilter === "all" || r.product.id === productFilter) &&
-      (warehouseFilter === "all" || r.warehouse.id === warehouseFilter),
-  );
+  const { data: movements, isLoading, error } = useStockMovements(filters);
 
-  const filteredLots = (lots ?? []).filter(
-    (lot) =>
-      (productFilter === "all" || lot.product_id === productFilter) &&
-      (warehouseFilter === "all" || lot.warehouse_id === warehouseFilter),
-  );
-
-  const filteredTransactions = (transactions ?? []).filter(
-    (tx) =>
-      (productFilter === "all" || tx.product_id === productFilter) &&
-      (warehouseFilter === "all" || tx.warehouse_id === warehouseFilter),
-  );
-
-  const stockGroups = new Map<string, ProductStockGroup>();
-  for (const row of filteredRows) {
-    const group = stockGroups.get(row.product.id) ?? {
-      productId: row.product.id,
-      productName: row.product.name,
-      unit: row.product.unit,
-      total: 0,
-      byWarehouse: [],
-    };
-    group.total += row.stock;
-    group.byWarehouse.push({ warehouseName: row.warehouse.name, stock: row.stock });
-    stockGroups.set(row.product.id, group);
+  function resetFilters() {
+    setDateFrom("");
+    setDateTo("");
+    setLotNumber("");
+    setProductId("");
+    setWarehouseId("");
+    setDirection("");
+    setMinAvailable("");
+    setExpiryFrom("");
+    setExpiryTo("");
+    setProvenance("");
+    setDestination("");
   }
-  const sortedStockGroups = [...stockGroups.values()].sort((a, b) =>
-    a.productName.localeCompare(b.productName, "fr"),
-  );
-  // Regroupé par unité plutôt qu'une somme unique : des tonnes et des cartons ne
-  // s'additionnent pas entre eux.
-  const totalsByUnit = new Map<string, number>();
-  for (const row of filteredRows) {
-    totalsByUnit.set(row.product.unit, (totalsByUnit.get(row.product.unit) ?? 0) + row.stock);
+
+  async function handleExportExcel() {
+    if (!movements) return;
+    await exportRowsToExcel(
+      `mouvements-de-stock-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      [
+        { header: "Date", key: "date" },
+        { header: "Lot", key: "lot" },
+        { header: "Produit", key: "produit" },
+        { header: "Magasin", key: "magasin" },
+        { header: "Type", key: "type" },
+        { header: "Quantité", key: "quantite" },
+        { header: "Stock disponible", key: "stockDisponible" },
+        { header: "Date de péremption", key: "peremption" },
+        { header: "Provenance", key: "provenance" },
+        { header: "Destination", key: "destination" },
+      ],
+      movements.map((row) => ({
+        date: new Date(row.createdAt).toLocaleString("fr-FR"),
+        lot: row.lotNumber !== null ? `Lot #${row.lotNumber}` : "—",
+        produit: row.productName,
+        magasin: row.warehouseName,
+        type: movementDirectionLabel(row.direction, row.type === "ADJUSTMENT"),
+        quantite: `${row.quantity} ${row.unit}`.trim(),
+        stockDisponible: row.availableStock !== null ? `${row.availableStock} ${row.unit}`.trim() : "—",
+        peremption: row.expiryDate ? new Date(row.expiryDate).toLocaleDateString("fr-FR") : "—",
+        provenance: row.provenance,
+        destination: row.destination,
+      })),
+    );
   }
-  const grandTotalLabel = [...totalsByUnit.entries()]
-    .map(([unit, total]) => `${formatNumber(total)} ${unit}`)
-    .join(" · ");
 
   return (
     <div className="space-y-6">
@@ -127,20 +112,55 @@ export function StockPage() {
       )}
 
       <Card>
-        <h2 className="mb-3 text-base font-semibold text-gray-800">Synthèse du stock disponible</h2>
-        <div className="mb-3 flex flex-wrap items-end gap-3">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-gray-800">Synthèse du stock disponible</h2>
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={!movements || movements.length === 0}
+            onClick={() => void handleExportExcel()}
+          >
+            Exporter en Excel
+          </Button>
+        </div>
+
+        <div className="mb-4 flex flex-wrap items-end gap-3">
           <div>
-            <label htmlFor="stock-filter-productId" className="mb-1 block text-xs font-medium text-gray-600">
+            <label htmlFor="mv-dateFrom" className="mb-1 block text-xs font-medium text-gray-600">
+              Depuis le
+            </label>
+            <Input id="mv-dateFrom" type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="mv-dateTo" className="mb-1 block text-xs font-medium text-gray-600">
+              Jusqu'au
+            </label>
+            <Input id="mv-dateTo" type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="mv-lotNumber" className="mb-1 block text-xs font-medium text-gray-600">
+              Lot n°
+            </label>
+            <Input
+              id="mv-lotNumber"
+              type="number"
+              className="w-24"
+              value={lotNumber}
+              onChange={(e) => setLotNumber(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="mv-productId" className="mb-1 block text-xs font-medium text-gray-600">
               Produit
             </label>
             <select
-              id="stock-filter-productId"
+              id="mv-productId"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              value={productFilter}
-              onChange={(e) => setProductFilter(e.target.value)}
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
             >
-              <option value="all">Tous les produits</option>
-              {productOptions.map((p) => (
+              <option value="">Tous les produits</option>
+              {products?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -148,201 +168,173 @@ export function StockPage() {
             </select>
           </div>
           <div>
-            <label htmlFor="stock-filter-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
+            <label htmlFor="mv-warehouseId" className="mb-1 block text-xs font-medium text-gray-600">
               Magasin
             </label>
             <select
-              id="stock-filter-warehouseId"
+              id="mv-warehouseId"
               className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-              value={warehouseFilter}
-              onChange={(e) => setWarehouseFilter(e.target.value)}
+              value={warehouseId}
+              onChange={(e) => setWarehouseId(e.target.value)}
             >
-              <option value="all">Tous les magasins</option>
-              {warehouseOptions.map((w) => (
+              <option value="">Tous les magasins</option>
+              {warehouses?.map((w) => (
                 <option key={w.id} value={w.id}>
                   {w.name}
                 </option>
               ))}
             </select>
           </div>
+          <div>
+            <label htmlFor="mv-direction" className="mb-1 block text-xs font-medium text-gray-600">
+              Type de mouvement
+            </label>
+            <select
+              id="mv-direction"
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+              value={direction}
+              onChange={(e) => setDirection(e.target.value as "" | "IN" | "OUT")}
+            >
+              <option value="">Tous</option>
+              <option value="IN">Entrée</option>
+              <option value="OUT">Sortie</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="mv-minAvailable" className="mb-1 block text-xs font-medium text-gray-600">
+              Stock disponible ≥
+            </label>
+            <Input
+              id="mv-minAvailable"
+              type="number"
+              step="0.001"
+              className="w-28"
+              value={minAvailable}
+              onChange={(e) => setMinAvailable(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="mv-expiryFrom" className="mb-1 block text-xs font-medium text-gray-600">
+              Péremption depuis
+            </label>
+            <Input
+              id="mv-expiryFrom"
+              type="date"
+              value={expiryFrom}
+              onChange={(e) => setExpiryFrom(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="mv-expiryTo" className="mb-1 block text-xs font-medium text-gray-600">
+              Péremption jusqu'au
+            </label>
+            <Input id="mv-expiryTo" type="date" value={expiryTo} onChange={(e) => setExpiryTo(e.target.value)} />
+          </div>
+          <div>
+            <label htmlFor="mv-provenance" className="mb-1 block text-xs font-medium text-gray-600">
+              Provenance
+            </label>
+            <Input
+              id="mv-provenance"
+              type="text"
+              className="w-40"
+              value={provenance}
+              onChange={(e) => setProvenance(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="mv-destination" className="mb-1 block text-xs font-medium text-gray-600">
+              Destination
+            </label>
+            <Input
+              id="mv-destination"
+              type="text"
+              className="w-40"
+              value={destination}
+              onChange={(e) => setDestination(e.target.value)}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+          >
+            Réinitialiser
+          </button>
         </div>
-        {isLoadingStocks && <p className="text-sm text-gray-500">Chargement…</p>}
-        {stocksError && (
-          <p className="text-sm text-red-600">Impossible de charger la synthèse du stock.</p>
-        )}
-        {productStocks && (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-gray-500">
-                <th scope="col" className="py-2">Produit</th>
-                <th scope="col" className="py-2">Magasin</th>
-                <th scope="col" className="py-2">Stock disponible</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedStockGroups.map((group) => (
-                <Fragment key={group.productId}>
-                  <tr className="border-b border-gray-100 bg-gray-50 font-medium">
-                    <td className="py-2" colSpan={2}>
-                      {group.productName}
-                    </td>
-                    <td
-                      className={`py-2 ${isLowStock(group.total, group.unit) ? "text-red-600" : ""}`}
-                    >
-                      {group.total} {group.unit}
-                    </td>
-                  </tr>
-                  {group.byWarehouse.map((w) => (
-                    <tr
-                      key={`${group.productId}-${w.warehouseName}`}
-                      className="border-b border-gray-100 text-gray-500"
-                    >
-                      <td className="py-1"></td>
-                      <td className="py-1 pl-2">{w.warehouseName}</td>
-                      <td className="py-1">
-                        {w.stock} {group.unit}
-                      </td>
-                    </tr>
-                  ))}
-                </Fragment>
-              ))}
-              {sortedStockGroups.length === 0 && (
-                <tr>
-                  <td colSpan={3} className="py-4 text-center text-gray-500">
-                    Aucun stock pour cette sélection.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-            {sortedStockGroups.length > 0 && (
-              <tfoot>
-                <tr className="border-t-2 border-gray-300 font-semibold text-gray-800">
-                  <td className="py-2" colSpan={2}>
-                    Total restant
-                  </td>
-                  <td className="py-2">{grandTotalLabel}</td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
-        )}
-      </Card>
 
-      <Card>
-        <h2 className="mb-3 text-base font-semibold text-gray-800">Lots</h2>
         <p className="mb-3 text-xs text-gray-500">
-          Filtré par les mêmes Produit / Magasin que la synthèse ci-dessus.
+          {isFiltered
+            ? "Tous les mouvements correspondant aux filtres."
+            : "Les 10 derniers mouvements enregistrés — appliquez un filtre pour voir l'ensemble des résultats correspondants."}
         </p>
-        {isLoadingLots && <p className="text-sm text-gray-500">Chargement…</p>}
-        {lotsError && <p className="text-sm text-red-600">Impossible de charger les lots.</p>}
-        {lots && (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-gray-500">
-                <th scope="col" className="py-2">Lot</th>
-                <th scope="col" className="py-2">Produit</th>
-                <th scope="col" className="py-2">Magasin</th>
-                <th scope="col" className="py-2">Quantité restante</th>
-                <th scope="col" className="py-2">Coût unitaire</th>
-                <th scope="col" className="py-2">Péremption</th>
-                <th scope="col" className="py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {filteredLots.map((lot) => {
-                const product = lot.products as
-                  { name: string; unit: string } | { name: string; unit: string }[] | null;
-                const productInfo = Array.isArray(product) ? product[0] : product;
-                const warehouse = lot.warehouses as { name: string } | { name: string }[] | null;
-                const warehouseName = Array.isArray(warehouse) ? warehouse[0]?.name : warehouse?.name;
-                const status = lotStatus(lot.expiry_date);
-                return (
-                  <tr key={lot.id} className="border-b border-gray-100">
-                    <td className="py-2">Lot #{lot.lot_number}</td>
-                    <td className="py-2">{productInfo?.name ?? "—"}</td>
-                    <td className="py-2">{warehouseName ?? "—"}</td>
-                    <td className="py-2">
-                      {lot.quantity_remaining} {productInfo?.unit ?? ""}
-                    </td>
-                    <td className="py-2">{formatNumber(lot.unit_cost)} FCFA</td>
-                    <td className="py-2">
-                      {lot.expiry_date
-                        ? new Date(lot.expiry_date).toLocaleDateString("fr-FR")
-                        : "—"}
-                    </td>
-                    <td className="py-2">
-                      {status && (
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}>
-                          {status.label}
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {filteredLots.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="py-4 text-center text-gray-500">
-                    Aucun lot pour cette sélection.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </Card>
 
-      <Card>
-        <h2 className="mb-1 text-base font-semibold text-gray-800">Mouvements récents</h2>
-        <p className="mb-3 text-xs text-gray-500">
-          Filtré par les mêmes Produit / Magasin que la synthèse ci-dessus, parmi les 50
-          derniers mouvements enregistrés.
-        </p>
         {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
-        {error && <p className="text-sm text-red-600">Impossible de charger les mouvements.</p>}
-        {transactions && (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-gray-500">
-                <th scope="col" className="py-2">Date</th>
-                <th scope="col" className="py-2">Produit</th>
-                <th scope="col" className="py-2">Magasin</th>
-                <th scope="col" className="py-2">Type</th>
-                <th scope="col" className="py-2">Quantité</th>
-                <th scope="col" className="py-2">Provenance / Destination</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTransactions.map((tx) => {
-                const product = tx.products as
-                  { name: string; unit: string } | { name: string; unit: string }[] | null;
-                const productInfo = Array.isArray(product) ? product[0] : product;
-                const warehouse = tx.warehouses as { name: string } | { name: string }[] | null;
-                const warehouseName = Array.isArray(warehouse)
-                  ? warehouse[0]?.name
-                  : warehouse?.name;
-                return (
-                  <tr key={tx.id} className="border-b border-gray-100">
-                    <td className="py-2">{new Date(tx.created_at).toLocaleString("fr-FR")}</td>
-                    <td className="py-2">{productInfo?.name ?? "—"}</td>
-                    <td className="py-2">{warehouseName ?? "—"}</td>
-                    <td className="py-2">{TRANSACTION_TYPE_LABELS[tx.type] ?? tx.type}</td>
-                    <td className="py-2">
-                      {tx.quantity} {productInfo?.unit ?? ""}
-                    </td>
-                    <td className="py-2 text-gray-500">{tx.note ?? "—"}</td>
-                  </tr>
-                );
-              })}
-              {filteredTransactions.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="py-4 text-center text-gray-500">
-                    Aucun mouvement pour cette sélection.
-                  </td>
+        {error && (
+          <p className="text-sm text-red-600">Impossible de charger les mouvements de stock.</p>
+        )}
+        {movements && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-gray-500">
+                  <th scope="col" className="py-2 pr-3">Date</th>
+                  <th scope="col" className="py-2 pr-3">Lot</th>
+                  <th scope="col" className="py-2 pr-3">Produit</th>
+                  <th scope="col" className="py-2 pr-3">Magasin</th>
+                  <th scope="col" className="py-2 pr-3">Type</th>
+                  <th scope="col" className="py-2 pr-3">Quantité</th>
+                  <th scope="col" className="py-2 pr-3">Stock disponible</th>
+                  <th scope="col" className="py-2 pr-3">Péremption</th>
+                  <th scope="col" className="py-2 pr-3">Provenance</th>
+                  <th scope="col" className="py-2">Destination</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {movements.map((row) => {
+                  const status = lotStatus(row.expiryDate);
+                  return (
+                    <tr key={row.key} className="border-b border-gray-100">
+                      <td className="py-2 pr-3">{new Date(row.createdAt).toLocaleString("fr-FR")}</td>
+                      <td className="py-2 pr-3">{row.lotNumber !== null ? `Lot #${row.lotNumber}` : "—"}</td>
+                      <td className="py-2 pr-3">{row.productName}</td>
+                      <td className="py-2 pr-3">{row.warehouseName}</td>
+                      <td className="py-2 pr-3">
+                        {movementDirectionLabel(row.direction, row.type === "ADJUSTMENT")}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {formatNumber(row.quantity)} {row.unit}
+                      </td>
+                      <td className="py-2 pr-3">
+                        {row.availableStock !== null ? `${formatNumber(row.availableStock)} ${row.unit}` : "—"}
+                      </td>
+                      <td className="py-2 pr-3">
+                        <div className="flex items-center gap-2">
+                          {row.expiryDate ? new Date(row.expiryDate).toLocaleDateString("fr-FR") : "—"}
+                          {status && (
+                            <span
+                              className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.className}`}
+                            >
+                              {status.label}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-2 pr-3 text-gray-500">{row.provenance}</td>
+                      <td className="py-2 text-gray-500">{row.destination}</td>
+                    </tr>
+                  );
+                })}
+                {movements.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="py-4 text-center text-gray-500">
+                      Aucun mouvement pour cette sélection.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>

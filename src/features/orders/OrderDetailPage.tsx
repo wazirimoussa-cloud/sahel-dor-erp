@@ -17,18 +17,7 @@ import { Input } from "@/components/ui/Input";
 import { generateOrderPdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
 import { formatNumber } from "@/lib/format";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "En attente",
-  validated: "Validé",
-  cancelled: "Annulé",
-};
-
-const STATUS_CLASSES: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700",
-  validated: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-};
+import { ORDER_STATUS_LABELS, ORDER_STATUS_CLASSES } from "@/lib/orderDisplay";
 
 const PAYMENT_LABELS: Record<string, string> = {
   unpaid: "Impayé",
@@ -115,6 +104,8 @@ export function OrderDetailPage() {
   const orderId = order.id;
   const orderCreatedAt = order.created_at;
   const orderPaymentStatusLabel = PAYMENT_LABELS[order.payment_status] ?? order.payment_status;
+  const orderStatusLabel = ORDER_STATUS_LABELS[order.status] ?? order.status;
+  const isOrderCancelled = order.status === "cancelled";
 
   async function buildOrderPdf() {
     const products = items.map((item) => {
@@ -133,6 +124,8 @@ export function OrderDetailPage() {
       items: products,
       totals: { totalHT, vatRate: vatRate ?? 0, vatAmount, totalTTC },
       paymentStatusLabel: orderPaymentStatusLabel,
+      statusLabel: orderStatusLabel,
+      isCancelled: isOrderCancelled,
     });
   }
 
@@ -201,9 +194,9 @@ export function OrderDetailPage() {
         </div>
         <div className="flex gap-2">
           <span
-            className={`rounded-full px-3 py-1 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}
+            className={`rounded-full px-3 py-1 text-xs font-medium ${ORDER_STATUS_CLASSES[order.status] ?? ""}`}
           >
-            {STATUS_LABELS[order.status] ?? order.status}
+            {ORDER_STATUS_LABELS[order.status] ?? order.status}
           </span>
           <span
             className={`rounded-full px-3 py-1 text-xs font-medium ${PAYMENT_CLASSES[order.payment_status] ?? ""}`}

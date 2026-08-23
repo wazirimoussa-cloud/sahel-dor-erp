@@ -42,6 +42,23 @@ export function useActiveWarehouses() {
   });
 }
 
+// Réservé aux filtres qui doivent couvrir tout l'historique (ex. filtre "Magasin" du
+// journal des mouvements de stock) : une transaction passée peut référencer un magasin
+// désormais archivé, contrairement à useActiveWarehouses qui l'exclurait.
+export function useAllWarehouses() {
+  return useQuery({
+    queryKey: ["warehouses", "all"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("warehouses")
+        .select("id, name")
+        .order("name", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useWarehouse(warehouseId: string | undefined) {
   return useQuery({
     queryKey: ["warehouses", warehouseId],

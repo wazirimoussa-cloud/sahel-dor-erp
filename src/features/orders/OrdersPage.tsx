@@ -4,18 +4,7 @@ import { useOrders } from "@/features/orders/useOrders";
 import { NewOrderForm } from "@/features/orders/NewOrderForm";
 import { Card } from "@/components/ui/Card";
 import { formatNumber } from "@/lib/format";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "En attente",
-  validated: "Validé",
-  cancelled: "Annulé",
-};
-
-const STATUS_CLASSES: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700",
-  validated: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-};
+import { ORDER_STATUS_LABELS, ORDER_STATUS_CLASSES } from "@/lib/orderDisplay";
 
 const PAYMENT_LABELS: Record<string, string> = {
   unpaid: "Impayé",
@@ -91,9 +80,9 @@ export function OrdersPage() {
                   <td className="py-2">{formatNumber(totalTTC)} FCFA</td>
                   <td className="py-2">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[order.status] ?? ""}`}
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_CLASSES[order.status] ?? ""}`}
                     >
-                      {STATUS_LABELS[order.status] ?? order.status}
+                      {ORDER_STATUS_LABELS[order.status] ?? order.status}
                     </span>
                   </td>
                   <td className="py-2">

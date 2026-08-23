@@ -2204,6 +2204,8 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      fn_auto_cancel_stale_orders: { Args: never; Returns: number }
+      fn_business_hours_elapsed: { Args: { p_since: string }; Returns: number }
       fn_consume_specific_lot: {
         Args: {
           p_lot_id: string

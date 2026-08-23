@@ -170,6 +170,8 @@ export interface OrderPdfInput {
   items: PdfLineItem[];
   totals: DocumentTotals;
   paymentStatusLabel: string;
+  statusLabel: string;
+  isCancelled: boolean;
 }
 
 export async function generateOrderPdf(input: OrderPdfInput) {
@@ -179,9 +181,12 @@ export async function generateOrderPdf(input: OrderPdfInput) {
   doc.text(`Date : ${new Date(input.createdAt).toLocaleString("fr-FR")}`, 14, 42);
   doc.text(`Client : ${input.clientName}`, 14, 48);
   doc.text(`Statut paiement : ${input.paymentStatusLabel}`, 14, 54);
+  if (input.isCancelled) doc.setTextColor(220, 38, 38);
+  doc.text(`Statut : ${input.statusLabel}`, 14, 60);
+  if (input.isCancelled) doc.setTextColor(0);
 
   autoTable(doc, {
-    startY: 60,
+    startY: 66,
     head: [["Produit", "Quantité", "Prix unitaire", "Sous-total"]],
     body: input.items.map((item) => [
       item.productName,
@@ -192,7 +197,7 @@ export async function generateOrderPdf(input: OrderPdfInput) {
   });
 
   const finalY =
-    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 60;
+    (doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY ?? 66;
   addTotalsBlock(doc, finalY + 10, input.totals);
 
   return { doc, filename: `facture-${input.id.slice(0, 8)}.pdf` };
@@ -328,7 +333,7 @@ export interface ReceptionPdfInput {
   items: { productName: string; unit?: string; quantityLoaded: number; quantityUnloaded: number }[];
 }
 
-// Bon de sortie (marchandise sortant de la garde du transporteur, entreposée en
+// Bon de réception (marchandise sortant de la garde du transporteur, entreposée en
 // magasin) : provenance, chauffeur/camion, quantités chargée/déchargée/écart par
 // produit, nombre de sacs à reconditionner, un point d'observation libre, et deux
 // blocs de signature (chauffeur / magasinier) pour l'exemplaire papier archivé au
@@ -336,7 +341,7 @@ export interface ReceptionPdfInput {
 // d'en-tête, signatures mieux réparties), cohérent avec un vrai bon de livraison papier.
 export async function generateReceptionPdf(input: ReceptionPdfInput) {
   const { doc, autoTable } = await newDocument(
-    `Bon de sortie n° ${input.receiptNumber}`,
+    `Bon de réception n° ${input.receiptNumber}`,
     "landscape",
   );
 
@@ -392,7 +397,7 @@ export async function generateReceptionPdf(input: ReceptionPdfInput) {
 
   return {
     doc,
-    filename: `bon-sortie-${input.receiptNumber}.pdf`,
+    filename: `bon-reception-${input.receiptNumber}.pdf`,
   };
 }
 

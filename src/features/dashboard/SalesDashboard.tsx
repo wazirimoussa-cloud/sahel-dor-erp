@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/Card";
 import { DashboardHeader } from "@/features/dashboard/DashboardHeader";
+import { ORDER_STATUS_LABELS, ORDER_STATUS_CLASSES } from "@/lib/orderDisplay";
 
 function useSalesDashboardData() {
   return useQuery({
@@ -28,12 +29,6 @@ function useSalesDashboardData() {
     },
   });
 }
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "En attente",
-  validated: "Validé",
-  cancelled: "Annulé",
-};
 
 // Opérateur de vente : ses commandes et l'état de leur validation/paiement — pas de
 // vision financière ni de stock (hors de son périmètre RBAC).
@@ -85,8 +80,10 @@ export function SalesDashboard() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs uppercase text-gray-500">
-                      {STATUS_LABELS[o.status] ?? o.status}
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${ORDER_STATUS_CLASSES[o.status] ?? ""}`}
+                    >
+                      {ORDER_STATUS_LABELS[o.status] ?? o.status}
                     </span>
                     <Link to={`/orders/${o.id}`} className="text-brand-600 hover:underline">
                       Voir

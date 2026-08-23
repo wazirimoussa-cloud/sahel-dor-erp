@@ -151,14 +151,19 @@ export function StockLossRequestsPage() {
                             <div className="flex flex-col gap-1">
                               <input
                                 type="text"
-                                placeholder="Motif du rejet"
+                                placeholder="Commentaire du rejet (obligatoire)"
                                 className="rounded-md border border-gray-300 px-2 py-1 text-xs"
                                 value={rejectionReason}
                                 onChange={(e) => setRejectionReason(e.target.value)}
                               />
+                              {rejectionReason.length > 0 && rejectionReason.trim().length < 3 && (
+                                <p className="text-xs text-red-600">
+                                  Le commentaire doit faire au moins 3 caractères.
+                                </p>
+                              )}
                               <Button
                                 variant="danger"
-                                disabled={reject.isPending || !rejectionReason.trim()}
+                                disabled={reject.isPending || rejectionReason.trim().length < 3}
                                 onClick={() =>
                                   void reject
                                     .mutateAsync({ requestId: r.id, rejectionReason })

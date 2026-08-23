@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type { TransactionType } from "@/lib/database.types";
 
@@ -19,23 +19,6 @@ export interface StockTransfer {
   quantity: number;
 }
 
-export function useTransactions() {
-  return useQuery({
-    queryKey: ["transactions"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("transactions")
-        .select(
-          "id, type, quantity, note, created_at, product_id, warehouse_id, products(name, unit), warehouses(name)",
-        )
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      return data;
-    },
-  });
-}
-
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -53,10 +36,9 @@ export function useCreateTransaction() {
     },
     onSuccess: () => {
       // Le trigger fn_apply_transaction_stock met déjà à jour products.stock côté DB ;
-      // on invalide les deux caches pour refléter le nouveau stock à l'écran.
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      // on invalide les caches concernés pour refléter le nouveau stock à l'écran.
+      void queryClient.invalidateQueries({ queryKey: ["stock_movements"] });
       void queryClient.invalidateQueries({ queryKey: ["products"] });
-      void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
       void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });
@@ -75,9 +57,8 @@ export function useTransferStock() {
       if (error) throw error;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["stock_movements"] });
       void queryClient.invalidateQueries({ queryKey: ["products"] });
-      void queryClient.invalidateQueries({ queryKey: ["product_stocks"] });
       void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
     },
   });

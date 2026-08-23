@@ -253,9 +253,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     en évitant une policy `UPDATE` générique sur `orders`. La policy RLS
     `orders_update_status` (seul endroit du projet où une transition de statut passait par
     un `UPDATE` client direct plutôt qu'une RPC) est supprimée, remplacée par
-    `validate_order`/`cancel_order` : **`cancel_order` restaure désormais le stock** via
+    `validate_order`/`cancel_order` : ~~**`cancel_order` restaure désormais le stock** via
     une transaction `ADJUSTMENT` par ligne de commande — l'ancienne limite connue
-    "l'annulation ne restaure pas le stock" est corrigée.
+    "l'annulation ne restaure pas le stock" est corrigée.~~ — **caduc depuis le point 18**
+    (`0016_agribusiness_governance.sql`) : le stock ne part plus qu'à la validation
+    (`validate_order`), donc annuler une commande encore "pending" n'a jamais rien à
+    restaurer (rien n'a été appliqué).
 
 13. **Comptabilité : écritures automatiques** (`0010_chart_of_accounts.sql`,
     `0011_accounting_entries.sql`) : dernier maillon de la chaîne. **Automatisation
@@ -398,14 +401,16 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     net, marge commerciale, autonomie financière, liquidité générale, délai moyen de
     règlement clients).
 
-20. **Synthèse du stock disponible** (page "Mouvements de stock") : récapitulatif du
+20. ~~**Synthèse du stock disponible** (page "Mouvements de stock") : récapitulatif du
     stock actuel regroupé par produit (total en gras) avec le détail par magasin en
     dessous, trié alphabétiquement, même mise en évidence du stock bas (< 5) que la page
     Produits. Réutilise `product_stocks` (source de vérité déjà tenue à jour par les
     transactions), aucune nouvelle table ni RPC. Deux sélecteurs (Produit, Magasin)
     permettent de filtrer la synthèse sur une seule combinaison ; une ligne "Total
     restant" en bas de tableau reflète la somme du stock affiché après filtrage (donc le
-    total général si aucun filtre n'est actif).
+    total général si aucun filtre n'est actif).~~ — **remplacée par le journal des
+    mouvements filtrable** (point 73), qui absorbe aussi les anciennes sections "Lots"
+    et "Mouvements récents" du point 39.
 
 21. **Traçabilité des mouvements, transferts entre magasins, rendement**
     (`0018_stock_traceability.sql`) : en réponse à une version affinée du cahier des
@@ -774,15 +779,14 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     sans pagination — limite assumée, à affiner si le volume de mouvements grossit.
     Les libellés de type (`TRANSACTION_TYPE_LABELS`) et le badge de péremption
     (`lotStatus`) sont désormais centralisés dans `src/lib/stockDisplay.ts`,
-    réutilisés par `/stock` et cette nouvelle fiche. Les tableaux "Lots" et
-    "Mouvements récents" de `/stock`, jusqu'ici jamais filtrés, appliquent
-    désormais les mêmes filtres Produit/Magasin que la synthèse de stock juste
-    au-dessus (client-side, ces trois tables partageant déjà les mêmes options de
-    filtre sur cette page) — "Mouvements récents" reste borné aux 50 derniers
-    mouvements (limite déjà existante, inchangée).
+    réutilisés par `/stock` et cette nouvelle fiche. (Les tableaux "Lots" et
+    "Mouvements récents" de `/stock` mentionnés ci-dessous ont depuis été
+    remplacés par le journal unique du point 73.)
 
-40. **Bon de sortie à la réception d'un achat** (`generateReceptionPdf` dans
-    `src/lib/pdf.ts`, bouton "Bon de sortie (PDF)" sur la fiche d'un achat reçu) :
+40. **Bon de réception à la réception d'un achat** (`generateReceptionPdf` dans
+    `src/lib/pdf.ts`, bouton "Bon de réception (PDF)" sur la fiche d'un achat reçu,
+    renommé depuis "Bon de sortie (PDF)" — la marchandise sort de la garde du
+    transporteur, mais du point de vue du magasin qui l'imprime c'est une réception) :
     document imprimable en paysage, généré côté client (`jsPDF`), reprenant la
     référence du bon de commande, la provenance, le chauffeur/camion, une ligne
     par produit (quantité chargée / déchargée / écart), le nombre de sacs à
@@ -1557,10 +1561,89 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     continu par `fn_apply_transaction_stock` à chaque mouvement ; une contrainte `> 0` au
     niveau de la table interdirait à tort un produit totalement épuisé par la suite).
 
+73. **Journal filtrable des mouvements de stock** (remplace "Synthèse du stock
+    disponible", absorbe "Lots" et "Mouvements récents" — point 20 et point 39 mis à
+    jour en conséquence) : une ligne par mouvement × lot (`useStockMovements.ts`,
+    `StockPage.tsx`). Une sortie qui a consommé plusieurs lots via FEFO (transaction ↔
+    `transaction_lot_allocations`) est éclatée en une ligne par lot touché, quantité =
+    celle prélevée sur ce lot précis, jamais le total du mouvement. Une entrée
+    (delta positif) crée toujours exactement un lot (`stock_lots.source_transaction_id`)
+    — ces deux chemins de liaison aux lots sont mutuellement exclusifs et récupérés en
+    une seule requête PostgREST à deux embeds (`stock_lots!source_transaction_id` +
+    `transaction_lot_allocations(stock_lots(...))`), aplatie côté client.
+    - **Filtres** : date, lot (n° exact), produit, magasin, type de mouvement (Entrée/
+      Sortie — un `ADJUSTMENT` est bucketé par signe, l'étiquette affichée garde la
+      nuance "(ajustement)"), stock disponible (seuil "≥", quantité restante **actuelle**
+      du lot, pas un instantané historique), date de péremption, provenance, destination
+      (recherche texte libre sur le libellé dérivé).
+    - **Provenance / Destination** dérivées des FK déjà existantes sur `transactions`
+      (`purchase_id`, `production_id`, `transformation_id`, `order_id`,
+      `transfer_group_id`) avec jointure vers `suppliers`/`clients` pour un libellé
+      lisible ; repli sur `note` puis "Mouvement manuel" si aucune FK n'est renseignée.
+    - **Pagination** : 10 derniers mouvements par défaut ; dès qu'un filtre est actif,
+      tous les résultats correspondants sont affichés, sans pagination précédent/suivant
+      (même choix que le point 39). Plafonds de sécurité sous-jacents sur la requête
+      brute (avant filtrage/éclatement) : 20 lignes sans filtre, 2000 avec — limite
+      assumée, comme le plafond de 300 du point 39 : si l'historique total dépasse 2000
+      et que seul un filtre appliqué côté client (lot, stock disponible, péremption,
+      provenance, destination) est actif, des correspondances anciennes au-delà du
+      plafond seraient exclues.
+    - **Mouvements antérieurs à `0037_stock_lots.sql`** : sans lot source ni allocation,
+      ils s'affichent avec les colonnes Lot/Stock disponible/Péremption à "—" plutôt que
+      d'être exclus (cas réel pour toute société déjà active avant cette migration).
+    - **Export Excel** (`src/lib/xlsx.ts`, `exceljs` chargé en import dynamique — pas le
+      paquet npm `xlsx`/SheetJS, qui porte deux CVE non corrigées sur le registre npm) :
+      exporte exactement les colonnes et lignes affichées à l'écran au moment du clic,
+      filtres compris.
+    - Les listes déroulantes Produit/Magasin utilisent désormais `useAllProducts()` /
+      la nouvelle `useAllWarehouses()` (couvrant aussi les entrées archivées, comme
+      `useAllProducts()` le faisait déjà pour l'historique de magasin du point 39) plutôt
+      que les options dérivées des lignes chargées.
+
+74. **Annulation automatique des bons de commande non validés après 48h ouvrées**
+    (`0083_annulation_automatique_bon_commande.sql`) : heures ouvrées = lundi-samedi,
+    8h-18h, dimanche exclu, calculées en heure d'Afrique de l'Ouest (`Africa/Lagos`, UTC+1
+    fixe sans DST) — pas de calendrier de jours fériés en v1 (simplification assumée, voir
+    "Limites connues"). `pg_cron` exécute `fn_auto_cancel_stale_orders()` toutes les
+    heures, qui s'appuie sur `fn_business_hours_elapsed()` (calcul jour par jour du
+    recouvrement entre la fenêtre ouvrée et l'intervalle `[created_at, now()]`). Aucune
+    réversion de stock ni écriture comptable : comme `cancel_order`, cette tâche ne fait
+    qu'un `update orders set status='cancelled'` sur les commandes encore "pending" — le
+    stock ne part qu'à la validation depuis le point 18, donc rien n'a jamais été retiré
+    tant qu'une commande reste en attente. Réutilise le trigger d'audit générique
+    `trg_audit_orders` existant plutôt qu'une journalisation dédiée : une ligne `logs` avec
+    `user_id is null` sur `orders`/`UPDATE` est le signal normal d'une annulation
+    automatique, pas une anomalie. Fonctions `revoke`-ées de `public`/`anon`/`authenticated`
+    (même motif que `reset_formation_data`, point 65) — uniquement invocables par le job
+    planifié. Au passage, le statut "Annulé" (déjà affiché en rouge sur `OrdersPage` et
+    `OrderDetailPage`) est désormais aussi affiché en rouge sur `SalesDashboard` (jusqu'ici
+    texte gris uni) et imprimé sur le PDF de la commande (`generateOrderPdf`, jusqu'ici
+    silencieux sur le statut hors paiement) ; labels/couleurs mutualisés dans le nouveau
+    `src/lib/orderDisplay.ts`, remplaçant trois copies dupliquées.
+
+75. **Commentaire de rejet obligatoire pour les pertes de stock**
+    (`0084_commentaire_rejet_obligatoire_pertes_stock.sql`) :
+    `stock_loss_requests.rejection_reason` existait déjà (point 32) mais n'était jamais
+    réellement obligatoire — seule une case grisée côté frontend l'empêchait, contournable
+    par un appel RPC direct. `reject_stock_loss` valide désormais
+    `trim(coalesce(p_rejection_reason,'')) <> ''` (même motif que `request_stock_loss` pour
+    `p_reason`, point 32), et une contrainte `check` sur `stock_loss_requests` verrouille la
+    même règle en base (`status <> 'rejected' or rejection_reason` non vide). Côté
+    `StockLossRequestsPage.tsx`, le champ (toujours un simple `<input>` en ligne, pas un
+    formulaire dédié) exige désormais 3 caractères minimum, avec message d'erreur affiché
+    sous le champ — même seuil que le motif de demande (`RequestStockLossForm.tsx`, `z.string().min(3, ...)`).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
   `npm run db:types` dès que le projet est lié, pour rester synchronisé avec le schéma réel.
+- **Fuseau horaire unique codé en dur pour l'annulation automatique** (point 74,
+  `fn_business_hours_elapsed`) : `Africa/Lagos` (UTC+1 fixe) est utilisé pour toutes les
+  sociétés, faute de colonne fuseau horaire sur `companies` — sans impact tant que les
+  sociétés du projet sont toutes en Afrique de l'Ouest (Niger/Togo, même fuseau), mais à
+  revisiter si une société hors zone WAT est un jour intégrée. Idem pour l'absence de
+  calendrier de jours fériés : les 48h ouvrées ne tiennent compte que du week-end
+  (dimanche), pas des jours fériés locaux.
 - **Comptabilité** : périmètre volontairement réduit (voir points 13-14, 43). ~~Transformation
   reste hors du grand livre~~ — **partiellement corrigée** (point 60,
   `0071_reclassement_transformation.sql`) : génère désormais une écriture de reclassement
