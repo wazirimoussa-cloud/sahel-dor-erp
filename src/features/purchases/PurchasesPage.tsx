@@ -21,15 +21,16 @@ const STATUS_CLASSES: Record<string, string> = {
 
 export function PurchasesPage() {
   const { hasAttribution } = useAuth();
+  const isReceptionsView = hasAttribution("achats.receptionner");
   const { page, pageSize, goToPrevious, goToNext } = usePagination();
-  const { data, isLoading, error } = usePurchases(page, pageSize);
+  const { data, isLoading, error } = usePurchases(page, pageSize, isReceptionsView);
   const purchases = data?.rows;
   const canCreate = hasAttribution("achats.creer");
 
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-bold text-forest-900">
-        {hasAttribution("achats.receptionner") ? "Réceptions" : "Bons d'achat"}
+        {isReceptionsView ? "Réceptions" : "Bons d'achat"}
       </h1>
 
       {canCreate && (

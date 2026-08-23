@@ -8,15 +8,23 @@ export interface PurchaseItemInput {
   unitCost?: number;
 }
 
-export function usePurchases(page: number, pageSize: number) {
+// prioritizePending trie les "en attente" en tête (page Réceptions du magasinier) : status
+// est un enum Postgres déclaré pending/received/cancelled (0005_purchases.sql), donc un tri
+// ascendant sur cette colonne place naturellement pending avant received/cancelled, sans
+// CASE ni tri côté client -- created_at reste le tri secondaire au sein d'un même statut.
+export function usePurchases(page: number, pageSize: number, prioritizePending = false) {
   return useQuery({
-    queryKey: ["purchases", page, pageSize],
+    queryKey: ["purchases", page, pageSize, prioritizePending],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("purchases")
         .select(
           "id, status, created_at, suppliers(name), warehouses(name), companies(vat_rate), purchase_items(quantity, unit_cost, products(vat_exempt))",
-        )
+        );
+      if (prioritizePending) {
+        query = query.order("status", { ascending: true });
+      }
+      const { data, error } = await query
         .order("created_at", { ascending: false })
         .range(...rangeFor(page, pageSize));
       if (error) throw error;

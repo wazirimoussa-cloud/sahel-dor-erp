@@ -1633,6 +1633,17 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     formulaire dédié) exige désormais 3 caractères minimum, avec message d'erreur affiché
     sous le champ — même seuil que le motif de demande (`RequestStockLossForm.tsx`, `z.string().min(3, ...)`).
 
+76. **Réceptions du magasinier : "en attente" en tête de liste** (`usePurchases.ts`) :
+    la page `/purchases` (titrée "Réceptions" quand `achats.receptionner` est présent,
+    "Bons d'achat" sinon) triait uniquement par `created_at desc`, mélangeant les achats
+    déjà reçus avec ceux à réceptionner. Nouveau paramètre `prioritizePending` sur
+    `usePurchases(page, pageSize, prioritizePending)`, activé uniquement pour la vue
+    Réceptions du magasinier : `purchase_status` est un enum Postgres déclaré
+    `pending`/`received`/`cancelled` (`0005_purchases.sql`), donc un tri ascendant sur
+    cette colonne place naturellement "En attente" en premier sans `CASE` ni tri côté
+    client — `created_at desc` reste le tri secondaire au sein d'un même statut. La vue
+    "Bons d'achat" des autres rôles garde l'ordre chronologique pur, inchangé.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
