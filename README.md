@@ -1644,6 +1644,31 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     client — `created_at desc` reste le tri secondaire au sein d'un même statut. La vue
     "Bons d'achat" des autres rôles garde l'ordre chronologique pur, inchangé.
 
+77. **Impression des documents du module Paie** (bulletins de paie, demandes de congé,
+    demandes d'avance) : trois nouveaux générateurs dans `src/lib/pdf.ts`
+    (`generatePayslipPdf`, `generateLeaveRecordPdf`, `generateSalaryAdvancePdf`), même motif
+    que les autres documents (`newDocument()`, en-tête société/logo/mentions légales,
+    import dynamique de jsPDF). `PayePage.tsx` étant une page de liste (pas de fiche
+    détail par bulletin/congé/avance comme pour les commandes ou achats), le bouton "PDF"
+    est posé en ligne sur chaque ligne des trois tableaux plutôt que sur une page dédiée —
+    visible à quiconque peut déjà voir le tableau (aucune attribution supplémentaire,
+    cohérent avec `paie.consulter`/`paie.gerer` existants).
+    - **Bulletin de paie** : tableau Rubrique/Montant (`autoTable`, ligne "Net à payer" en
+      pied de tableau), poste de l'employé affiché s'il est renseigné. `usePayslips.ts`
+      étend son `select` pour joindre `employees(position)` et `salary_advances(amount)`
+      (montant de l'avance remboursée, jusqu'ici seul `advance_repaid_id` était chargé).
+    - **Demande de congé / demande d'avance** : aucun circuit d'approbation n'existe en
+      base pour ces deux registres (voir points 50-52 — ce sont des enregistrements
+      directs, pas des "demandes" avec statut pending/approved/rejected). Les imprimés
+      ajoutent deux blocs de signature (Employé / Responsable, même motif que le bon de
+      réception du point 40) pour servir de pièce justificative papier signée classée au
+      dossier de l'employé — une amélioration purement visuelle sur le PDF, aucun champ
+      d'approbation n'est ajouté au modèle de données.
+    - **Pas de "tout autre document"** : recherche faite dans tout le module Paie
+      (contrats, registre de paie, déclaration sociale, bordereau) — rien d'autre
+      n'existe dans le schéma ou l'écran aujourd'hui à imprimer ; seuls ces trois
+      documents sont couverts.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

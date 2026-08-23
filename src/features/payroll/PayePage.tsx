@@ -11,6 +11,11 @@ import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { formatNumber } from "@/lib/format";
+import {
+  generatePayslipPdf,
+  generateLeaveRecordPdf,
+  generateSalaryAdvancePdf,
+} from "@/lib/pdf";
 
 function relation<T>(value: T | T[] | null): T | undefined {
   return Array.isArray(value) ? value[0] : (value ?? undefined);
@@ -53,6 +58,47 @@ export function PayePage() {
     }
   }
 
+  async function handleDownloadPayslip(payslip: NonNullable<typeof payslips>[number]) {
+    const employee = relation(payslip.employees);
+    const advance = relation(payslip.salary_advances);
+    const { doc, filename } = await generatePayslipPdf({
+      employeeName: employee?.full_name ?? "—",
+      position: employee?.position ?? undefined,
+      period: payslip.period,
+      grossSalary: payslip.gross_salary,
+      pensionWithholding: payslip.pension_withholding,
+      itsWithholding: payslip.its_withholding,
+      advanceRepaidAmount: advance?.amount,
+      netPay: payslip.net_pay,
+    });
+    doc.save(filename);
+  }
+
+  async function handleDownloadAdvance(advance: NonNullable<typeof advances>[number]) {
+    const employee = relation(advance.employees);
+    const repaidBy = relation(advance.payslips);
+    const { doc, filename } = await generateSalaryAdvancePdf({
+      employeeName: employee?.full_name ?? "—",
+      amount: advance.amount,
+      advanceDate: advance.advance_date,
+      reason: advance.reason ?? undefined,
+      statusLabel: repaidBy ? "Remboursée" : "En attente",
+    });
+    doc.save(filename);
+  }
+
+  async function handleDownloadLeaveRecord(record: NonNullable<typeof leaveRecords>[number]) {
+    const employee = relation(record.employees);
+    const { doc, filename } = await generateLeaveRecordPdf({
+      employeeName: employee?.full_name ?? "—",
+      typeLabel: LEAVE_TYPE_LABELS[record.type],
+      startDate: record.start_date,
+      endDate: record.end_date,
+      reason: record.reason ?? undefined,
+    });
+    doc.save(filename);
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-lg font-bold text-forest-900">Paie</h1>
@@ -77,6 +123,7 @@ export function PayePage() {
                 <th scope="col" className="py-2">ITS</th>
                 <th scope="col" className="py-2">Avance remboursée</th>
                 <th scope="col" className="py-2">Net</th>
+                <th scope="col" className="py-2" />
               </tr>
             </thead>
             <tbody>
@@ -91,11 +138,20 @@ export function PayePage() {
                   <td className="py-2">{formatNumber(payslip.its_withholding)} FCFA</td>
                   <td className="py-2">{payslip.advance_repaid_id ? "Oui" : "—"}</td>
                   <td className="py-2 font-semibold">{formatNumber(payslip.net_pay)} FCFA</td>
+                  <td className="py-2 text-right">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => void handleDownloadPayslip(payslip)}
+                    >
+                      PDF
+                    </Button>
+                  </td>
                 </tr>
               ))}
               {payslips.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-4 text-center text-gray-500">
+                  <td colSpan={8} className="py-4 text-center text-gray-500">
                     Aucun bulletin de paie pour le moment.
                   </td>
                 </tr>
@@ -133,6 +189,7 @@ export function PayePage() {
                 <th scope="col" className="py-2">Montant</th>
                 <th scope="col" className="py-2">Motif</th>
                 <th scope="col" className="py-2">Statut</th>
+                <th scope="col" className="py-2" />
               </tr>
             </thead>
             <tbody>
@@ -145,12 +202,21 @@ export function PayePage() {
                     <td className="py-2">{formatNumber(advance.amount)} FCFA</td>
                     <td className="py-2">{advance.reason ?? "—"}</td>
                     <td className="py-2">{repaidBy ? "Remboursée" : "En attente"}</td>
+                    <td className="py-2 text-right">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void handleDownloadAdvance(advance)}
+                      >
+                        PDF
+                      </Button>
+                    </td>
                   </tr>
                 );
               })}
               {advances.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-4 text-center text-gray-500">
+                  <td colSpan={6} className="py-4 text-center text-gray-500">
                     Aucune avance pour le moment.
                   </td>
                 </tr>
@@ -195,7 +261,7 @@ export function PayePage() {
                 <th scope="col" className="py-2">Début</th>
                 <th scope="col" className="py-2">Fin</th>
                 <th scope="col" className="py-2">Motif</th>
-                {canManage && <th scope="col" className="py-2" />}
+                <th scope="col" className="py-2" />
               </tr>
             </thead>
             <tbody>
@@ -206,18 +272,31 @@ export function PayePage() {
                   <td className="py-2">{new Date(record.start_date).toLocaleDateString("fr-FR")}</td>
                   <td className="py-2">{new Date(record.end_date).toLocaleDateString("fr-FR")}</td>
                   <td className="py-2">{record.reason ?? "—"}</td>
-                  {canManage && (
-                    <td className="py-2">
-                      <Button type="button" variant="secondary" onClick={() => void handleDeleteLeave(record.id)}>
-                        Supprimer
+                  <td className="py-2 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => void handleDownloadLeaveRecord(record)}
+                      >
+                        PDF
                       </Button>
-                    </td>
-                  )}
+                      {canManage && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => void handleDeleteLeave(record.id)}
+                        >
+                          Supprimer
+                        </Button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}
               {leaveRecords.length === 0 && (
                 <tr>
-                  <td colSpan={canManage ? 6 : 5} className="py-4 text-center text-gray-500">
+                  <td colSpan={6} className="py-4 text-center text-gray-500">
                     Aucun congé/absence enregistré pour le moment.
                   </td>
                 </tr>

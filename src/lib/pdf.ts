@@ -79,6 +79,18 @@ interface DocumentTotals {
   totalTTC: number;
 }
 
+// Nom de fichier lisible pour les documents Paie -- pas d'identifiant court comme les
+// achats/commandes (receipt_number, id.slice(0,8)) à réutiliser côté paie, donc dérivé du
+// nom de l'employé (accents/espaces normalisés pour rester un nom de fichier sûr partout).
+function slugify(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 function formatFcfa(amount: number): string {
   // toLocaleString("fr-FR") insere un espace insecable (U+202F ou U+00A0) comme
   // separateur de milliers : ce caractere est hors de l'encodage WinAnsi utilise par
@@ -439,5 +451,122 @@ export async function generateCreditNotePdf(input: CreditNotePdfInput) {
   return {
     doc,
     filename: `facture-avoir-${input.purchaseId.slice(0, 8)}.pdf`,
+  };
+}
+
+export interface PayslipPdfInput {
+  employeeName: string;
+  position?: string;
+  period: string;
+  grossSalary: number;
+  pensionWithholding: number;
+  itsWithholding: number;
+  advanceRepaidAmount?: number;
+  netPay: number;
+}
+
+export async function generatePayslipPdf(input: PayslipPdfInput) {
+  const periodLabel = new Date(input.period).toLocaleDateString("fr-FR", {
+    month: "long",
+    year: "numeric",
+  });
+  const { doc, autoTable } = await newDocument(`Bulletin de paie — ${periodLabel}`);
+
+  doc.setFontSize(10);
+  doc.text(`Employé : ${input.employeeName}`, 14, 42);
+  if (input.position) doc.text(`Poste : ${input.position}`, 14, 48);
+  doc.text(`Période : ${periodLabel}`, 14, input.position ? 54 : 48);
+
+  const rows: [string, string][] = [
+    ["Salaire brut", formatFcfa(input.grossSalary)],
+    ["Cotisation retraite", `- ${formatFcfa(input.pensionWithholding)}`],
+    ["ITS", `- ${formatFcfa(input.itsWithholding)}`],
+  ];
+  if (input.advanceRepaidAmount) {
+    rows.push(["Avance sur salaire remboursée", `- ${formatFcfa(input.advanceRepaidAmount)}`]);
+  }
+
+  autoTable(doc, {
+    startY: input.position ? 62 : 56,
+    head: [["Rubrique", "Montant"]],
+    body: rows,
+    foot: [["Net à payer", formatFcfa(input.netPay)]],
+    footStyles: { fontStyle: "bold", fontSize: 11 },
+  });
+
+  return {
+    doc,
+    filename: `bulletin-paie-${slugify(input.employeeName)}-${input.period.slice(0, 7)}.pdf`,
+  };
+}
+
+function addSignatureBlock(
+  doc: InstanceType<typeof import("jspdf").default>,
+  startY: number,
+  leftLabel: string,
+  rightLabel: string,
+): void {
+  doc.setFontSize(9);
+  doc.line(14, startY, 90, startY);
+  doc.text(leftLabel, 14, startY + 5);
+  doc.line(120, startY, 196, startY);
+  doc.text(rightLabel, 120, startY + 5);
+}
+
+export interface LeaveRecordPdfInput {
+  employeeName: string;
+  typeLabel: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}
+
+// Deux blocs de signature (Employé / Responsable) : ce registre n'a pas de circuit
+// d'approbation en base (voir README, module Paie) mais l'imprimé reste utile comme pièce
+// justificative papier signée pour le dossier de l'employé.
+export async function generateLeaveRecordPdf(input: LeaveRecordPdfInput) {
+  const { doc } = await newDocument("Demande de congé / absence");
+
+  doc.setFontSize(10);
+  doc.text(`Employé : ${input.employeeName}`, 14, 42);
+  doc.text(`Type : ${input.typeLabel}`, 14, 48);
+  doc.text(
+    `Du ${new Date(input.startDate).toLocaleDateString("fr-FR")} au ${new Date(input.endDate).toLocaleDateString("fr-FR")}`,
+    14,
+    54,
+  );
+  doc.text(`Motif : ${input.reason || "—"}`, 14, 60);
+
+  addSignatureBlock(doc, 90, "Employé", "Responsable");
+
+  return {
+    doc,
+    filename: `conge-${slugify(input.employeeName)}-${input.startDate}.pdf`,
+  };
+}
+
+export interface SalaryAdvancePdfInput {
+  employeeName: string;
+  amount: number;
+  advanceDate: string;
+  reason?: string;
+  statusLabel: string;
+}
+
+export async function generateSalaryAdvancePdf(input: SalaryAdvancePdfInput) {
+  const { doc } = await newDocument("Demande d'avance sur salaire");
+
+  doc.setFontSize(10);
+  doc.text(`Employé : ${input.employeeName}`, 14, 42);
+  doc.text(`Date : ${new Date(input.advanceDate).toLocaleDateString("fr-FR")}`, 14, 48);
+  doc.text(`Montant : ${formatFcfa(input.amount)}`, 14, 54);
+  doc.text(`Motif : ${input.reason || "—"}`, 14, 60);
+  doc.text(`Statut : ${input.statusLabel}`, 14, 66);
+
+  addSignatureBlock(doc, 96, "Employé", "Responsable");
+
+  return {
+    doc,
+    filename: `avance-${slugify(input.employeeName)}-${input.advanceDate}.pdf`,
   };
 }

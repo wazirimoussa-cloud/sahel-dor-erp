@@ -18,7 +18,7 @@ export function usePayslips(page: number, pageSize: number) {
       const { data, error } = await supabase
         .from("payslips")
         .select(
-          "id, period, gross_salary, pension_withholding, its_withholding, net_pay, advance_repaid_id, created_at, employees(full_name)",
+          "id, period, gross_salary, pension_withholding, its_withholding, net_pay, advance_repaid_id, created_at, employees(full_name, position), salary_advances(amount)",
         )
         .order("period", { ascending: false })
         .range(...rangeFor(page, pageSize));
