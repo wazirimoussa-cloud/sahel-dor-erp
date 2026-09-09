@@ -6,11 +6,12 @@ import {
   netBookValueAsOf,
   type FixedAssetRow,
 } from "@/features/financials/useFixedAssets";
-
-interface StockSnapshot {
-  total: number;
-  unvalued: { productId: string; name: string; quantity: number; unit: string }[];
-}
+import {
+  buildUnitCostMap,
+  stockValueAsOf,
+  daysBetweenInclusive,
+  computeStockRotation,
+} from "@/lib/stockValuation";
 
 interface AccountBalance {
   debit: number;
@@ -61,55 +62,12 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
     0,
   );
 
-  const productNameById = new Map(products.map((p) => [p.id, p.name]));
-  const productUnitById = new Map(products.map((p) => [p.id, p.unit]));
-
-  // CUMP global par produit, à partir des lots créés par une réception d'achat —
-  // stock_lots.unit_cost porte le prix de revient du produit, fixé une fois pour
-  // toutes à sa création (voir migration 0075), pas le prix d'achat brut de cet
-  // achat précis. D'anciens lots (avant 0075) gardent leur coût atterri prorata
-  // d'origine, jamais réécrit — la moyenne mélange donc les deux historiquement,
-  // cohérent avec le principe d'immuabilité du projet.
-  const cump = new Map<string, { qty: number; cost: number }>();
-  for (const lot of purchaseLots) {
-    const entry = cump.get(lot.product_id) ?? { qty: 0, cost: 0 };
-    entry.qty += lot.quantity_received;
-    entry.cost += lot.quantity_received * lot.unit_cost;
-    cump.set(lot.product_id, entry);
-  }
-  const unitCostByProduct = new Map(
-    [...cump].map(([productId, { qty, cost }]) => [productId, qty > 0 ? cost / qty : 0]),
-  );
-
-  function stockValueAsOf(dateIso: string): StockSnapshot {
-    const bound = `${dateIso}T23:59:59.999`;
-    const qtyByProduct = new Map<string, number>();
-    for (const t of transactions) {
-      if (t.created_at > bound) continue;
-      const delta = t.type === "IN" ? t.quantity : t.type === "OUT" ? -t.quantity : t.quantity;
-      qtyByProduct.set(t.product_id, (qtyByProduct.get(t.product_id) ?? 0) + delta);
-    }
-    let total = 0;
-    const unvalued: { productId: string; name: string; quantity: number; unit: string }[] = [];
-    for (const [productId, quantity] of qtyByProduct) {
-      if (quantity <= 0) continue;
-      const unitCost = unitCostByProduct.get(productId);
-      if (unitCost !== undefined) {
-        total += quantity * unitCost;
-      } else {
-        unvalued.push({
-          productId,
-          name: productNameById.get(productId) ?? "?",
-          quantity,
-          unit: productUnitById.get(productId) ?? "",
-        });
-      }
-    }
-    return { total, unvalued };
-  }
-
-  const stockStart = stockValueAsOf(startDate);
-  const stockEnd = stockValueAsOf(endDate);
+  // CUMP + valorisation du stock aux deux bornes de la période : extrait dans
+  // src/lib/stockValuation.ts (partagé avec useStockRotation.ts, plus léger, qui n'a pas
+  // besoin du journal comptable/immobilisations pour ce même calcul).
+  const unitCostByProduct = buildUnitCostMap(purchaseLots);
+  const stockStart = stockValueAsOf({ products, transactions }, unitCostByProduct, startDate);
+  const stockEnd = stockValueAsOf({ products, transactions }, unitCostByProduct, endDate);
 
   // Solde d'un compte (par code) : somme débit/crédit des lignes dont l'écriture
   // parente a une entry_date dans [from, to] (bornes optionnelles = illimité).
@@ -201,10 +159,7 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
   const totalPassif = fournisseurs + tvaAPayer + capitalSocial + resultatCumule;
 
   // Analyse financière.
-  const days = Math.max(
-    1,
-    Math.round((new Date(endDate).getTime() - new Date(startDate).getTime()) / 86_400_000) + 1,
-  );
+  const days = daysBetweenInclusive(startDate, endDate);
   const margeCommerciale =
     produitsPeriode > 0 ? (resultatNetPeriode / produitsPeriode) * 100 : null;
   const autonomieFinanciere = totalPassif > 0 ? (capitauxPropresTotal / totalPassif) * 100 : null;
@@ -213,6 +168,18 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
     passifCirculant > 0 ? (actif.stock + actif.clients + actif.tresorerie) / passifCirculant : null;
   const delaiReglementClients =
     produitsPeriode > 0 ? (clientsSolde / produitsPeriode) * days : null;
+
+  // Rotation des stocks : extrait dans src/lib/stockValuation.ts (même raison que la
+  // valorisation du stock ci-dessus).
+  const { rotationStock, rotationStockJours } = computeStockRotation(
+    transactions,
+    unitCostByProduct,
+    startDate,
+    endDate,
+    stockStart,
+    stockEnd,
+    days,
+  );
 
   return {
     capitalSocial,
@@ -235,6 +202,8 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
       autonomieFinanciere,
       liquiditeGenerale,
       delaiReglementClients,
+      rotationStock,
+      rotationStockJours,
     },
     unvaluedStock: stockEnd.unvalued,
   };

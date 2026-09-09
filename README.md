@@ -1669,6 +1669,200 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       n'existe dans le schéma ou l'écran aujourd'hui à imprimer ; seuls ces trois
       documents sont couverts.
 
+78. **Tableau de bord Finance enrichi** (`FinancialDashboard.tsx`) : premier des 7 tableaux
+    de bord de l'app à recevoir le traitement complet demandé par le client (KPI, graphiques,
+    alertes à seuil, filtre de période, comparaison N-1) — pensé comme le pattern à répliquer
+    sur les 6 autres dans des demandes séparées, pas comme une refonte isolée.
+    - **8 cartes KPI** (au lieu de 4) via le nouveau composant partagé
+      `src/components/ui/StatTile.tsx` : CA, résultat net, marge commerciale, rotation des
+      stocks (nouveau ratio, calculé dans `computeFinancialStatements` sans requête
+      supplémentaire), trésorerie, créances clients (+ DSO déjà calculé mais jusqu'ici
+      jamais affiché), dettes fournisseurs, valeur du stock. Chaque carte compare à la
+      période précédente de même durée (delta + flèche neutre, sans couleur bonne/mauvaise
+      implicite).
+    - **Seuils d'alerte** (couleur de bordure, un seul système via `StatTile.status`,
+      remplace le prop décoratif `accent` pour ces cartes) : résultat net et trésorerie
+      négatifs → rouge ; marge commerciale < 10 % → orange, < 0 % → rouge ; délai de
+      règlement clients (DSO) > 60 j → orange, > 90 j → rouge. Seuils confirmés avec
+      l'utilisateur, pas de précédent business existant pour marge/DSO — à ajuster si
+      l'usage réel montre qu'ils sont mal calibrés.
+    - **Nouveau panneau "Top clients"** (`useTopClients.ts`) et **graphique de tendance
+      trésorerie** (extension de `useMonthlyActivity.ts`, second appel bornée en amont pour
+      obtenir le solde de départ — la trésorerie est un solde cumulé, pas un flux remis à
+      zéro chaque mois comme Ventes/Achats).
+    - **5 KPI du cahier des charges original explicitement laissés hors périmètre**, faute
+      de toute donnée réelle sous-jacente dans le schéma (confirmé avec l'utilisateur, pas
+      une version inventée/approximative) : écarts budget/réel (aucun concept de budget
+      nulle part), trésorerie prévisionnelle J+30 (aucune date d'échéance sur les
+      créances/dettes), commandes en retard / factures à relancer (aucune date d'échéance
+      sur `orders`/`purchases`), taux d'utilisation des machines (aucune notion de machine
+      dans le schéma), turnover RH daté (`employees.active` n'a pas d'horodatage de
+      désactivation).
+    - **Personnalisation** (choix/disposition des KPI, sauvegarde par utilisateur)
+      également hors périmètre — demanderait une vraie table de préférences persistée côté
+      serveur, aucun mécanisme de ce type n'existe aujourd'hui dans l'app.
+    - Le graphique Ventes/Achats existant reste sur sa fenêtre fixe de 6 mois, volontairement
+      pas raccordé au nouveau filtre de période (refondre son découpage en buckets pour une
+      plage de durée variable est hors périmètre de cette demande).
+
+79. **Tableau de bord Ventes enrichi** (`SalesDashboard.tsx`) : deuxième tableau de bord
+    à recevoir le pattern posé au point 78 — filtre de période, comparaison N-1, seuils
+    d'alerte, `StatTile`. `src/lib/dateRange.ts` (nouveau) extrait
+    `defaultStartDate`/`defaultEndDate`/`priorPeriod` depuis `FinancialDashboard.tsx`
+    (2ᵉ usage, moment annoncé au point 78 pour arrêter de dupliquer) — `FinancialDashboard`
+    importe désormais depuis ce module, sans changement de comportement (vérifié en
+    direct : rendu identique avant/après).
+    - **6 cartes** : CA, panier moyen et bons de commande validés (activité de la période,
+      comparables N-1) ; bons de commande en attente, impayés et clients (instantané actuel,
+      comportement inchangé par rapport à l'ancien dashboard). Seuil sur le taux d'impayés
+      (`unpaidCount / nonCancelledCount`) : > 20 % orange, > 40 % rouge — confirmé avec
+      l'utilisateur, provisoire comme les seuils du point 78 (pas de date d'échéance sur les
+      commandes pour définir un "impayé en retard" plus précisément).
+    - **Nouveaux panneaux** : "Top clients" (réutilise `useTopClients.ts` du point 78 sans
+      modification) et "CA par utilisateur" (`useSalesPeriodSummary.ts`, nouveau hook,
+      requête séparée de `useTopClients` pour ne pas risquer de régression sur un hook déjà
+      livré).
+    - **Deux clarifications de périmètre confirmées avec l'utilisateur** : "Nombre de
+      leads"/"taux de conversion" restent hors périmètre (ce logiciel n'a aucune notion de
+      prospect avant un bon de commande, ce n'est pas un CRM) ; "CA par commercial" devient
+      "CA par utilisateur créateur de la commande" (`orders.user_id`) — il n'existe pas de
+      concept figé de "commercial" dans le modèle d'attributions granulaires (point 33), les
+      rôles sont informatifs, pas structurants.
+    - Aucun graphique ajouté sur ce dashboard (contrairement à Finance) : un graphique
+      CA/mois aurait dupliqué celui déjà visible sur `FinancialDashboard` pour les profils
+      ayant accès aux deux — pas de sur-construction pour ce premier passage.
+
+80. **Tableau de bord Magasin enrichi** (`WarehouseDashboard.tsx`) : troisième tableau de
+    bord à recevoir le pattern des points 78-79. Confirmé avec l'utilisateur : le seuil de
+    stock bas reste celui déjà en place (`LOW_STOCK_THRESHOLDS`/`isLowStock()`, par unité) —
+    pas de seuil personnalisé par produit, qui aurait demandé une vraie nouvelle colonne en
+    base.
+    - **`src/lib/stockValuation.ts`** (nouveau) : la logique de valorisation du stock (CUMP,
+      `stockValueAsOf`, rotation des stocks — déjà ajoutée au point 78 dans
+      `computeFinancialStatements`) est extraite en fonctions pures, réutilisées à
+      l'identique par `useFinancialStatements.ts` (refactor pur, aucun changement de
+      comportement — `tests/unit/computeFinancialStatements.test.ts` passe sans
+      modification) et par le nouveau `useStockRotation.ts`, hook nettement plus léger
+      (`products`/`stock_lots`/`transactions` seulement, **sans** `journal_entries` ni
+      `fixed_assets`) — le dashboard Magasin est montré à un profil qui n'a souvent aucun
+      accès comptable, et `journal_entries`+`stock_lots` est déjà la jointure la plus lourde
+      de l'app (point 63, tests de charge) : inutile de la refaire pour un simple ratio de
+      stock.
+    - **5 cartes** : rotation des stocks et valeur du stock (comparables N-1, via le nouveau
+      hook léger) ; produits en stock bas, réceptions en attente et mouvements du jour
+      (instantané "maintenant", comportement inchangé). Seuil sur "Produits en stock bas" :
+      critique dès qu'il y en a au moins un — règle non ambiguë, contrairement aux seuils
+      provisoires des points 78-79.
+    - "Mouvements aujourd'hui" reste volontairement un compteur du jour sans comparaison
+      N-1 — la valeur pour un magasinier est de voir l'activité en cours, pas une tendance
+      sur ce chiffre précis.
+
+81. **Tableau de bord Achats enrichi** (`PurchasingDashboard.tsx`) : quatrième tableau de
+    bord à recevoir le pattern des points 78-80. Le dashboard n'est visible que via
+    `hasModuleAccess("achats")` (condition unique, `DashboardPage.tsx`), donc tous les liens
+    vers `/purchases` sont toujours cliquables — seuls les liens vers `/suppliers` (module
+    `fournisseurs`, distinct) sont gardés individuellement.
+    - **`src/lib/purchaseDisplay.ts`** (nouveau, 3ᵉ occurrence de la même duplication déjà
+      réglée pour les commandes au point 79) : `PURCHASE_STATUS_LABELS`/
+      `PURCHASE_STATUS_CLASSES` remplacent les dictionnaires locaux dupliqués de
+      `PurchasingDashboard.tsx` (texte gris uni, sans pastille) et `PurchasesPage.tsx`
+      (avec pastille) — refactor pur pour `PurchasesPage.tsx` (aucun changement de rendu),
+      et la liste "Bons d'achat récents" du dashboard gagne une vraie pastille colorée par
+      statut, alignée avec Ventes.
+    - **`usePurchasingPeriodSummary.ts`** (nouveau) : `receive_purchase()`
+      (`0075_prix_de_revient_produit.sql`) débite le compte 601 du montant HT
+      (`sum(quantity * unit_cost)`) au moment de la réception (`status: 'received'`) —
+      l'équivalent achats exact de la validation d'une commande côté 701. Le hook filtre
+      donc sur `status = 'received'` et `received_at` dans la période, retourne
+      `{ totalHT, purchaseCount, averagePurchase, topSuppliers }`.
+    - **5 cartes** : montant total engagé (HT), achat moyen et bons d'achat reçus (activité
+      de la période, comparables N-1) ; bons d'achat en attente de réception et fournisseurs
+      (instantané "maintenant", comportement inchangé). Nouveau panneau "Top fournisseurs"
+      (période), même gabarit que "Top clients" du point 79.
+    - **Pas d'équivalent "taux d'impayés" pour les achats** : contrairement à `orders`
+      (`payment_status`), `purchases` n'a aucune colonne de paiement/échéance — hors
+      périmètre, comme le reste des KPI sans donnée réelle (point 78). Aucun autre seuil
+      n'a de base légitime sur ce dashboard.
+    - Aucun graphique ajouté : dupliquerait celui déjà visible sur `FinancialDashboard`
+      pour les profils ayant accès aux deux, mêmes raisons que Ventes/Magasin.
+
+82. **Tableau de bord Production enrichi** (`ProductionDashboard.tsx`) : cinquième tableau
+    de bord à recevoir le pattern des points 78-81. Premier cas de **gating à deux modules
+    distincts** en OU (`hasModuleAccess("production") || hasModuleAccess("transformation")`,
+    même famille que Finance au point 78 mais appliqué ici à des listes/compteurs par type) :
+    un profil peut n'avoir que l'un des deux modules, donc chaque carte et **chaque lien
+    "Voir" ligne par ligne** dans les listes "Dernières productions"/"Dernières
+    transformations" est gardé individuellement — les données elles-mêmes restent toujours
+    affichées (la RLS n'est scopée qu'au niveau `company_id`, jamais par attribution, même
+    convention que "Réceptions en attente" au point 80), seule la navigation est gardée.
+    - **`useProductionPeriodSummary.ts`** (nouveau) : `productions`/`transformations` sont
+      des faits atomiques immédiats (pas de workflow différé, contrairement à Achats/Ventes)
+      — `created_at` est directement la date de reconnaissance. Valeur produite = lignes déjà
+      valorisées : `production_items.unit_cost` pour les productions,
+      `transformation_outputs.unit_cost` pour les transformations (les intrants n'ont pas de
+      coût unitaire propre, consommés à leur CUMP).
+    - **5 cartes** : productions et valeur produite, transformations et valeur produite
+      (activité de la période, comparables N-1) ; produits en stock bas (instantané,
+      réutilise exactement le seuil non ambigu du point 80 — critique dès qu'il y en a au
+      moins un, rien de nouveau à confirmer).
+    - Aucun graphique ajouté, mêmes raisons que Ventes/Magasin/Achats.
+
+83. **Tableau de bord Logistique enrichi** (`LogisticsDashboard.tsx`) : sixième tableau de
+    bord à recevoir le pattern des points 78-82. Même gating à deux modules distincts en OU
+    que le point 82 (`hasModuleAccess("transporteurs") || hasModuleAccess("pertes_stock")`),
+    mais avec un écart trouvé en explorant : le dashboard n'exploitait jusqu'ici que
+    `purchase_losses` (pertes constatées à la réception, liées aux transporteurs) — le module
+    `pertes_stock` (déclaration/approbation de pertes en magasin, `stock_loss_requests`,
+    circuit distinct documenté au point 31/75) donnait pourtant accès à ce même dashboard
+    sans qu'aucune de ses données n'y apparaisse. Corrigé en ajoutant une vraie section
+    `pertes_stock`, gardée par son propre module.
+    - **`useLogisticsPeriodSummary.ts`** (nouveau) : `stock_loss_requests` a `reviewed_at`
+      (renseigné à l'approbation/au rejet) en plus de `created_at` — permet un vrai "délai
+      moyen d'approbation", contrairement à Achats/Superviseur où cette donnée n'existe pas.
+      Pas de coût unitaire sur cette table (contrairement à `purchase_losses.unit_cost`) :
+      aucune "valeur des pertes de stock déclarées" n'est affichée, pour ne pas fabriquer un
+      chiffre à partir du prix courant du produit plutôt que du coût réel de l'époque.
+    - **6 cartes** : pertes constatées à la réception + leur valeur, pertes de stock
+      déclarées et taux d'approbation avec ligne secondaire "Délai moyen d'approbation"
+      (activité de la période, comparables N-1) ; transporteurs et pertes de stock en attente
+      d'approbation (instantané). **Seuil sur le taux de rejet** (100 % − taux d'approbation) :
+      orange si `> 20 %`, rouge si `> 40 %` — confirmé avec l'utilisateur, même paire de
+      seuils que le taux d'impayés du point 79 (un taux de rejet élevé peut signaler un abus
+      du circuit de déclaration, raison d'être de la séparation des tâches).
+    - Nouveau panneau "Dernières pertes de stock déclarées" (statut coloré, dictionnaire
+      local — 2ᵉ occurrence seulement avec `StockLossRequestsPage.tsx`, pas encore la règle
+      des trois occurrences, pas d'extraction).
+    - **Bug latent corrigé au passage** : le lien "Voir" de "Dernières pertes (réception)"
+      pointe vers `/purchases/:id`, qui exige `hasModuleAccess("achats")` — un troisième
+      module, distinct des deux qui donnent accès au dashboard. Un profil avec seulement
+      `transporteurs` obtenait un lien mort ("Accès refusé"). Gardé désormais par
+      `hasModuleAccess("achats")` spécifiquement.
+    - Aucun graphique ajouté, mêmes raisons que les dashboards précédents.
+
+84. **Tableau de bord Superviseur enrichi** (`SupervisorDashboard.tsx`) : septième et dernier
+    tableau de bord à recevoir le pattern des points 78-83 — chantier des tableaux de bord
+    terminé. Le plus mince des 7 en données réelles : `orders` n'a ni `validated_at` ni
+    `validated_by`, donc aucun délai de validation ni volume "validé par ce superviseur"
+    n'est mesurable. Un vrai KPI existe malgré tout : le circuit d'annulation automatique du
+    point 74 (`fn_business_hours_elapsed`, `0083_annulation_automatique_bon_commande.sql`)
+    annule tout `orders` `pending` après 48 heures ouvrées (Africa/Lagos, lundi-samedi
+    8h-18h) — exactement la ressource que la file d'attente du Superviseur consomme.
+    - **Port TypeScript de `fn_business_hours_elapsed`** (local à `SupervisorDashboard.tsx`,
+      1ᵉʳ usage, pas encore d'extraction) — vérifié par calcul manuel sur 4 cas (weekend
+      traversé, span multi-jours, bornes) avant intégration. À garder en synchronisation si
+      la fonction SQL change.
+    - **`useSupervisorPeriodSummary.ts`** (nouveau) — `orders` filtré sur `created_at` (seule
+      date disponible), `validatedCount`/`cancelledCount`/`cancellationRate` — compte à la
+      fois les annulations manuelles et automatiques (le statut ne distingue pas la cause).
+    - **6 cartes** : commandes validées et annulées, taux d'annulation (activité de la
+      période, comparables N-1 — **seuil orange `> 20 %`, rouge `> 40 %`**, confirmé, même
+      paire que les points 79/83) ; bons de commande à valider, montant total HT en attente
+      (inchangés) et **commandes proches de l'annulation automatique** (nouveau, `< 8h`
+      ouvrées restantes sur le budget de 48h, confirmé — critique dès qu'il y en a au moins
+      une, même règle non ambiguë que le point 80).
+    - La liste "À valider" gagne un badge "Urgente" par ligne pour les commandes concernées.
+    - Aucun graphique ajouté, mêmes raisons que les dashboards précédents.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

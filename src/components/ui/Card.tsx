@@ -1,13 +1,16 @@
 import type { ReactNode } from "react";
 import clsx from "clsx";
 
-type Accent = "green" | "gold" | "red" | "forest";
+export type Accent = "green" | "gold" | "red" | "forest" | "amber";
 
-const ACCENT_CLASSES: Record<Accent, string> = {
+// Exporté pour StatTile.tsx : les cartes KPI à seuil doivent réutiliser cette même palette
+// de bordures plutôt que d'en dupliquer une — un seul système de couleurs "sens" dans l'app.
+export const ACCENT_CLASSES: Record<Accent, string> = {
   green: "border-t-4 border-t-emerald-600",
   gold: "border-t-4 border-t-brand-500",
   red: "border-t-4 border-t-red-500",
   forest: "border-t-4 border-t-forest-700",
+  amber: "border-t-4 border-t-amber-500",
 };
 
 export function Card({

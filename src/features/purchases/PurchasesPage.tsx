@@ -6,18 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { formatNumber } from "@/lib/format";
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "En attente",
-  received: "Reçu",
-  cancelled: "Annulé",
-};
-
-const STATUS_CLASSES: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-700",
-  received: "bg-green-100 text-green-700",
-  cancelled: "bg-red-100 text-red-700",
-};
+import { PURCHASE_STATUS_LABELS, PURCHASE_STATUS_CLASSES } from "@/lib/purchaseDisplay";
 
 export function PurchasesPage() {
   const { hasAttribution } = useAuth();
@@ -93,9 +82,9 @@ export function PurchasesPage() {
                   <td className="py-2">{formatNumber(totalTTC)} FCFA</td>
                   <td className="py-2">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[purchase.status] ?? ""}`}
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${PURCHASE_STATUS_CLASSES[purchase.status] ?? ""}`}
                     >
-                      {STATUS_LABELS[purchase.status] ?? purchase.status}
+                      {PURCHASE_STATUS_LABELS[purchase.status] ?? purchase.status}
                     </span>
                   </td>
                   <td className="py-2 text-right">

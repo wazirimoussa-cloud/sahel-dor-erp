@@ -114,6 +114,10 @@ describe("computeFinancialStatements", () => {
     expect(result.ratios.autonomieFinanciere).toBeCloseTo((1_162_000 / 1_175_000) * 100, 6);
     expect(result.ratios.liquiditeGenerale).toBeCloseTo(215_000 / 13_000, 6);
     expect(result.ratios.delaiReglementClients).toBeCloseTo((30_000 / 27_000) * 31, 6);
+    // Rotation des stocks : coût des sorties (30 × 500 = 15 000) / stock moyen
+    // ((50 000 + 35 000) / 2 = 42 500).
+    expect(result.ratios.rotationStock).toBeCloseTo(15_000 / 42_500, 6);
+    expect(result.ratios.rotationStockJours).toBeCloseTo((42_500 / 15_000) * 31, 6);
 
     expect(result.unvaluedStock).toHaveLength(0);
   });
@@ -165,5 +169,7 @@ describe("computeFinancialStatements", () => {
     expect(result.ratios.autonomieFinanciere).toBeNull();
     expect(result.ratios.liquiditeGenerale).toBeNull();
     expect(result.ratios.delaiReglementClients).toBeNull();
+    expect(result.ratios.rotationStock).toBeNull();
+    expect(result.ratios.rotationStockJours).toBeNull();
   });
 });
