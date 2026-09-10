@@ -64,19 +64,28 @@ par `company_id` (`…001` vs `…0f0`). Conséquences observées :
 - Impossible de tester une migration avant Production.
 - Une requête folle ou une erreur de RLS touche les deux environnements.
 
+**Runbook détaillé** : `docs/runbook-separation-formation.md` (phases A→D, étapes
+[UTILISATEUR] vs [CLAUDE], rollback). Méthode retenue : **projet vierge + seed
+reconstruit**, Formation garde le `company_id …0f0`.
+
 **Actions**
-- [ ] Créer un **second projet Supabase** pour Formation (Free suffit).
-- [ ] `supabase db dump --schema-only` depuis le projet actuel → `db push` vers le
-      nouveau (+ données de seed si besoin).
-- [ ] Repointer les variables d'env Vercel de `sahel-dor-erp-formation`.
-- [ ] Mettre à jour la doc de déploiement (le _dance_ `supabase link`) et
-      `.env.example`.
-- [ ] Simplifier `reset_formation_data()` en `truncate` global une fois isolé.
-- [ ] Router les tests d'intégration vers ce nouveau projet ; réactiver
-      `fileParallelism` si l'isolation par test le permet.
+- [x] **Phase A (repo)** : `supabase/scripts/seed-formation.sql` (société + plan
+      comptable extraits) ; `supabase/scripts/provision-formation-auth.mjs` (recrée les
+      5 comptes + 80 attributions via l'API Admin) ; `.env.example` ; le runbook.
+- [ ] **Phase B (infra, [U])** : créer/valider le projet Supabase Formation (un projet
+      `fvayodtstgbebnaihdwz` « sahel » existe déjà dans l'org, à vérifier) ;
+      `db push` + seed + edge functions + `provision-formation-auth.mjs`.
+- [ ] **Phase C (bascule)** : repointer les variables Vercel de `sahel-dor-erp-formation` ;
+      vérif navigateur 2 dashboards ; mettre à jour `.env.local` et secrets CI.
+- [ ] **Phase D (après)** : job CI `integration`, `fileParallelism` best effort, doc
+      README, purge des comptes `*.formation` de l'ancien projet.
+
+`reset_formation_data()` **n'est pas modifié** : garder le `company_id …0f0` dans le
+nouveau projet le laisse valide tel quel (le « truncate global » envisagé était une
+fausse bonne idée — les migrations tournent sur les deux environnements).
 
 **Fini quand** : Formation a son propre `project-ref`, les migrations passent d'abord
-par Formation, les tests d'intégration ne touchent plus l'instance de Production.
+par Formation, `npm run test:integration` tourne vert contre Formation isolée en CI.
 
 ---
 
@@ -210,3 +219,4 @@ représentatif, et le temps ne croît plus linéairement avec l'historique.
 | 2026-09-10 | 3, 6 | Quick wins S1 : CI (`ci.yml`), `.nvmrc`, `.gitignore` `.claude/`. Constat : lazy-load exports déjà fait. | — |
 | 2026-09-10 | 1 | Stopgap sauvegarde nocturne (`backup.yml`) — reste à ajouter le secret `SUPABASE_DB_URL`. | `310b888` |
 | 2026-09-10 | 3 | CI verte après correctif : suite unitaire rendue hermétique (variables Supabase factices dans `vitest.config.ts`) — elle échouait en CI faute de `.env.local`. | `9db09e8` |
+| 2026-09-10 | 2 | Phase A séparation Formation : seed + script de provisioning des 5 comptes + runbook. Référentiel Formation extrait du projet partagé. Phases B/C/D en attente d'actions infra. | — |
