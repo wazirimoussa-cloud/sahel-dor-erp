@@ -1,0 +1,67 @@
+name: Sauvegarde BdD (nuit)
+
+# Stopgap gratuit en attendant l'activation des sauvegardes Supabase (plan Pro) et du
+# PITR -- voir docs/plan-remediation.md, point 1.
+#
+# Prérequis : ajouter le secret SUPABASE_DB_URL dans
+#   Settings → Secrets and variables → Actions
+# = la chaîne de connexion Postgres directe du projet
+#   (Supabase → Project Settings → Database → Connection string → URI,
+#    en remplaçant le mot de passe). Utiliser de préférence un rôle en lecture seule.
+#
+# Tant que le secret n'est pas défini, le job "dump" est ignoré proprement (pas d'échec).
+# Restauration : pg_restore --clean --no-owner --no-privileges -d "<url>" backup-<stamp>.dump
+
+on:
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC chaque jour
+  workflow_dispatch: {}
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - id: check
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -n "$DB_URL" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::SUPABASE_DB_URL non configuré — sauvegarde ignorée."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  dump:
+    needs: guard
+    if: needs.guard.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer postgresql-client 16 (PGDG)
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      - name: Dump
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          stamp=$(date -u +%Y%m%dT%H%M%SZ)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          pg_dump "$DB_URL" --no-owner --no-privileges --format=custom --file="backup-$stamp.dump"
+          ls -lh "backup-$stamp.dump"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ env.STAMP }}
+          path: backup-*.dump
+          retention-days: 30
+          if-no-files-found: error

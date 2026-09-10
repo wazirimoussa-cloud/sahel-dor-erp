@@ -27,3 +27,7 @@ Thumbs.db
 
 .vercel
 .env*
+
+# Claude Code : on partage launch.json (config de preview), on ignore le reste
+.claude/*
+!.claude/launch.json

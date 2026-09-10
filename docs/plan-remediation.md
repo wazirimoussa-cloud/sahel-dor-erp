@@ -10,15 +10,22 @@ _Journal_ en bas, et lier le numéro de migration / commit correspondant.
 
 | # | Chantier | Gravité | Effort | État |
 |---|----------|---------|--------|------|
-| 1 | [Sauvegardes / PITR](#1-sauvegardes--pitr) | Critique | ½ j | à faire |
+| 1 | [Sauvegardes / PITR](#1-sauvegardes--pitr) | Critique | ½ j | en cours |
 | 2 | [Séparer Formation de Production](#2-séparer-formation-de-production) | Élevée | 1 j | à faire |
-| 3 | [Tests d'intégration en CI](#3-tests-dintégration-en-ci) | Élevée | 2-3 j | à faire |
+| 3 | [Tests d'intégration en CI](#3-tests-dintégration-en-ci) | Élevée | 2-3 j | en cours |
 | 4 | [RLS par attribution](#4-rls-par-attribution) | Élevée | plusieurs j | à faire |
 | 5 | [Perf du cœur comptable](#5-perf-du-cœur-comptable) | Moyenne | 1 j + | à faire |
-| 6 | [Dette légère](#6-dette-légère) | Faible | ~2 j cumulés | à faire |
+| 6 | [Dette légère](#6-dette-légère) | Faible | ~1 j cumulé | en cours |
 
 Ordre conseillé : 1 → 2 → 3 → 4 → 5. Le point 3 est le socle qui rend 4 et 5
 faisables sans régression.
+
+**Quick wins semaine 1 (2026-09-10)** : `.gitignore` réglé (`.claude/launch.json`
+partagé, reste ignoré) ; `.nvmrc` ajouté ; workflow CI
+(`.github/workflows/ci.yml` — typecheck + lint + tests unitaires + build sur chaque
+PR) ; workflow de sauvegarde nocturne (`.github/workflows/backup.yml`, en attente du
+secret `SUPABASE_DB_URL`). Le _lazy-load des exports_ prévu s'est avéré **déjà fait**
+(voir point 6).
 
 ---
 
@@ -33,8 +40,13 @@ exposition : perte de données = perte définitive.
       suggère le plan **Free** = aucune sauvegarde.
 - [ ] Passer en **Pro** → sauvegardes quotidiennes automatiques.
 - [ ] Si RPO < 24h nécessaire : ajouter l'add-on **PITR** (7 jours).
-- [ ] Stopgap immédiat, indépendant du tier : workflow GitHub Actions planifié
-      (`nightly`) qui exécute `supabase db dump` vers un bucket R2/S3 chiffré.
+- [x] Stopgap : workflow GitHub Actions planifié `.github/workflows/backup.yml`
+      (`pg_dump` custom-format quotidien à 02:00 UTC, artefact 30 j).
+- [ ] **Activer le stopgap** : ajouter le secret `SUPABASE_DB_URL` (chaîne de
+      connexion Postgres, rôle lecture seule de préférence) dans
+      _Settings → Secrets and variables → Actions_.
+- [ ] Faire évoluer le stopgap vers un bucket R2/S3 chiffré (l'artefact GitHub, 30 j,
+      n'est qu'un dépannage court terme).
 - [ ] **Tester une restauration** sur un projet jetable — sinon ça ne compte pas.
 
 **Fini quand** : une restauration a été testée avec succès et la procédure est écrite ici.
@@ -78,12 +90,14 @@ par Formation, les tests d'intégration ne touchent plus l'instance de Productio
   paie, production-ledger, purchase-to-payment, stock-and-assets). Lancés
   séparément par `npm run test:integration`, contre le projet Supabase partagé.
 - Charge : `tests/load/read-only-load-test.mjs`.
-- **Aucun `.github/workflows/`** — rien ne garde un merge.
 - Aucun test ciblant spécifiquement les **politiques RLS**.
 - Aucun E2E navigateur.
 
 **Actions**
-- [ ] Workflow GitHub Actions : `typecheck` + `lint` + `test` + `build` sur chaque PR.
+- [x] Workflow GitHub Actions `.github/workflows/ci.yml` : `typecheck` + `lint` +
+      `test` (unitaires) + `build` sur chaque PR et push `master`. `.nvmrc` = 24.
+- [ ] Protéger `master` : exiger le passage de CI avant merge (réglage GitHub, à faire
+      côté repo).
 - [ ] Ajouter `test:integration` au workflow, contre le projet Formation isolé
       (point 2) ou une instance `supabase start` éphémère.
 - [ ] Nouveau `tests/unit/stockValuation.test.ts` — CUMP, `stockValueAsOf`, rotation
@@ -175,12 +189,14 @@ représentatif, et le temps ne croît plus linéairement avec l'historique.
 - [ ] **Fuseau horaire** : `Africa/Lagos` codé en dur (`fn_business_hours_elapsed`,
       `businessHoursElapsed` côté client). Ajouter `companies.timezone` et le
       propager. À faire avant d'intégrer toute société hors WAT.
-- [ ] **Bundle** : `exceljs` (~930 Ko) et `jspdf` (~400 Ko) chargés d'emblée.
-      → `await import()` dans les handlers d'export/impression, `React.lazy` sur les
-      pages de rapport lourdes. ~1,3 Mo en moins au chargement initial (pénalisant
-      sur connexion lente).
-- [ ] **`.gitignore`** : `.claude/` n'est ni ignoré ni suivi. Décider : l'ignorer,
-      ou committer `.claude/launch.json` comme config de preview partagée.
+- [x] **Bundle** : vérification faite — **déjà réglé**. `exceljs` / `jspdf` /
+      `jspdf-autotable` sont en `import()` dynamique (`src/lib/xlsx.ts`,
+      `src/lib/pdf.ts`), les 24 pages et les 7 dashboards sont en `React.lazy`
+      (`src/routes.tsx`, `src/features/dashboard/DashboardPage.tsx`), `recharts` est
+      isolé dans le chunk de `FinancialDashboard`. Le chargement initial vérifié en
+      prod ne tire aucun de ces gros chunks.
+- [x] **`.gitignore`** : `.claude/launch.json` (config de preview portable) suivi,
+      `.claude/*` ignoré pour le reste.
 - [ ] **Taux fiscaux** : IS / Précompte ISB / Taxe immobilière en attente de
       validation des collègues. Dès accord → une migration sur la config fiscale.
 
@@ -190,4 +206,6 @@ représentatif, et le temps ne croît plus linéairement avec l'historique.
 
 | Date | Chantier | Avancée | Réf |
 |------|----------|---------|-----|
-| 2026-09-10 | — | Création du document (diagnostic initial) | — |
+| 2026-09-10 | — | Création du document (diagnostic initial) | `0e4cce4` |
+| 2026-09-10 | 3, 6 | Quick wins S1 : CI (`ci.yml`), `.nvmrc`, `.gitignore` `.claude/`. Constat : lazy-load exports déjà fait. | — |
+| 2026-09-10 | 1 | Stopgap sauvegarde nocturne (`backup.yml`) — reste à ajouter le secret `SUPABASE_DB_URL`. | — |
