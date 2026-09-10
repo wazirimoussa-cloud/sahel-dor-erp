@@ -208,4 +208,5 @@ représentatif, et le temps ne croît plus linéairement avec l'historique.
 |------|----------|---------|-----|
 | 2026-09-10 | — | Création du document (diagnostic initial) | `0e4cce4` |
 | 2026-09-10 | 3, 6 | Quick wins S1 : CI (`ci.yml`), `.nvmrc`, `.gitignore` `.claude/`. Constat : lazy-load exports déjà fait. | — |
-| 2026-09-10 | 1 | Stopgap sauvegarde nocturne (`backup.yml`) — reste à ajouter le secret `SUPABASE_DB_URL`. | — |
+| 2026-09-10 | 1 | Stopgap sauvegarde nocturne (`backup.yml`) — reste à ajouter le secret `SUPABASE_DB_URL`. | `310b888` |
+| 2026-09-10 | 3 | CI verte après correctif : suite unitaire rendue hermétique (variables Supabase factices dans `vitest.config.ts`) — elle échouait en CI faute de `.env.local`. | `9db09e8` |
