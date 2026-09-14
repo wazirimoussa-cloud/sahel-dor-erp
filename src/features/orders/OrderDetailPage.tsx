@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
@@ -13,7 +13,7 @@ import {
 } from "@/features/orders/useOrders";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { generateOrderPdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
 import { formatNumber } from "@/lib/format";
@@ -53,7 +53,7 @@ export function OrderDetailPage() {
   const canRecordPayment = hasAttribution("ventes.encaisser_paiement");
 
   const {
-    register: registerPayment,
+    control: controlPayment,
     handleSubmit: handlePaymentSubmit,
     reset: resetPayment,
     formState: { isSubmitting: isSubmittingPayment, errors: paymentErrors },
@@ -325,7 +325,13 @@ export function OrderDetailPage() {
               <label htmlFor="order-payment-amount" className="mb-1 block text-xs font-medium text-gray-600">
                 Montant reçu (FCFA)
               </label>
-              <Input id="order-payment-amount" type="number" {...registerPayment("amount")} />
+              <Controller
+                control={controlPayment}
+                name="amount"
+                render={({ field }) => (
+                  <AmountInput id="order-payment-amount" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                )}
+              />
               {paymentErrors.amount && (
                 <p className="mt-1 text-xs text-red-600">{paymentErrors.amount.message}</p>
               )}

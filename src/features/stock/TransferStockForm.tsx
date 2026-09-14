@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
 import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useTransferStock } from "@/features/stock/useTransactions";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const transferSchema = z
   .object({
@@ -30,6 +30,7 @@ export function TransferStockForm() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -119,7 +120,13 @@ export function TransferStockForm() {
         <label htmlFor="transfer-quantity" className="mb-1 block text-xs font-medium text-gray-600">
           Quantité
         </label>
-        <Input id="transfer-quantity" type="number" step="0.001" {...register("quantity")} />
+        <Controller
+          control={control}
+          name="quantity"
+          render={({ field }) => (
+            <AmountInput id="transfer-quantity" allowDecimals value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+          )}
+        />
         {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
       </div>
 

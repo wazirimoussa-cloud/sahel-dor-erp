@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
@@ -7,6 +7,7 @@ import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useCreateTransformation } from "@/features/transformations/useTransformations";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const lineSchema = z.object({
   productId: z.string().uuid("Choisissez un produit"),
@@ -128,11 +129,18 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
               >
                 Quantité
               </label>
-              <Input
-                id={`inputs-${index}-quantity`}
-                type="number"
-                step="0.001"
-                {...register(`inputs.${index}.quantity` as const)}
+              <Controller
+                control={control}
+                name={`inputs.${index}.quantity` as const}
+                render={({ field }) => (
+                  <AmountInput
+                    id={`inputs-${index}-quantity`}
+                    allowDecimals
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
               />
             </div>
             <Button type="button" variant="secondary" onClick={() => inputsArray.remove(index)}>
@@ -188,11 +196,18 @@ export function NewTransformationForm({ onCreated }: { onCreated?: () => void })
               >
                 Quantité
               </label>
-              <Input
-                id={`outputs-${index}-quantity`}
-                type="number"
-                step="0.001"
-                {...register(`outputs.${index}.quantity` as const)}
+              <Controller
+                control={control}
+                name={`outputs.${index}.quantity` as const}
+                render={({ field }) => (
+                  <AmountInput
+                    id={`outputs-${index}-quantity`}
+                    allowDecimals
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                  />
+                )}
               />
             </div>
             <div>

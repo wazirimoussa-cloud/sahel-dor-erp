@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
@@ -13,6 +13,7 @@ import { ProductForm } from "@/features/products/ProductForm";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { isLowStock } from "@/lib/stockThreshold";
@@ -85,6 +86,7 @@ export function ProductsPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors },
@@ -224,7 +226,13 @@ export function ProductsPage() {
                             >
                               Nouveau prix
                             </label>
-                            <Input id="newPrice" type="number" step="0.01" {...register("newPrice")} />
+                            <Controller
+                              control={control}
+                              name="newPrice"
+                              render={({ field }) => (
+                                <AmountInput id="newPrice" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+                              )}
+                            />
                             {errors.newPrice && (
                               <p className="mt-1 text-xs text-red-600">{errors.newPrice.message}</p>
                             )}

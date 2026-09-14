@@ -1863,6 +1863,34 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     - La liste "À valider" gagne un badge "Urgente" par ligne pour les commandes concernées.
     - Aucun graphique ajouté, mêmes raisons que les dashboards précédents.
 
+85. **Séparateur de milliers pendant la saisie des montants et quantités**
+    (`src/components/ui/AmountInput.tsx`, nouveau) : un `<input type="number">` refuse
+    nativement tout caractère non numérique — impossible d'y afficher un espace de
+    groupement en tapant, contrairement à l'affichage (`formatNumber()`, déjà en place
+    partout). `AmountInput` reste en `type="text"` (`inputMode` adapté pour le clavier
+    mobile) et reformate lui-même en direct, avec préservation de la position du curseur
+    (écriture directe dans le DOM avant le rendu React, plutôt qu'un `value` contrôlé —
+    c'est ce qui évite le classique curseur qui saute en fin de champ). Composant
+    utilisable directement (état simple) ou via `<Controller>` de react-hook-form
+    (`register()` seul ne permet pas d'intercepter la frappe).
+    - **Champs concernés** : les montants FCFA (coûts produit, prix, salaires, avances,
+      encaissements, immobilisations, capital social) et les quantités (lignes d'achat/
+      commande/production/transformation, mouvements de stock, transferts, pertes) —
+      20 champs, 14 fichiers.
+    - **Explicitement hors périmètre** : `VatSettingsPage.tsx` (taux fiscaux ET montants
+      forfaitaires cohabitent sous des noms de colonne trompeurs — sous-chantier séparé) ;
+      petits compteurs structurels (durée d'amortissement, coefficient dégressif,
+      personnes à charge, sacs à reconditionner) ; filtres de consultation
+      (`StockPage.tsx`) ; la quantité reçue par ligne sur `PurchaseDetailPage.tsx` (champ
+      non contrôlé `defaultValue`, wiring différent, follow-up possible).
+    - **Ajustement de stock signé** (`StockMovementForm.tsx`, type `ADJUSTMENT`) : seul
+      champ où un `-` en tête de saisie doit rester possible — ajout d'un prop
+      `allowNegative` au composant (découvert en cours d'implémentation, pas prévu au
+      plan initial).
+    - `tests/unit/AmountInput.test.tsx` couvre la logique la plus délicate : préservation
+      du curseur (frappe séquentielle, backspace à travers un espace de groupement),
+      partie décimale, signe, valeur vide → `undefined` (jamais `0`), clamp `min` au blur.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

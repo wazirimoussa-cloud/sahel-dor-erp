@@ -1,10 +1,11 @@
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
 import { useCreateEmployee } from "@/features/payroll/useEmployees";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const employeeSchema = z.object({
   fullName: z.string().min(1, "Nom requis"),
@@ -20,6 +21,7 @@ export function EmployeeForm({ onCreated }: { onCreated?: () => void }) {
   const createEmployee = useCreateEmployee();
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -54,7 +56,13 @@ export function EmployeeForm({ onCreated }: { onCreated?: () => void }) {
         <label htmlFor="employee-baseSalary" className="mb-1 block text-xs font-medium text-gray-600">
           Salaire de base (FCFA)
         </label>
-        <Input id="employee-baseSalary" type="number" step="0.01" {...register("baseSalary")} />
+        <Controller
+          control={control}
+          name="baseSalary"
+          render={({ field }) => (
+            <AmountInput id="employee-baseSalary" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+          )}
+        />
         {errors.baseSalary && <p className="mt-1 text-xs text-red-600">{errors.baseSalary.message}</p>}
       </div>
       <div>

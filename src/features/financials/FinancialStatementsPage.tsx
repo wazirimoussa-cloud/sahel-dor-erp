@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
@@ -8,6 +8,7 @@ import { useUpdateCapitalSocial } from "@/features/financials/useUpdateCapitalSo
 import { useCreateFixedAsset, useDisposeFixedAsset } from "@/features/financials/useFixedAssets";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { Button } from "@/components/ui/Button";
 import { formatNumber } from "@/lib/format";
 
@@ -67,6 +68,7 @@ export function FinancialStatementsPage() {
 
   const {
     register: registerAsset,
+    control: controlAsset,
     handleSubmit: handleAssetSubmit,
     reset: resetAssetForm,
     watch: watchAsset,
@@ -87,6 +89,7 @@ export function FinancialStatementsPage() {
 
   const {
     register: registerDisposal,
+    control: controlDisposal,
     handleSubmit: handleDisposalSubmit,
     reset: resetDisposalForm,
     formState: { errors: disposalErrors, isSubmitting: isSubmittingDisposal },
@@ -305,14 +308,12 @@ export function FinancialStatementsPage() {
                         Capital social
                         {canEditCapital && (
                           <div className="mt-1 flex items-center gap-2">
-                            <Input
-                              type="number"
+                            <AmountInput
                               min={0}
-                              step="0.01"
                               className="w-32"
                               aria-label="Capital social"
-                              value={displayedCapital}
-                              onChange={(e) => setCapitalInput(e.target.value)}
+                              value={displayedCapital === "" ? undefined : Number(displayedCapital)}
+                              onChange={(v) => setCapitalInput(v === undefined ? "" : String(v))}
                             />
                             <Button
                               type="button"
@@ -406,11 +407,17 @@ export function FinancialStatementsPage() {
                   >
                     Coût (FCFA)
                   </label>
-                  <Input
-                    id="asset-acquisitionCost"
-                    type="number"
-                    step="0.01"
-                    {...registerAsset("acquisitionCost")}
+                  <Controller
+                    control={controlAsset}
+                    name="acquisitionCost"
+                    render={({ field }) => (
+                      <AmountInput
+                        id="asset-acquisitionCost"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                      />
+                    )}
                   />
                   {assetErrors.acquisitionCost && (
                     <p className="mt-1 text-xs text-red-600">{assetErrors.acquisitionCost.message}</p>
@@ -576,12 +583,18 @@ export function FinancialStatementsPage() {
                               >
                                 Prix de cession (FCFA)
                               </label>
-                              <Input
-                                id="disposal-disposalPrice"
-                                type="number"
-                                min={0}
-                                step="0.01"
-                                {...registerDisposal("disposalPrice")}
+                              <Controller
+                                control={controlDisposal}
+                                name="disposalPrice"
+                                render={({ field }) => (
+                                  <AmountInput
+                                    id="disposal-disposalPrice"
+                                    min={0}
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    onBlur={field.onBlur}
+                                  />
+                                )}
                               />
                               {disposalErrors.disposalPrice && (
                                 <p className="mt-1 text-xs text-red-600">

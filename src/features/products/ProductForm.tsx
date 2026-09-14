@@ -1,10 +1,11 @@
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
 import { useCreateProduct } from "@/features/products/useProducts";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { formatNumber } from "@/lib/format";
 
 const UNITS = ["tonne", "carton", "bidon", "unité"] as const;
@@ -27,6 +28,7 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
   const createProduct = useCreateProduct();
   const {
     register,
+    control,
     handleSubmit,
     reset,
     watch,
@@ -74,28 +76,58 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
         <label htmlFor="product-purchase-cost" className="mb-1 block text-xs font-medium text-gray-600">
           Prix global d'achat
         </label>
-        <Input id="product-purchase-cost" type="number" step="0.01" {...register("purchaseCost")} />
+        <Controller
+          control={control}
+          name="purchaseCost"
+          render={({ field }) => (
+            <AmountInput id="product-purchase-cost" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+          )}
+        />
         {errors.purchaseCost && <p className="mt-1 text-xs text-red-600">{errors.purchaseCost.message}</p>}
       </div>
       <div>
         <label htmlFor="product-freight-cost" className="mb-1 block text-xs font-medium text-gray-600">
           Frais de transport
         </label>
-        <Input id="product-freight-cost" type="number" step="0.01" {...register("freightCost")} />
+        <Controller
+          control={control}
+          name="freightCost"
+          render={({ field }) => (
+            <AmountInput id="product-freight-cost" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+          )}
+        />
         {errors.freightCost && <p className="mt-1 text-xs text-red-600">{errors.freightCost.message}</p>}
       </div>
       <div>
         <label htmlFor="product-handling-cost" className="mb-1 block text-xs font-medium text-gray-600">
           Frais de manutention
         </label>
-        <Input id="product-handling-cost" type="number" step="0.01" {...register("handlingCost")} />
+        <Controller
+          control={control}
+          name="handlingCost"
+          render={({ field }) => (
+            <AmountInput id="product-handling-cost" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+          )}
+        />
         {errors.handlingCost && <p className="mt-1 text-xs text-red-600">{errors.handlingCost.message}</p>}
       </div>
       <div>
         <label htmlFor="product-stock" className="mb-1 block text-xs font-medium text-gray-600">
           Stock initial
         </label>
-        <Input id="product-stock" type="number" step="0.001" {...register("stock")} />
+        <Controller
+          control={control}
+          name="stock"
+          render={({ field }) => (
+            <AmountInput
+              id="product-stock"
+              allowDecimals
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+            />
+          )}
+        />
         {errors.stock && <p className="mt-1 text-xs text-red-600">{errors.stock.message}</p>}
       </div>
       <p className="w-full text-xs text-gray-500">
@@ -107,7 +139,13 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
         <label htmlFor="product-selling-price" className="mb-1 block text-xs font-medium text-gray-600">
           Prix de vente
         </label>
-        <Input id="product-selling-price" type="number" step="0.01" {...register("sellingPrice")} />
+        <Controller
+          control={control}
+          name="sellingPrice"
+          render={({ field }) => (
+            <AmountInput id="product-selling-price" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+          )}
+        />
         {errors.sellingPrice && <p className="mt-1 text-xs text-red-600">{errors.sellingPrice.message}</p>}
       </div>
       <div>

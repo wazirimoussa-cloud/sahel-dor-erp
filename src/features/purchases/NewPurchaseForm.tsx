@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
@@ -7,7 +7,7 @@ import { useActiveSuppliers } from "@/features/suppliers/useSuppliers";
 import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useCreatePurchase } from "@/features/purchases/usePurchases";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const purchaseSchema = z.object({
   supplierId: z.string().uuid("Choisissez un fournisseur"),
@@ -142,11 +142,18 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
             >
               Quantité
             </label>
-            <Input
-              id={`purchase-items-${index}-quantity`}
-              type="number"
-              step="0.001"
-              {...register(`items.${index}.quantity` as const)}
+            <Controller
+              control={control}
+              name={`items.${index}.quantity` as const}
+              render={({ field }) => (
+                <AmountInput
+                  id={`purchase-items-${index}-quantity`}
+                  allowDecimals
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           </div>
 

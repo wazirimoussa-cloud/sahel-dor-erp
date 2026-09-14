@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
@@ -7,7 +7,7 @@ import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useActiveClients } from "@/features/clients/useClients";
 import { useCreateOrder } from "@/features/orders/useOrders";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const orderSchema = z.object({
   warehouseId: z.string().uuid("Choisissez un magasin"),
@@ -136,11 +136,18 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
             >
               Quantité
             </label>
-            <Input
-              id={`order-items-${index}-quantity`}
-              type="number"
-              step="0.001"
-              {...register(`items.${index}.quantity` as const)}
+            <Controller
+              control={control}
+              name={`items.${index}.quantity` as const}
+              render={({ field }) => (
+                <AmountInput
+                  id={`order-items-${index}-quantity`}
+                  allowDecimals
+                  value={field.value}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                />
+              )}
             />
           </div>
 

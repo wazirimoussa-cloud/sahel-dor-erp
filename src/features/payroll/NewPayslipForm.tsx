@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link } from "react-router-dom";
@@ -8,6 +8,7 @@ import { useCreatePayslip } from "@/features/payroll/usePayslips";
 import { useOutstandingAdvances } from "@/features/payroll/useSalaryAdvances";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 import { formatNumber } from "@/lib/format";
 
 const payslipSchema = z.object({
@@ -28,6 +29,7 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     watch,
@@ -109,14 +111,26 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
           <label htmlFor="grossSalary" className="mb-1 block text-xs font-medium text-gray-600">
             Salaire brut (FCFA)
           </label>
-          <Input id="grossSalary" type="number" step="0.01" {...register("grossSalary")} />
+          <Controller
+            control={control}
+            name="grossSalary"
+            render={({ field }) => (
+              <AmountInput id="grossSalary" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+            )}
+          />
           {errors.grossSalary && <p className="mt-1 text-xs text-red-600">{errors.grossSalary.message}</p>}
         </div>
         <div>
           <label htmlFor="pensionWithholding" className="mb-1 block text-xs font-medium text-gray-600">
             Retenue pension (FCFA)
           </label>
-          <Input id="pensionWithholding" type="number" step="0.01" {...register("pensionWithholding")} />
+          <Controller
+            control={control}
+            name="pensionWithholding"
+            render={({ field }) => (
+              <AmountInput id="pensionWithholding" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+            )}
+          />
           {errors.pensionWithholding && (
             <p className="mt-1 text-xs text-red-600">{errors.pensionWithholding.message}</p>
           )}
@@ -125,7 +139,13 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
           <label htmlFor="itsWithholding" className="mb-1 block text-xs font-medium text-gray-600">
             Retenue ITS (FCFA)
           </label>
-          <Input id="itsWithholding" type="number" step="0.01" {...register("itsWithholding")} />
+          <Controller
+            control={control}
+            name="itsWithholding"
+            render={({ field }) => (
+              <AmountInput id="itsWithholding" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+            )}
+          />
           {errors.itsWithholding && (
             <p className="mt-1 text-xs text-red-600">{errors.itsWithholding.message}</p>
           )}

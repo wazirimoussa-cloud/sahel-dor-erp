@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
@@ -9,6 +9,7 @@ import { useStockLots } from "@/features/stock/useStockLots";
 import { lotStatus } from "@/lib/stockDisplay";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const schema = z
   .object({
@@ -42,6 +43,7 @@ export function RequestStockLossForm() {
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     reset,
@@ -137,7 +139,13 @@ export function RequestStockLossForm() {
           <label htmlFor="loss-quantity" className="mb-1 block text-xs font-medium text-gray-600">
             Quantité concernée
           </label>
-          <Input id="loss-quantity" type="number" step="0.001" {...register("quantity")} />
+          <Controller
+            control={control}
+            name="quantity"
+            render={({ field }) => (
+              <AmountInput id="loss-quantity" allowDecimals value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+            )}
+          />
           {errors.quantity && <p className="mt-1 text-xs text-red-600">{errors.quantity.message}</p>}
         </div>
       </div>
@@ -177,7 +185,19 @@ export function RequestStockLossForm() {
           <label htmlFor="repackagedQuantity" className="mb-1 block text-xs font-medium text-gray-600">
             Quantité récupérée après reconditionnement
           </label>
-          <Input id="repackagedQuantity" type="number" step="0.001" {...register("repackagedQuantity")} />
+          <Controller
+            control={control}
+            name="repackagedQuantity"
+            render={({ field }) => (
+              <AmountInput
+                id="repackagedQuantity"
+                allowDecimals
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
           {errors.repackagedQuantity && (
             <p className="mt-1 text-xs text-red-600">{errors.repackagedQuantity.message}</p>
           )}

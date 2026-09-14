@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveEmployees } from "@/features/payroll/useEmployees";
 import { useCreateSalaryAdvance } from "@/features/payroll/useSalaryAdvances";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { AmountInput } from "@/components/ui/AmountInput";
 
 const advanceSchema = z.object({
   employeeId: z.string().uuid("Choisissez un employé"),
@@ -22,6 +23,7 @@ export function SalaryAdvanceForm({ onCreated }: { onCreated?: () => void }) {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -62,7 +64,13 @@ export function SalaryAdvanceForm({ onCreated }: { onCreated?: () => void }) {
         <label htmlFor="advance-amount" className="mb-1 block text-xs font-medium text-gray-600">
           Montant (FCFA)
         </label>
-        <Input id="advance-amount" type="number" step="0.01" {...register("amount")} />
+        <Controller
+          control={control}
+          name="amount"
+          render={({ field }) => (
+            <AmountInput id="advance-amount" value={field.value} onChange={field.onChange} onBlur={field.onBlur} />
+          )}
+        />
         {errors.amount && <p className="mt-1 text-xs text-red-600">{errors.amount.message}</p>}
       </div>
       <div>
