@@ -1950,6 +1950,19 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       perte déclarée fonctionne de bout en bout (valeur de la perte correcte, transporteur
       bien attribué).
 
+89. **"Modifier" ajouté au module Transporteurs** (`TransportersPage.tsx`, `useUpdateTransporter`
+    dans `useTransporters.ts`) : jusqu'ici création seule, aucun moyen de corriger un
+    transporteur existant — gap devenu concret avec l'auto-création du point 87 (un
+    transporteur créé à la volée depuis la réception n'a qu'un nom, jamais de téléphone/email/
+    adresse). Repris du même patron que "Modifier le prix" sur `ProductsPage.tsx` : bouton par
+    ligne qui ouvre un formulaire en ligne pré-rempli, sous la ligne concernée.
+    - **Aucune RPC ni migration nécessaire** : la policy RLS `transporters_update`
+      (`0032_attributions.sql`) existait déjà, jamais utilisée jusqu'ici — `transporteurs.gerer`
+      en opérationnel suffit, `.update()` direct comme `useCreateTransporter`.
+    - Vérifié en direct sur Formation (`magasinier.formation`) : ouverture du formulaire,
+      renseignement téléphone/email/adresse sur un transporteur auto-créé, sauvegarde reflétée
+      immédiatement dans la liste.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

@@ -1,9 +1,23 @@
+import { Fragment, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
-import { useTransporters } from "@/features/transporters/useTransporters";
+import { useTransporters, useUpdateTransporter } from "@/features/transporters/useTransporters";
 import { TransporterForm } from "@/features/transporters/TransporterForm";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+
+const editTransporterSchema = z.object({
+  name: z.string().min(1, "Nom requis"),
+  phone: z.string().optional(),
+  email: z.string().email("Email invalide").optional().or(z.literal("")),
+  address: z.string().optional(),
+});
+type EditTransporterFormValues = z.infer<typeof editTransporterSchema>;
 
 export function TransportersPage() {
   const { hasAttribution } = useAuth();
@@ -11,6 +25,43 @@ export function TransportersPage() {
   const { data, isLoading, error } = useTransporters(page, pageSize);
   const transporters = data?.rows;
   const canManage = hasAttribution("transporteurs.gerer");
+  const updateTransporter = useUpdateTransporter();
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<EditTransporterFormValues>({ resolver: zodResolver(editTransporterSchema) });
+
+  function startEditing(transporter: {
+    id: string;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    address: string | null;
+  }) {
+    setEditError(null);
+    setEditingId(editingId === transporter.id ? null : transporter.id);
+    reset({
+      name: transporter.name,
+      phone: transporter.phone ?? "",
+      email: transporter.email ?? "",
+      address: transporter.address ?? "",
+    });
+  }
+
+  async function onSubmitEdit(transporterId: string, values: EditTransporterFormValues) {
+    setEditError(null);
+    try {
+      await updateTransporter.mutateAsync({ id: transporterId, ...values });
+      setEditingId(null);
+    } catch {
+      setEditError("Modification refusée (droits insuffisants ou email invalide).");
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -32,19 +83,94 @@ export function TransportersPage() {
                 <th scope="col" className="py-2">Nom</th>
                 <th scope="col" className="py-2">Téléphone</th>
                 <th scope="col" className="py-2">Email</th>
+                {canManage && <th scope="col" className="py-2" />}
               </tr>
             </thead>
             <tbody>
               {transporters.map((transporter) => (
-                <tr key={transporter.id} className="border-b border-gray-100">
-                  <td className="py-2">{transporter.name}</td>
-                  <td className="py-2">{transporter.phone ?? "—"}</td>
-                  <td className="py-2">{transporter.email ?? "—"}</td>
-                </tr>
+                <Fragment key={transporter.id}>
+                  <tr className="border-b border-gray-100">
+                    <td className="py-2">{transporter.name}</td>
+                    <td className="py-2">{transporter.phone ?? "—"}</td>
+                    <td className="py-2">{transporter.email ?? "—"}</td>
+                    {canManage && (
+                      <td className="py-2 text-right">
+                        <button
+                          type="button"
+                          className="text-xs text-brand-600 hover:underline"
+                          onClick={() => startEditing(transporter)}
+                        >
+                          Modifier
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                  {editingId === transporter.id && (
+                    <tr className="border-b border-gray-100 bg-gray-50">
+                      <td colSpan={4} className="py-2">
+                        <form
+                          onSubmit={handleSubmit((values) => onSubmitEdit(transporter.id, values))}
+                          className="flex flex-wrap items-end gap-3"
+                          noValidate
+                        >
+                          <div>
+                            <label
+                              htmlFor="edit-transporter-name"
+                              className="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                              Nom
+                            </label>
+                            <Input id="edit-transporter-name" {...register("name")} />
+                            {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name.message}</p>}
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="edit-transporter-phone"
+                              className="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                              Téléphone
+                            </label>
+                            <Input id="edit-transporter-phone" {...register("phone")} />
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="edit-transporter-email"
+                              className="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                              Email
+                            </label>
+                            <Input id="edit-transporter-email" type="email" {...register("email")} />
+                            {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email.message}</p>}
+                          </div>
+                          <div>
+                            <label
+                              htmlFor="edit-transporter-address"
+                              className="mb-1 block text-xs font-medium text-gray-600"
+                            >
+                              Adresse
+                            </label>
+                            <Input id="edit-transporter-address" {...register("address")} />
+                          </div>
+                          <Button type="submit" disabled={isSubmitting}>
+                            Enregistrer
+                          </Button>
+                          <Button type="button" variant="secondary" onClick={() => setEditingId(null)}>
+                            Annuler
+                          </Button>
+                          {editError && (
+                            <p role="alert" className="w-full text-xs text-red-600">
+                              {editError}
+                            </p>
+                          )}
+                        </form>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
               {transporters.length === 0 && (
                 <tr>
-                  <td colSpan={3} className="py-4 text-center text-gray-500">
+                  <td colSpan={canManage ? 4 : 3} className="py-4 text-center text-gray-500">
                     Aucun transporteur pour le moment.
                   </td>
                 </tr>

@@ -59,3 +59,35 @@ export function useCreateTransporter() {
     },
   });
 }
+
+export interface UpdateTransporterInput {
+  id: string;
+  name: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+// RLS transporters_update (0032_attributions.sql) autorise déjà l'update direct pour
+// transporteurs.gerer en opérationnel -- pas besoin de RPC, même schéma que la lecture/
+// création (useTransporters/useCreateTransporter ci-dessus).
+export function useUpdateTransporter() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (transporter: UpdateTransporterInput) => {
+      const { error } = await supabase
+        .from("transporters")
+        .update({
+          name: transporter.name,
+          phone: transporter.phone || null,
+          email: transporter.email || null,
+          address: transporter.address || null,
+        })
+        .eq("id", transporter.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["transporters"] });
+    },
+  });
+}
