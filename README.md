@@ -2114,8 +2114,16 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     - Vérifié en direct sur Formation : création + cession d'une immobilisation test
       (5 000 000 FCFA, 5 ans, cédée à 1 an pour 3 000 000) → 3 écritures équilibrées
       (acquisition 24/521 ; sortie 28+675/24 ; encaissement 521/775).
-    - **Écarts SYSCOHADA restants, non traités** : 4494 (Précompte ISB — écart probable,
-      jamais confirmé avec certitude quel code serait correct).
+
+96. **Dernier écart SYSCOHADA corrigé : Précompte ISB, 4494 → 4492** (migration `0094`) :
+    confirmé sur 4 vérifications indépendantes (2 pages, recoupées chacune 2 fois) — 4494
+    réel est "État, subventions d'équipement/investissement à recevoir", sans rapport. Un
+    précompte est une avance/retenue sur un impôt à venir, exactement la définition de
+    **4492** "État, avances et acomptes versés sur impôts" (sous 449 "État, créances et
+    dettes diverses", même famille que 4494). Compte jamais référencé par une RPC : simple
+    renommage, vérifié en direct.
+    - **Tous les écarts SYSCOHADA identifiés lors de l'audit (points 93-96) sont
+      maintenant corrigés** : 31→32, 421↔425, 647→6411, 646→6412, 21→24, 4494→4492.
 
 ## Limites connues / pistes pour la suite
 
