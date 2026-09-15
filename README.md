@@ -1993,6 +1993,33 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     - Vérifié : `npm run typecheck && npm run lint && npm run test && npm run build` propres ;
       vérification en direct sur Formation (`comptable.formation`) à faire après déploiement.
 
+91. **Étend la couverture du journal d'audit générique** (`fn_audit_log`/`logs`, migration
+    `0088_etend_audit_generique.sql`) : en creusant la question "toute modification a-t-elle
+    un historique ?" (point 90), découverte d'un système déjà en place et largement répandu —
+    `fn_audit_log()` (0002) + trigger `trg_audit_<table>` déjà posés sur la quasi-totalité des
+    tables métier (produits, commandes, clients, fournisseurs, transporteurs, entrepôts,
+    employés, achats, productions, transformations, paie, congés, plan comptable...), chaque
+    écriture (création/modification/suppression) journalisée automatiquement dans `logs`,
+    consultable via `/logs` (module `journal_audit`). Le diagnostic initial du point 90 avait
+    raté ce système — 5 tables réellement mutées en place restaient hors couverture :
+    `companies` (capital social + infos légales, en plus des taux fiscaux déjà couverts par le
+    point 90), `users` (bascule actif/inactif), `user_attributions` (octroi/retrait de droits —
+    jusqu'ici `set_user_attributions` faisait un delete+insert sans aucune trace), et les
+    transitions d'état `stock_loss_requests` (approbation/rejet) et `fixed_assets` (cession).
+    - Volontairement exclues (même raisonnement qu'au point 90) : `product_stocks`/
+      `stock_lots` (état dérivé, recalculé à chaque transaction déjà auditée — les auditer en
+      plus dupliquerait le même événement sans information nouvelle) ; `order_payments`/
+      `purchase_losses`/`transaction_lot_allocations` (jamais modifiés après création,
+      seulement insérés puis lus — déjà visibles intégralement via leurs propres écrans) ;
+      `attributions`/`attribution_conflicts`/`roles` (catalogues statiques).
+    - **`LogsPage.tsx` corrigé au passage** : la colonne `metadata` (instantané JSON complet
+      de la ligne) était déjà remontée par `useLogs.ts` mais jamais affichée — un bouton
+      "Détails" par ligne l'affiche maintenant en table clé/valeur. Limite assumée et
+      documentée sur l'écran : `metadata` est un instantané (l'état après l'écriture), pas un
+      diff champ par champ — contrairement à `product_price_history`/`fiscal_rate_history`,
+      dédiés chacun à un seul écran et conçus spécifiquement pour l'avant/après.
+    - Vérifié : `npm run typecheck && npm run lint && npm run test` propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
