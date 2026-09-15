@@ -2163,6 +2163,24 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       10 830 FCFA). `npm run typecheck && npm run lint && npm run test && npm run build`
       propres (49 tests, +5 pour `vat.ts`).
 
+98. **Libellé du compte 608 corrigé : "Achats d'emballages"** (migration `0096`) : seedé par
+    `0043_prix_de_revient.sql` sous "Frais accessoires d'achat (transport, manutention)" —
+    convention du **PCG français**, pas SYSCOHADA (qui réserve le 608 aux "Achats
+    d'emballages" : `6081` perdus, `6082` récupérables non identifiables, `6083` usage
+    mixte). Le code `608` lui-même restait correct, seul le libellé était trompeur.
+    - **Aucun impact réel** : compte non référencé par aucune RPC depuis
+      `0076_retrait_frais_achat.sql`, qui a supprimé le mécanisme de frais de transport/
+      manutention saisis à l'achat (remplacé par `freight_cost`/`handling_cost` sur la fiche
+      produit) — ligne de catalogue orpheline, jamais postée. Simple renommage, vérifié en
+      direct.
+    - **Dernier écart identifié encore ouvert** : la citation "Art. 23-24 CGI" pour la taxe
+      sur la publicité commerciale extérieure (`taxe_publicite_panneau_*_rate`) reste
+      probablement fausse — recherché à deux reprises sans trouver de section "publicité"
+      dans le Code Général des Impôts national (Ordonnance 2025-22) ; relève vraisemblablement
+      d'un texte distinct propre aux collectivités territoriales, non localisé. Sans compte
+      comptable associé (taux de référence manuel uniquement) : aucun impact financier, juste
+      une citation d'article à vérifier si la bonne source est un jour trouvée.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
