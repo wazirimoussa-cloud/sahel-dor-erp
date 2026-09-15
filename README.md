@@ -2050,6 +2050,37 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       exact, dépassement refusé) ; `npm run typecheck && npm run lint && npm run test && npm run build`
       propres.
 
+93. **3 comptes renumérotés pour conformité SYSCOHADA révisé** (migration `0091`, suite au
+    contrôle demandé après le point 92) : `31/32`, `421/422/425` étaient décalés d'un cran par
+    rapport au plan comptable officiel — confirmé sur plusieurs sources indépendantes avant de
+    toucher au code.
+    - **31 → 32** : le compte 31 SYSCOHADA est "Marchandises" (cohérent avec 601 "Achats de
+      **marchandises**" déjà en place côté achats), pas "Matières premières" — c'est le 32.
+      `create_transformation()` y enregistre le stock de matières premières consommées, donc
+      le contenu était juste, seul le numéro était faux.
+    - **421 ↔ 425** : SYSCOHADA réserve 421 aux avances/acomptes et 422 aux rémunérations
+      dues — l'app avait ces deux notions échangées (421 = rémunérations dues, 425 = avances).
+      Le 425 SYSCOHADA réel ("Représentants du personnel" — délégués, syndicats) n'a jamais
+      été utilisé par l'app, pas recréé.
+    - **Renuméroter, pas recréer** : `journal_entry_lines` référence `account_id` (uuid
+      stable), jamais le `code` directement — changer `code`/`name` sur une ligne
+      `chart_of_accounts` existante ne touche donc aucune écriture déjà passée. `update`
+      simple (421→422 avant 425→421, pour ne pas violer `unique (company_id, code)` un
+      instant), puis `create_transformation`/`create_payslip`/`create_salary_advance`
+      redéfinies avec les nouveaux codes — copies verbatim de 0085/0064, seuls les
+      littéraux `code = '...'` changent.
+    - **D'autres écarts identifiés mais non corrigés dans cette passe** (comptes 21, 646, 647,
+      et probablement 4494 — voir l'échange qui a précédé ce point) : laissés de côté faute
+      d'avoir trouvé avec certitude le bon code de remplacement pour 647 (taxe immobilière),
+      et parce que 21/646 touchent des modules (immobilisations, taxes) qui n'ont pas encore
+      été audités avec la même rigueur que 31/421/425.
+    - Vérifié en direct sur Formation via RPC : `create_salary_advance` + `create_payslip`
+      (avec remboursement d'avance) → écriture équilibrée 661/422/431/447/421 ;
+      `create_transformation` → écriture équilibrée 32/601/36/32 (reclassement). Aucun
+      changement frontend requis (les comptes sont toujours résolus dynamiquement par code,
+      jamais codés en dur côté client). `npm run typecheck && npm run lint && npm run test
+      && npm run build` propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
