@@ -2095,6 +2095,28 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       devrait être 6412), 4494 (Précompte ISB — probable écart, jamais confirmé avec
       certitude).
 
+95. **Comptes 646 et 21 corrigés** (migration `0093`) :
+    - **646 → 6412** "Patentes, licences et taxes annexes" (même famille 641 que 6411, point
+      94). 646 réel est "Droits d'enregistrement". Compte seedé par
+      `0030_is_taxe_professionnelle_structure.sql`, jamais référencé par une RPC : simple
+      renommage.
+    - **21 → 24** "Matériel, Mobilier et Actifs biologiques". SYSCOHADA réserve 21 aux
+      immobilisations **incorporelles** uniquement — les actifs physiques suivis par
+      `fixed_assets` (`category` en texte libre : camions, entrepôts, équipements...)
+      relèvent de 23 (bâtiments) ou 24 (matériel/mobilier). **Choix confirmé avec
+      l'utilisateur** : un seul compte générique 24 plutôt qu'une répartition par
+      catégorie — `category` en texte libre ne permet pas un routage fiable vers 23 vs 24 ;
+      un bâtiment/entrepôt saisi un jour resterait imparfaitement classé (limite assumée,
+      documentée ici plutôt que dans le code). Aucune donnée `fixed_assets` n'existait sur
+      Formation ni Production au moment de la correction — renommage sans aucun risque.
+      `create_fixed_asset`/`dispose_fixed_asset` redéfinies avec le nouveau code (5 points
+      d'usage : acquisition, amortissement cumulé/VNC à la cession).
+    - Vérifié en direct sur Formation : création + cession d'une immobilisation test
+      (5 000 000 FCFA, 5 ans, cédée à 1 an pour 3 000 000) → 3 écritures équilibrées
+      (acquisition 24/521 ; sortie 28+675/24 ; encaissement 521/775).
+    - **Écarts SYSCOHADA restants, non traités** : 4494 (Précompte ISB — écart probable,
+      jamais confirmé avec certitude quel code serait correct).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
