@@ -2081,6 +2081,20 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       jamais codés en dur côté client). `npm run typecheck && npm run lint && npm run test
       && npm run build` propres.
 
+94. **Compte "Taxe immobilière" corrigé : 647 → 6411** (migration `0092`) : le bon code a été
+    confirmé sur 2 sources indépendantes (plan-comptable-ohada.com/compte/64) — 6411 "Impôts
+    fonciers et taxes annexes", sous 641 "Impôts et taxes directs" (même famille que 6412
+    "Patentes, licences et taxes annexes", identifié au point 93 pour la taxe professionnelle
+    mais pas encore corrigé). 647 réel est "Pénalités et amendes fiscales", sans rapport.
+    - Simple renommage : aucune RPC ne référençait `code = '647'` (compte seedé par
+      `0027_precompte_isb_taxe_immobiliere.sql` mais jamais branché sur une écriture
+      automatique — voir la limite déjà documentée sur cet écran), donc aucun changement de
+      code applicatif nécessaire, uniquement la ligne `chart_of_accounts`.
+    - Vérifié en direct : plus aucune ligne au code `647`, le compte apparaît bien en `6411`.
+    - Reste hors périmètre : 21 (immobilisations, devrait distinguer 23/24), 646 (patente,
+      devrait être 6412), 4494 (Précompte ISB — probable écart, jamais confirmé avec
+      certitude).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
