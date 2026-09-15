@@ -1963,6 +1963,36 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       renseignement téléphone/email/adresse sur un transporteur auto-créé, sauvegarde reflétée
       immédiatement dans la liste.
 
+90. **Historique des changements de taux fiscaux** (`fiscal_rate_history`,
+    `update_fiscal_rates` — migration `0087_historique_taux_fiscaux.sql`) : audit systématique
+    des modifications passé en revue — le prix produit avait déjà un historique
+    (`product_price_history`, point 24) mais les 17 champs de `VatSettingsPage.tsx` (TVA, IS,
+    précompte ISB, taxe immobilière, taxe professionnelle, IRVM, droits d'enregistrement,
+    publicité, foncier) étaient écrasés par un simple `update()`, sans trace — alors que ces
+    taux pilotent tous les calculs fiscaux futurs et sont justement en cours de révision avec
+    des collègues (voir point sur les taux fiscaux en attente de retour).
+    - Même patron que `update_product_price`/`product_price_history` : table append-only
+      (trigger `fn_block_mutation`) + RPC `security definer` qui insère une ligne d'historique
+      (`field_name`, `old_value`, `new_value`, `user_id`, `created_at`) **par champ réellement
+      modifié** (pas de bruit si le formulaire est soumis sans changement), avant d'écraser
+      `companies`. Même autorisation que l'écran (`comptabilite.modifier_capital_social`).
+    - Périmètre volontairement limité aux taux fiscaux (décision explicite avec l'utilisateur) :
+      les bascules actif/inactif (entrepôts, clients, fournisseurs, produits, utilisateurs,
+      employés) et les fiches contact (transporteurs) restent de simples `update()` — action
+      réversible ou donnée non financière, un historique y serait du bruit. Le capital social
+      (`useUpdateCapitalSocial`) et les changements d'attributions utilisateur
+      (`set_user_attributions`, delete+insert sans trace de l'état précédent) ont le même écart
+      mais sont restés hors périmètre de cette passe, à traiter séparément si besoin.
+    - Panneau "Historique des modifications" ajouté à `VatSettingsPage.tsx` (visible à tous,
+      pas seulement `canManage` — même logique que le bouton "Historique" par ligne sur
+      `ProductsPage.tsx`), affichant date/champ/ancien→nouveau/auteur.
+    - **Piège rencontré** : `npm run db:types` régénère `database.types.ts` depuis le schéma
+      live et écrase les alias de type ajoutés à la main en bas du fichier (`RoleName`,
+      `TransactionType`, etc.) — à réappliquer après chaque régénération tant qu'ils n'ont pas
+      leur propre fichier séparé.
+    - Vérifié : `npm run typecheck && npm run lint && npm run test && npm run build` propres ;
+      vérification en direct sur Formation (`comptable.formation`) à faire après déploiement.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

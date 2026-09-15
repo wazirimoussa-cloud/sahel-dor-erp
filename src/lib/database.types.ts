@@ -291,6 +291,51 @@ export type Database = {
           },
         ]
       }
+      fiscal_rate_history: {
+        Row: {
+          company_id: string
+          created_at: string
+          field_name: string
+          id: string
+          new_value: number
+          old_value: number
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          field_name: string
+          id?: string
+          new_value: number
+          old_value: number
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          field_name?: string
+          id?: string
+          new_value?: number
+          old_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fiscal_rate_history_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_rate_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fixed_assets: {
         Row: {
           acquisition_cost: number
@@ -2368,6 +2413,61 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_fiscal_rates: {
+        Args: {
+          p_company_id: string
+          p_droits_enregistrement_actes_societe: number
+          p_droits_enregistrement_fonds_commerce_rate: number
+          p_impot_societes_rate: number
+          p_irvm_dividendes_rate: number
+          p_irvm_obligations_rate: number
+          p_irvm_plus_values_cession_rate: number
+          p_precompte_isb_rate: number
+          p_redevance_domaine_public_rate: number
+          p_taxe_immobiliere_rate: number
+          p_taxe_professionnelle_ca_annuel: number
+          p_taxe_professionnelle_droit_fixe_pour_mille: number
+          p_taxe_professionnelle_droit_proportionnel_rate: number
+          p_taxe_professionnelle_plancher: number
+          p_taxe_professionnelle_valeur_locative: number
+          p_taxe_publicite_panneau_autre_rate: number
+          p_taxe_publicite_panneau_papier_rate: number
+          p_vat_rate: number
+        }
+        Returns: {
+          address: string | null
+          capital_social: number
+          created_at: string
+          droits_enregistrement_actes_societe: number
+          droits_enregistrement_fonds_commerce_rate: number
+          id: string
+          impot_societes_rate: number
+          irvm_dividendes_rate: number
+          irvm_obligations_rate: number
+          irvm_plus_values_cession_rate: number
+          name: string
+          nif: string | null
+          precompte_isb_rate: number
+          rccm: string | null
+          redevance_domaine_public_rate: number
+          taxe_immobiliere_rate: number
+          taxe_professionnelle_ca_annuel: number
+          taxe_professionnelle_droit_fixe_pour_mille: number
+          taxe_professionnelle_droit_proportionnel_rate: number
+          taxe_professionnelle_plancher: number
+          taxe_professionnelle_rate: number
+          taxe_professionnelle_valeur_locative: number
+          taxe_publicite_panneau_autre_rate: number
+          taxe_publicite_panneau_papier_rate: number
+          vat_rate: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "companies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       update_product_price: {
         Args: { new_price: number; product_id: string; reason?: string }
         Returns: {
@@ -2434,12 +2534,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2463,11 +2563,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2488,11 +2588,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2513,11 +2613,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2530,11 +2630,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }

@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/auth/useAuth";
-import { useCompanySettings, useUpdateFiscalRates } from "@/features/accounting/useCompanySettings";
+import { useCompanySettings, useFiscalRateHistory, useUpdateFiscalRates } from "@/features/accounting/useCompanySettings";
 import type { Tables } from "@/lib/database.types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -273,6 +273,49 @@ const DROITS_FONCIERS_FIELDS: {
   },
 ];
 
+// Regroupe les 17 tableaux de champs ci-dessus pour retrouver le libellé/suffixe d'un
+// field_name de fiscal_rate_history (colonne DB, ex. "vat_rate") — même clé que `column`.
+const FIELD_LABELS: Record<string, { label: string; suffix: string }> = Object.fromEntries(
+  [
+    ...RATE_FIELDS,
+    ...TAXE_PROFESSIONNELLE_FIELDS,
+    ...TAXE_PROFESSIONNELLE_DATA_FIELDS,
+    ...IRVM_FIELDS,
+    ...DROITS_ENREGISTREMENT_FIELDS,
+    ...TAXE_PUBLICITE_FIELDS,
+    ...DROITS_FONCIERS_FIELDS,
+  ].map((field) => [field.column, { label: field.label, suffix: field.suffix }]),
+);
+
+function FiscalRateHistoryRows({ companyId }: { companyId: string }) {
+  const { data: history, isLoading } = useFiscalRateHistory(companyId);
+  if (isLoading) return <p className="py-2 text-xs text-gray-500">Chargement…</p>;
+  if (!history || history.length === 0) {
+    return <p className="py-2 text-xs text-gray-500">Aucun changement enregistré.</p>;
+  }
+  return (
+    <table className="w-full text-left text-xs text-gray-600">
+      <tbody>
+        {history.map((h) => {
+          const userRelation = h.users as { email: string } | { email: string }[] | null;
+          const userEmail = Array.isArray(userRelation) ? userRelation[0]?.email : userRelation?.email;
+          const field = FIELD_LABELS[h.field_name];
+          return (
+            <tr key={h.id} className="border-b border-gray-100">
+              <td className="py-1 pr-3">{new Date(h.created_at).toLocaleString("fr-FR")}</td>
+              <td className="py-1 pr-3">{field?.label ?? h.field_name}</td>
+              <td className="py-1 pr-3">
+                {formatNumber(h.old_value)} → {formatNumber(h.new_value)} {field?.suffix ?? ""}
+              </td>
+              <td className="py-1">{userEmail ?? "—"}</td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
 export function VatSettingsPage() {
   const { hasAttribution } = useAuth();
   const { data: company, isLoading, error } = useCompanySettings();
@@ -385,6 +428,17 @@ export function VatSettingsPage() {
 
       {isLoading && <p className="text-sm text-gray-500">Chargement…</p>}
       {error && <p className="text-sm text-red-600">Impossible de charger les paramètres.</p>}
+
+      {company && (
+        <Card>
+          <h2 className="mb-1 text-sm font-bold text-forest-900">Historique des modifications</h2>
+          <p className="mb-4 text-xs text-gray-500">
+            Chaque champ ci-dessus qui change réellement de valeur (qu'il s'agisse d'un taux ou
+            d'un montant) laisse une trace ici — qui, quand, ancienne et nouvelle valeur.
+          </p>
+          <FiscalRateHistoryRows companyId={company.id} />
+        </Card>
+      )}
 
       {company && !canManage && (
         <>
