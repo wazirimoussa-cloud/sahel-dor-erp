@@ -1914,6 +1914,26 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       prix de revient réel (65 000 FCFA/bidon pour "Huile Bidon 20L") au lieu du coût global
       du lot initial (10 000 000 FCFA).
 
+87. **"Transporteur (si perte)" : saisie libre avec auto-création**
+    (`0086_transporteur_perte_saisie_libre.sql`) : remplace le menu déroulant du module
+    Réception par un champ texte (avec suggestions autocomplete via `<datalist>`, alimentées
+    par `useAllTransporters()`). Deux frictions réelles rencontrées le même jour en
+    vérification live : Formation s'est retrouvée sans aucun transporteur enregistré
+    (déclaration de perte bloquée), et aucun des 5 comptes de test n'avait
+    `transporteurs.gerer` en opérationnel pour en créer un via l'écran dédié.
+    - `receive_purchase()` résout désormais un **nom** de transporteur au lieu d'un id :
+      réutilise un transporteur existant pour la société (comparaison insensible à la casse
+      et aux espaces superflus, `lower(trim(name))`), sinon en crée un nouveau à la volée.
+      Les deux chemins vérifiés en direct : réutilisation (variante de casse/espaces sur un
+      nom existant → même id, aucun doublon) et création (nouveau nom → nouvelle ligne
+      `transporters`, une seule fois).
+    - **Autorisation assumée** : la création implicite d'un transporteur via cette RPC ne
+      dépend que de `achats.receptionner` (déjà requis pour toute réception), pas de
+      `transporteurs.gerer` — c'est l'objectif même de la demande.
+    - `ReceptionLine.transporterId` → `transporterName` (`PurchaseDetailPage.tsx`),
+      `ReceivePurchaseLossInput.transporterId` → `transporterName` (`usePurchases.ts`),
+      invalidation `["transporters"]` ajoutée à `useReceivePurchase()`.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

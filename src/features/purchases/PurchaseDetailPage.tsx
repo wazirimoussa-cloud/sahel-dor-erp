@@ -18,7 +18,9 @@ import { formatNumber } from "@/lib/format";
 
 interface ReceptionLine {
   quantityReceived: number;
-  transporterId: string;
+  // Saisie libre (pas une sélection dans la liste Transporteurs) : receive_purchase()
+  // réutilise un transporteur existant si le nom correspond, sinon en crée un nouveau.
+  transporterName: string;
   reason: string;
   expiryDate: string;
 }
@@ -169,7 +171,8 @@ export function PurchaseDetailPage() {
       const productInfo = productInfoOf(item);
       const quantityLost = item.quantity - Number(line.quantityReceived);
       if (quantityLost > 0) {
-        if (!line.transporterId) {
+        const transporterName = line.transporterName?.trim();
+        if (!transporterName) {
           setActionError(
             `Un transporteur est requis pour la perte constatée sur "${productInfo?.name ?? "un produit"}".`,
           );
@@ -177,7 +180,7 @@ export function PurchaseDetailPage() {
         }
         losses.push({
           productId: productInfo?.id ?? item.id,
-          transporterId: line.transporterId,
+          transporterName,
           quantityLost,
           reason: line.reason,
         });
@@ -414,18 +417,14 @@ export function PurchaseDetailPage() {
                       />
                     </td>
                     <td className="py-2">
-                      <select
-                        className="rounded-md border border-gray-300 px-2 py-1 text-sm"
+                      <Input
+                        type="text"
+                        list="transporters-datalist"
+                        placeholder="Nom du transporteur"
+                        className="w-40"
                         aria-label={`Transporteur — ${productInfoOf(item)?.name ?? "produit"}`}
-                        {...registerReception(`lines.${index}.transporterId` as const)}
-                      >
-                        <option value="">— Aucune —</option>
-                        {transporters?.map((transporter) => (
-                          <option key={transporter.id} value={transporter.id}>
-                            {transporter.name}
-                          </option>
-                        ))}
-                      </select>
+                        {...registerReception(`lines.${index}.transporterName` as const)}
+                      />
                     </td>
                     <td className="py-2">
                       <Input
@@ -439,6 +438,12 @@ export function PurchaseDetailPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* Suggestions autocomplete partagées par les champs "Transporteur" de chaque
+                ligne -- saisie libre, la liste existante n'est qu'une aide, jamais imposée. */}
+            <datalist id="transporters-datalist">
+              {transporters?.map((transporter) => <option key={transporter.id} value={transporter.name} />)}
+            </datalist>
 
             <div className="grid grid-cols-2 gap-3 border-t border-gray-100 pt-3 sm:grid-cols-4">
               <div>

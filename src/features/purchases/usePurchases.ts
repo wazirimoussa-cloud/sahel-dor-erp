@@ -80,7 +80,10 @@ export function useCreatePurchase() {
 
 export interface ReceivePurchaseLossInput {
   productId: string;
-  transporterId: string;
+  // Saisie libre (pas un id) : receive_purchase() réutilise un transporteur existant pour
+  // cette société si le nom correspond (insensible à la casse/espaces), sinon en crée un
+  // nouveau à la volée -- retire la dépendance à l'écran Transporteurs pour ce cas d'usage.
+  transporterName: string;
   quantityLost: number;
   reason?: string;
 }
@@ -107,7 +110,7 @@ export function useReceivePurchase() {
         purchase_id: params.purchaseId,
         losses: params.losses.map((loss) => ({
           product_id: loss.productId,
-          transporter_id: loss.transporterId,
+          transporter_name: loss.transporterName,
           quantity_lost: loss.quantityLost,
           reason: loss.reason || null,
         })),
@@ -129,6 +132,8 @@ export function useReceivePurchase() {
       void queryClient.invalidateQueries({ queryKey: ["purchase_losses", params.purchaseId] });
       void queryClient.invalidateQueries({ queryKey: ["purchase_losses"] });
       void queryClient.invalidateQueries({ queryKey: ["stock_lots"] });
+      // Un nouveau transporteur a pu être créé côté serveur (saisie libre, auto-création).
+      void queryClient.invalidateQueries({ queryKey: ["transporters"] });
     },
   });
 }
