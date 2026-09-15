@@ -16,6 +16,7 @@ const amountField = z.coerce.number().min(0, "Le montant doit être positif");
 
 const fiscalRatesSchema = z.object({
   vatRate: percentField(),
+  vatReducedRate: percentField(),
   impotSocietesRate: percentField(),
   precompteIsbRate: percentField(),
   taxeImmobiliereRate: percentField(),
@@ -55,7 +56,10 @@ type CompanyRow = Tables<"companies">;
 
 const RATE_FIELDS: {
   name: keyof FiscalRatesFormValues;
-  column: keyof Pick<CompanyRow, "vat_rate" | "impot_societes_rate" | "precompte_isb_rate" | "taxe_immobiliere_rate">;
+  column: keyof Pick<
+    CompanyRow,
+    "vat_rate" | "vat_reduced_rate" | "impot_societes_rate" | "precompte_isb_rate" | "taxe_immobiliere_rate"
+  >;
   label: string;
   suffix: string;
   help: string;
@@ -63,9 +67,16 @@ const RATE_FIELDS: {
   {
     name: "vatRate",
     column: "vat_rate",
-    label: "TVA",
+    label: "TVA — taux normal",
     suffix: "%",
-    help: "Appliquée aux produits non exonérés lors des achats, ventes et déclarations.",
+    help: "Appliquée aux produits non exonérés et non à taux réduit, lors des achats, ventes et déclarations (Art. 226 CGI).",
+  },
+  {
+    name: "vatReducedRate",
+    column: "vat_reduced_rate",
+    label: "TVA — taux réduit",
+    suffix: "%",
+    help: "5% sur le sucre et l'huile alimentaire, à l'achat comme à la vente (Art. 226 CGI) — cocher \"TVA taux réduit\" sur la fiche du produit concerné.",
   },
   {
     name: "impotSocietesRate",
@@ -79,14 +90,14 @@ const RATE_FIELDS: {
     column: "precompte_isb_rate",
     label: "Précompte ISB",
     suffix: "%",
-    help: "2% marché intérieur (opérateur immatriculé) par défaut ; l'Art. 40 CGI prévoit aussi 4% (douane/port) et 7% (opérateur non immatriculé) — à ajuster au cas par cas. Compte 4494, aucun calcul automatique.",
+    help: "2% marché intérieur (opérateur immatriculé) par défaut ; l'Art. 40 CGI prévoit aussi 4% (douane/port) et 7% (opérateur non immatriculé) — à ajuster au cas par cas. Compte 4492, aucun calcul automatique.",
   },
   {
     name: "taxeImmobiliereRate",
     column: "taxe_immobiliere_rate",
     label: "Taxe immobilière",
     suffix: "%",
-    help: "1% de la valeur des immobilisations pour une personne morale (Art. 155 CGI). Compte 647, aucun calcul automatique.",
+    help: "1% de la valeur des immobilisations pour une personne morale (Art. 155 CGI). Compte 6411, aucun calcul automatique.",
   },
 ];
 
@@ -339,6 +350,7 @@ export function VatSettingsPage() {
     if (company) {
       reset({
         vatRate: company.vat_rate,
+        vatReducedRate: company.vat_reduced_rate,
         impotSocietesRate: company.impot_societes_rate,
         precompteIsbRate: company.precompte_isb_rate,
         taxeImmobiliereRate: company.taxe_immobiliere_rate,

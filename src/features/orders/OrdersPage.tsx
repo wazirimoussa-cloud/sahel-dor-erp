@@ -5,6 +5,7 @@ import { NewOrderForm } from "@/features/orders/NewOrderForm";
 import { Card } from "@/components/ui/Card";
 import { formatNumber } from "@/lib/format";
 import { ORDER_STATUS_LABELS, ORDER_STATUS_CLASSES } from "@/lib/orderDisplay";
+import { computeVatBreakdown } from "@/lib/vat";
 
 const PAYMENT_LABELS: Record<string, string> = {
   unpaid: "Impayé",
@@ -53,23 +54,30 @@ export function OrdersPage() {
               const items = order.order_items as {
                 quantity: number;
                 unit_price: number;
-                products: { vat_exempt: boolean } | { vat_exempt: boolean }[] | null;
+                products:
+                  | { vat_exempt: boolean; vat_reduced: boolean }
+                  | { vat_exempt: boolean; vat_reduced: boolean }[]
+                  | null;
               }[];
-              const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
-              const taxableHT = items.reduce((sum, item) => {
-                const p = item.products;
-                const productInfo = Array.isArray(p) ? p[0] : p;
-                if (productInfo?.vat_exempt) return sum;
-                return sum + item.quantity * item.unit_price;
-              }, 0);
               const companyRelation = order.companies as
-                | { vat_rate: number }
-                | { vat_rate: number }[]
+                | { vat_rate: number; vat_reduced_rate: number }
+                | { vat_rate: number; vat_reduced_rate: number }[]
                 | null;
-              const vatRate = Array.isArray(companyRelation)
-                ? companyRelation[0]?.vat_rate
-                : companyRelation?.vat_rate;
-              const totalTTC = totalHT + (vatRate ? Math.round(taxableHT * vatRate) / 100 : 0);
+              const company = Array.isArray(companyRelation) ? companyRelation[0] : companyRelation;
+              const { totalTTC } = computeVatBreakdown(
+                items.map((item) => {
+                  const p = item.products;
+                  const productInfo = Array.isArray(p) ? p[0] : p;
+                  return {
+                    quantity: item.quantity,
+                    unitPrice: item.unit_price,
+                    vatExempt: productInfo?.vat_exempt ?? false,
+                    vatReduced: productInfo?.vat_reduced ?? false,
+                  };
+                }),
+                company?.vat_rate ?? 0,
+                company?.vat_reduced_rate ?? 0,
+              );
               const clientRelation = order.clients as { name: string } | { name: string }[] | null;
               const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
               return (

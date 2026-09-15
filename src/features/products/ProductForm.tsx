@@ -19,6 +19,10 @@ const productSchema = z.object({
   stock: z.coerce.number().positive("Le stock initial est obligatoire et doit être supérieur à 0"),
   unit: z.enum(UNITS),
   vatExempt: z.boolean(),
+  vatReduced: z.boolean(),
+}).refine((v) => !(v.vatExempt && v.vatReduced), {
+  message: "Un produit ne peut pas être à la fois exonéré et à taux réduit",
+  path: ["vatReduced"],
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -38,6 +42,7 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
     defaultValues: {
       unit: "unité",
       vatExempt: false,
+      vatReduced: false,
       purchaseCost: 0,
       freightCost: 0,
       handlingCost: 0,
@@ -169,6 +174,13 @@ export function ProductForm({ onCreated }: { onCreated?: () => void }) {
         <label htmlFor="vatExempt" className="text-xs font-medium text-gray-600">
           Exonéré de TVA (céréales, sel)
         </label>
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" id="vatReduced" className="h-4 w-4" {...register("vatReduced")} />
+        <label htmlFor="vatReduced" className="text-xs font-medium text-gray-600">
+          TVA taux réduit 5% (sucre, huile alimentaire)
+        </label>
+        {errors.vatReduced && <p className="mt-1 text-xs text-red-600">{errors.vatReduced.message}</p>}
       </div>
       <Button type="submit" disabled={isSubmitting}>
         Ajouter le produit

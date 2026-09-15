@@ -84,8 +84,13 @@ export function VatDeclarationPage() {
       {data && (
         <Card>
           <h2 className="mb-3 text-base font-semibold text-gray-800">
-            {monthLabel(month)} — Taux applicable : {data.vatRate}%
+            {monthLabel(month)} — Taux normal : {data.vatRate}%
           </h2>
+          <p className="mb-3 text-xs text-gray-500">
+            Les totaux ci-dessous sont extraits du grand livre (comptes 4431/4452) — corrects
+            même si certaines opérations de la période ont appliqué le taux réduit (sucre,
+            huile alimentaire) ou une exonération, sans qu'il faille les distinguer ici.
+          </p>
           <table className="w-full text-left text-sm">
             <tbody>
               <tr className="border-b border-gray-100">

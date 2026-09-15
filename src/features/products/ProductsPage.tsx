@@ -149,6 +149,11 @@ export function ProductsPage() {
                           Exonéré TVA
                         </span>
                       )}
+                      {product.vat_reduced && (
+                        <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                          TVA réduite 5%
+                        </span>
+                      )}
                     </td>
                     <td className="py-2">
                       {formatNumber(product.selling_price)} FCFA / {product.unit}

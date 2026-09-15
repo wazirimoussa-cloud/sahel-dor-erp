@@ -8,7 +8,7 @@ export function useCompanySettings() {
       const { data, error } = await supabase
         .from("companies")
         .select(
-          "id, vat_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative, irvm_dividendes_rate, irvm_plus_values_cession_rate, irvm_obligations_rate, droits_enregistrement_actes_societe, droits_enregistrement_fonds_commerce_rate, taxe_publicite_panneau_papier_rate, taxe_publicite_panneau_autre_rate, redevance_domaine_public_rate",
+          "id, vat_rate, vat_reduced_rate, impot_societes_rate, taxe_professionnelle_rate, precompte_isb_rate, taxe_immobiliere_rate, taxe_professionnelle_droit_fixe_pour_mille, taxe_professionnelle_plancher, taxe_professionnelle_droit_proportionnel_rate, taxe_professionnelle_ca_annuel, taxe_professionnelle_valeur_locative, irvm_dividendes_rate, irvm_plus_values_cession_rate, irvm_obligations_rate, droits_enregistrement_actes_societe, droits_enregistrement_fonds_commerce_rate, taxe_publicite_panneau_papier_rate, taxe_publicite_panneau_autre_rate, redevance_domaine_public_rate",
         )
         .single();
       if (error) throw error;
@@ -19,6 +19,7 @@ export function useCompanySettings() {
 
 export interface FiscalRates {
   vatRate: number;
+  vatReducedRate: number;
   impotSocietesRate: number;
   precompteIsbRate: number;
   taxeImmobiliereRate: number;
@@ -47,6 +48,7 @@ export function useUpdateFiscalRates() {
       const { error } = await supabase.rpc("update_fiscal_rates", {
         p_company_id: companyId,
         p_vat_rate: rates.vatRate,
+        p_vat_reduced_rate: rates.vatReducedRate,
         p_impot_societes_rate: rates.impotSocietesRate,
         p_precompte_isb_rate: rates.precompteIsbRate,
         p_taxe_immobiliere_rate: rates.taxeImmobiliereRate,

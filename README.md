@@ -2125,6 +2125,44 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
     - **Tous les écarts SYSCOHADA identifiés lors de l'audit (points 93-96) sont
       maintenant corrigés** : 31→32, 421↔425, 647→6411, 646→6412, 21→24, 4494→4492.
 
+97. **Taux de TVA réduit (5%) sur le sucre et l'huile alimentaire** (migration `0095`) :
+    l'audit de conformité (loi de finances 2026, Art. 226 CGI — Ordonnance 2025-22, en
+    vigueur depuis le 1er janvier) a révélé un vrai écart de calcul, pas seulement
+    documentaire : *"Le taux normal de la TVA est de 19%. Toutefois, les opérations
+    d'importation ou de vente à l'intérieur de sucre et d'huile alimentaire sont soumises à
+    un taux réduit de 5%."* Le modèle `products.vat_exempt` (booléen, point 28) ne
+    distinguait que exonéré/taux plein — pas de 3ᵉ palier pour ce taux réduit. Sucre et
+    huile sont des produits centraux de l'activité : l'app appliquait 19% au lieu de 5% sur
+    ces ventes/achats.
+    - Nouvelle colonne `products.vat_reduced` (booléen, même règle que `vat_exempt` :
+      fixé à la création uniquement, contrainte d'exclusion mutuelle avec `vat_exempt`) et
+      `companies.vat_reduced_rate` (numérique, défaut 5%, éditable et tracé dans
+      `fiscal_rate_history` au même titre que les 17 autres taux, point 90 — pas codé en
+      dur, cohérent avec le reste de l'écran Paramètres fiscaux).
+    - **Backfill** : tout produit existant "sucre"/"huile" (par nom, insensible à la casse)
+      corrigé au bon état — y compris "Sucre BUA", découvert marqué **exonéré** à tort
+      (0%) lors d'un test antérieur à cette conversation, alors que la bonne valeur est
+      taux réduit (5%), pas exonération.
+    - `validate_order()`/`receive_purchase()` calculent désormais la TVA sur 3 paliers
+      (exonéré/réduit/normal) au lieu de 2 — reste de la logique (401/701/4431 côté ventes,
+      601/4098/4452/401 côté achats avec le recouvrement de pertes du point 92) inchangé.
+    - **`src/lib/vat.ts`** (nouveau) : `computeVatBreakdown()`, extrait après la 4ᵉ
+      occurrence du même calcul dupliqué côté client (`OrdersPage`, `OrderDetailPage`,
+      `PurchasesPage`, `PurchaseDetailPage`) — règle des trois occurrences déjà appliquée
+      ailleurs (`orderDisplay.ts`, `purchaseDisplay.ts`). Testé unitairement
+      (`tests/unit/vat.test.ts`).
+    - PDF (factures, déclaration TVA) : le libellé "TVA (X%)" à taux unique devient "TVA :"
+      (facture) ou "Taux de TVA normal : X%" (déclaration) — une même facture peut
+      désormais mélanger plusieurs taux, un taux unique affiché serait trompeur ; les
+      montants restent exacts dans les deux cas (`computeVatDeclaration` lit le grand
+      livre 4431/4452 déjà correct, aucun changement nécessaire côté déclaration).
+    - `ProductForm.tsx` : case "TVA taux réduit 5% (sucre, huile alimentaire)", exclusive
+      avec "Exonéré de TVA" (zod `.refine`).
+    - Vérifié en direct sur Formation via RPC : commande d'1 unité de Sucre BUA validée →
+      écriture 4431 à 2 850 FCFA sur 57 000 FCFA HT, soit exactement 5% (19% aurait donné
+      10 830 FCFA). `npm run typecheck && npm run lint && npm run test && npm run build`
+      propres (49 tests, +5 pour `vat.ts`).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

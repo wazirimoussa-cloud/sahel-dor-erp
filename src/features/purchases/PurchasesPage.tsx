@@ -7,6 +7,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
 import { formatNumber } from "@/lib/format";
 import { PURCHASE_STATUS_LABELS, PURCHASE_STATUS_CLASSES } from "@/lib/purchaseDisplay";
+import { computeVatBreakdown } from "@/lib/vat";
 
 export function PurchasesPage() {
   const { hasAttribution } = useAuth();
@@ -48,21 +49,30 @@ export function PurchasesPage() {
               const items = purchase.purchase_items as {
                 quantity: number;
                 unit_cost: number;
-                products: { vat_exempt: boolean } | { vat_exempt: boolean }[] | null;
+                products:
+                  | { vat_exempt: boolean; vat_reduced: boolean }
+                  | { vat_exempt: boolean; vat_reduced: boolean }[]
+                  | null;
               }[];
-              const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
-              const taxableHT = items.reduce((sum, item) => {
-                const p = item.products;
-                const productInfo = Array.isArray(p) ? p[0] : p;
-                if (productInfo?.vat_exempt) return sum;
-                return sum + item.quantity * item.unit_cost;
-              }, 0);
               const companyRelation = purchase.companies as
-                { vat_rate: number } | { vat_rate: number }[] | null;
-              const vatRate = Array.isArray(companyRelation)
-                ? companyRelation[0]?.vat_rate
-                : companyRelation?.vat_rate;
-              const totalTTC = totalHT + (vatRate ? Math.round(taxableHT * vatRate) / 100 : 0);
+                | { vat_rate: number; vat_reduced_rate: number }
+                | { vat_rate: number; vat_reduced_rate: number }[]
+                | null;
+              const company = Array.isArray(companyRelation) ? companyRelation[0] : companyRelation;
+              const { totalTTC } = computeVatBreakdown(
+                items.map((item) => {
+                  const p = item.products;
+                  const productInfo = Array.isArray(p) ? p[0] : p;
+                  return {
+                    quantity: item.quantity,
+                    unitPrice: item.unit_cost,
+                    vatExempt: productInfo?.vat_exempt ?? false,
+                    vatReduced: productInfo?.vat_reduced ?? false,
+                  };
+                }),
+                company?.vat_rate ?? 0,
+                company?.vat_reduced_rate ?? 0,
+              );
               const supplierRelation = purchase.suppliers as
                 { name: string } | { name: string }[] | null;
               const supplierName = Array.isArray(supplierRelation)

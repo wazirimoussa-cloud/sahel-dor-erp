@@ -167,7 +167,10 @@ function addTotalsBlock(
 ): void {
   doc.setFontSize(10);
   doc.text(`Sous-total HT : ${formatFcfa(totals.totalHT)}`, 140, startY, { align: "left" });
-  doc.text(`TVA (${totals.vatRate}%) : ${formatFcfa(totals.vatAmount)}`, 140, startY + 6, {
+  // Pas de taux affiché entre parenthèses : depuis le taux réduit sucre/huile (0095), une
+  // même facture peut mélanger plusieurs taux -- le montant reste exact, un taux unique
+  // affiché ici serait trompeur.
+  doc.text(`TVA : ${formatFcfa(totals.vatAmount)}`, 140, startY + 6, {
     align: "left",
   });
   doc.setFontSize(11);
@@ -307,7 +310,11 @@ export async function generateVatDeclarationPdf(input: VatDeclarationPdfInput) {
   const { doc, autoTable } = await newDocument(`Déclaration TVA — ${input.periodLabel}`);
 
   doc.setFontSize(10);
-  doc.text(`Taux de TVA applicable : ${input.vatRate}%`, 14, 42);
+  // "Taux normal" plutôt que "taux applicable" depuis le taux réduit sucre/huile (0095) :
+  // les totaux ci-dessous sont extraits du grand livre (4431/4452), déjà corrects quel que
+  // soit le mélange de taux réellement appliqué ligne par ligne -- ce taux n'est qu'une
+  // référence, pas LE taux unique de la période.
+  doc.text(`Taux de TVA normal : ${input.vatRate}%`, 14, 42);
 
   autoTable(doc, {
     startY: 50,

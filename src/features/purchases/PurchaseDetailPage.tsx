@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { generatePurchasePdf, generateCreditNotePdf, generateReceptionPdf } from "@/lib/pdf";
 import { canSharePdf, shareOrDownloadPdf } from "@/lib/share";
 import { formatNumber } from "@/lib/format";
+import { computeVatBreakdown } from "@/lib/vat";
 
 interface ReceptionLine {
   quantityReceived: number;
@@ -84,25 +85,29 @@ export function PurchaseDetailPage() {
     quantity: number;
     unit_cost: number;
     products:
-      | { id: string; name: string; unit: string; vat_exempt: boolean; unit_cost: number }
-      | { id: string; name: string; unit: string; vat_exempt: boolean; unit_cost: number }[]
+      | { id: string; name: string; unit: string; vat_exempt: boolean; vat_reduced: boolean; unit_cost: number }
+      | { id: string; name: string; unit: string; vat_exempt: boolean; vat_reduced: boolean; unit_cost: number }[]
       | null;
   }[];
   function productInfoOf(item: (typeof items)[number]) {
     return Array.isArray(item.products) ? item.products[0] : item.products;
   }
-  const totalHT = items.reduce((sum, item) => sum + item.quantity * item.unit_cost, 0);
-  const taxableHT = items.reduce((sum, item) => {
-    if (productInfoOf(item)?.vat_exempt) return sum;
-    return sum + item.quantity * item.unit_cost;
-  }, 0);
   const companyRelation = purchase.companies as
-    { vat_rate: number } | { vat_rate: number }[] | null;
-  const vatRate = Array.isArray(companyRelation)
-    ? companyRelation[0]?.vat_rate
-    : companyRelation?.vat_rate;
-  const vatAmount = vatRate ? Math.round(taxableHT * vatRate) / 100 : 0;
-  const totalTTC = totalHT + vatAmount;
+    | { vat_rate: number; vat_reduced_rate: number }
+    | { vat_rate: number; vat_reduced_rate: number }[]
+    | null;
+  const company = Array.isArray(companyRelation) ? companyRelation[0] : companyRelation;
+  const vatRate = company?.vat_rate;
+  const { totalHT, vatAmount, totalTTC } = computeVatBreakdown(
+    items.map((item) => ({
+      quantity: item.quantity,
+      unitPrice: item.unit_cost,
+      vatExempt: productInfoOf(item)?.vat_exempt ?? false,
+      vatReduced: productInfoOf(item)?.vat_reduced ?? false,
+    })),
+    company?.vat_rate ?? 0,
+    company?.vat_reduced_rate ?? 0,
+  );
   const creatorRelation = purchase.users as { email: string } | { email: string }[] | null;
   const creatorEmail = Array.isArray(creatorRelation)
     ? creatorRelation[0]?.email
@@ -301,6 +306,11 @@ export function PurchaseDetailPage() {
                         Exonéré TVA
                       </span>
                     )}
+                    {productInfo?.vat_reduced && (
+                      <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
+                        TVA réduite {company?.vat_reduced_rate ?? 0}%
+                      </span>
+                    )}
                   </td>
                   <td className="py-2">
                     {item.quantity} {productInfo?.unit ?? ""}
@@ -326,7 +336,7 @@ export function PurchaseDetailPage() {
             </tr>
             <tr>
               <td colSpan={3} className="text-right text-sm text-gray-600">
-                TVA ({vatRate ?? 0}%)
+                TVA (normal {vatRate ?? 0}%, réduit {company?.vat_reduced_rate ?? 0}%)
               </td>
               <td className="text-sm text-gray-800">{formatNumber(vatAmount)} FCFA</td>
               {purchase.status === "received" && canViewLandedCost && <td />}

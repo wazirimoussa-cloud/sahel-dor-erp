@@ -193,6 +193,7 @@ export type Database = {
           taxe_publicite_panneau_autre_rate: number
           taxe_publicite_panneau_papier_rate: number
           vat_rate: number
+          vat_reduced_rate: number
         }
         Insert: {
           address?: string | null
@@ -220,6 +221,7 @@ export type Database = {
           taxe_publicite_panneau_autre_rate?: number
           taxe_publicite_panneau_papier_rate?: number
           vat_rate?: number
+          vat_reduced_rate?: number
         }
         Update: {
           address?: string | null
@@ -247,6 +249,7 @@ export type Database = {
           taxe_publicite_panneau_autre_rate?: number
           taxe_publicite_panneau_papier_rate?: number
           vat_rate?: number
+          vat_reduced_rate?: number
         }
         Relationships: []
       }
@@ -1017,6 +1020,7 @@ export type Database = {
           unit: string
           unit_cost: number
           vat_exempt: boolean
+          vat_reduced: boolean
         }
         Insert: {
           active?: boolean
@@ -1032,6 +1036,7 @@ export type Database = {
           unit?: string
           unit_cost?: number
           vat_exempt?: boolean
+          vat_reduced?: boolean
         }
         Update: {
           active?: boolean
@@ -1047,6 +1052,7 @@ export type Database = {
           unit?: string
           unit_cost?: number
           vat_exempt?: boolean
+          vat_reduced?: boolean
         }
         Relationships: [
           {
@@ -2488,6 +2494,7 @@ export type Database = {
           p_taxe_publicite_panneau_autre_rate: number
           p_taxe_publicite_panneau_papier_rate: number
           p_vat_rate: number
+          p_vat_reduced_rate: number
         }
         Returns: {
           address: string | null
@@ -2515,6 +2522,7 @@ export type Database = {
           taxe_publicite_panneau_autre_rate: number
           taxe_publicite_panneau_papier_rate: number
           vat_rate: number
+          vat_reduced_rate: number
         }
         SetofOptions: {
           from: "*"
@@ -2539,6 +2547,7 @@ export type Database = {
           unit: string
           unit_cost: number
           vat_exempt: boolean
+          vat_reduced: boolean
         }
         SetofOptions: {
           from: "*"

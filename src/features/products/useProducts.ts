@@ -12,6 +12,7 @@ export interface NewProduct {
   stock: number;
   unit: string;
   vatExempt: boolean;
+  vatReduced: boolean;
 }
 
 export function useProducts(page: number, pageSize: number) {
@@ -21,7 +22,7 @@ export function useProducts(page: number, pageSize: number) {
       const { data, error } = await supabase
         .from("products")
         .select(
-          "id, name, selling_price, purchase_cost, freight_cost, handling_cost, unit_cost, stock, unit, vat_exempt, company_id, created_at, active",
+          "id, name, selling_price, purchase_cost, freight_cost, handling_cost, unit_cost, stock, unit, vat_exempt, vat_reduced, company_id, created_at, active",
         )
         .order("name", { ascending: true })
         .range(...rangeFor(page, pageSize));
@@ -40,7 +41,7 @@ export function useAllProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, selling_price, unit_cost, stock, unit, vat_exempt")
+        .select("id, name, selling_price, unit_cost, stock, unit, vat_exempt, vat_reduced")
         .order("name", { ascending: true });
       if (error) throw error;
       return data;
@@ -59,7 +60,7 @@ export function useActiveProducts() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("products")
-        .select("id, name, selling_price, unit_cost, stock, unit, vat_exempt")
+        .select("id, name, selling_price, unit_cost, stock, unit, vat_exempt, vat_reduced")
         .eq("active", true)
         .order("name", { ascending: true });
       if (error) throw error;
@@ -95,6 +96,7 @@ export function useCreateProduct() {
         stock: product.stock,
         unit: product.unit,
         vat_exempt: product.vatExempt,
+        vat_reduced: product.vatReduced,
       });
       if (error) throw error;
     },

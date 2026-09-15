@@ -19,7 +19,7 @@ export function usePurchases(page: number, pageSize: number, prioritizePending =
       let query = supabase
         .from("purchases")
         .select(
-          "id, status, created_at, suppliers(name), warehouses(name), companies(vat_rate), purchase_items(quantity, unit_cost, products(vat_exempt))",
+          "id, status, created_at, suppliers(name), warehouses(name), companies(vat_rate, vat_reduced_rate), purchase_items(quantity, unit_cost, products(vat_exempt, vat_reduced))",
         );
       if (prioritizePending) {
         query = query.order("status", { ascending: true });
@@ -41,7 +41,7 @@ export function usePurchase(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt, unit_cost))",
+          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate, vat_reduced_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt, vat_reduced, unit_cost))",
         )
         .eq("id", purchaseId as string)
         .single();
