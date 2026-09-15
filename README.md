@@ -1934,6 +1934,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       `ReceivePurchaseLossInput.transporterId` → `transporterName` (`usePurchases.ts`),
       invalidation `["transporters"]` ajoutée à `useReceivePurchase()`.
 
+88. **"Transporteur (si perte)" actif uniquement en cas de perte** (`PurchaseDetailPage.tsx`) :
+    le champ, ajouté au point 87, reste désactivé (grisé, `placeholder` "Aucune perte
+    constatée") tant que la quantité reçue égale la quantité commandée pour la ligne — il ne
+    s'active que si l'utilisateur réduit la quantité reçue. Rend visible dans l'interface une
+    règle qui n'existait jusque-là qu'à la validation (message d'erreur après coup).
+    - Comparaison faite via `watch()` de react-hook-form sur `lines.${index}.quantityReceived`
+      pour chaque ligne, comparée à la quantité commandée (`item.quantity`) — un champ non
+      encore modifié (`watch()` renvoie `undefined` avant toute frappe, le champ étant
+      non contrôlé via `defaultValue`) retombe sur la quantité commandée, donc "pas de perte"
+      par défaut. Un champ vidé (`Number("") === 0`) est traité comme une perte totale, même
+      convention que le calcul de `quantityLost` à la soumission.
+    - Vérifié en direct : désactivé par défaut, s'active dès que la quantité reçue change,
+      se redésactive si on la remet à la quantité commandée, et une réception complète avec
+      perte déclarée fonctionne de bout en bout (valeur de la perte correcte, transporteur
+      bien attribué).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

@@ -63,6 +63,7 @@ export function PurchaseDetailPage() {
   const {
     register: registerReception,
     handleSubmit: handleReceptionSubmit,
+    watch: watchReception,
     formState: { errors: receptionErrors },
   } = useForm<ReceptionFormValues>();
 
@@ -390,7 +391,18 @@ export function PurchaseDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, index) => (
+                {items.map((item, index) => {
+                  // Le champ Transporteur ne devient actif que si une perte est constatée sur
+                  // cette ligne (quantité reçue ≠ quantité commandée) -- avant toute frappe,
+                  // watch() renvoie undefined pour un champ non contrôlé (defaultValue) : on
+                  // retombe alors sur la quantité commandée, donc "pas de perte" par défaut.
+                  // Un champ vidé (Number("") === 0) est traité comme une perte totale, même
+                  // convention que le calcul de quantityLost à la soumission (onReceptionSubmit).
+                  const watchedReceived = watchReception(`lines.${index}.quantityReceived` as const);
+                  const quantityReceived = watchedReceived === undefined ? item.quantity : Number(watchedReceived);
+                  const hasLoss = quantityReceived !== item.quantity;
+
+                  return (
                   <tr key={item.id} className="border-b border-gray-100">
                     <td className="py-2">{productInfoOf(item)?.name ?? "Produit supprimé"}</td>
                     <td className="py-2">
@@ -420,8 +432,9 @@ export function PurchaseDetailPage() {
                       <Input
                         type="text"
                         list="transporters-datalist"
-                        placeholder="Nom du transporteur"
-                        className="w-40"
+                        placeholder={hasLoss ? "Nom du transporteur" : "Aucune perte constatée"}
+                        disabled={!hasLoss}
+                        className="w-40 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
                         aria-label={`Transporteur — ${productInfoOf(item)?.name ?? "produit"}`}
                         {...registerReception(`lines.${index}.transporterName` as const)}
                       />
@@ -435,7 +448,8 @@ export function PurchaseDetailPage() {
                       />
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
 
