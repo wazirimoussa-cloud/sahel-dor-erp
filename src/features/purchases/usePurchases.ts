@@ -172,6 +172,66 @@ export function useAllPurchaseLosses() {
   });
 }
 
+// purchase_losses est en append-only (0020) : le montant recouvré n'y est jamais stocké,
+// toujours recalculé depuis la somme des lignes purchase_loss_recoveries (elles-mêmes
+// append-only, 0089/0090) — même principe que orders.amount_paid, mais purchase_losses ne
+// peut pas être mis à jour en place comme orders. Une seule requête (RLS scope déjà à la
+// société via purchase_losses -> purchases) ramène tous les recouvrements de la société ;
+// regroupés côté client par purchase_loss_id.
+export function useAllPurchaseLossRecoveredTotals() {
+  return useQuery({
+    queryKey: ["purchase_loss_recoveries", "totals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchase_loss_recoveries")
+        .select("purchase_loss_id, amount");
+      if (error) throw error;
+      const totals = new Map<string, number>();
+      for (const row of data) {
+        totals.set(row.purchase_loss_id, (totals.get(row.purchase_loss_id) ?? 0) + row.amount);
+      }
+      return totals;
+    },
+  });
+}
+
+// Historique append-only des recouvrements d'une perte donnée — affiché au clic sur une
+// ligne (une perte peut avoir plusieurs recouvrements partiels).
+export function usePurchaseLossRecoveries(lossId: string | undefined) {
+  return useQuery({
+    queryKey: ["purchase_loss_recoveries", lossId],
+    enabled: Boolean(lossId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchase_loss_recoveries")
+        .select("id, amount, created_at, users(email)")
+        .eq("purchase_loss_id", lossId as string)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
+// record_purchase_loss_recovery (0089/0090) : débite trésorerie (521)/crédite l'avoir à
+// recevoir (4098) — symétrique au record_payment des encaissements clients.
+export function useRecordPurchaseLossRecovery() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { lossId: string; amount: number }) => {
+      const { error } = await supabase.rpc("record_purchase_loss_recovery", {
+        p_loss_id: params.lossId,
+        p_amount: params.amount,
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_data, params) => {
+      void queryClient.invalidateQueries({ queryKey: ["purchase_loss_recoveries", "totals"] });
+      void queryClient.invalidateQueries({ queryKey: ["purchase_loss_recoveries", params.lossId] });
+    },
+  });
+}
+
 export function useCancelPurchase() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -2020,6 +2020,36 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       dédiés chacun à un seul écran et conçus spécifiquement pour l'avant/après.
     - Vérifié : `npm run typecheck && npm run lint && npm run test` propres.
 
+92. **Recouvrement des pertes transport comptabilisé** (migrations `0089`/`0090`) : jusqu'ici
+    la "facture d'avoir" transporteur (`PurchaseLossesPage.tsx`) n'était qu'un PDF — la perte
+    elle-même n'était pas neutralisée comptablement (le 601 débitait la quantité **commandée**,
+    perte comprise) et son recouvrement effectif n'était tracé nulle part.
+    - `receive_purchase()` répartit désormais la valeur du bon entre 601 (achats, quantité
+      réellement reçue) et le nouveau compte **4098 "Avoirs à recevoir"** (valeur perdue) —
+      401 (fournisseur) et 4452 (TVA) restent inchangés, la dette envers le fournisseur et la
+      TVA récupérable ne dépendent pas de la faute du transporteur. Revient explicitement sur
+      un choix documenté dans `0020_transporters_purchase_losses.sql` qui gardait 601 intact
+      "car la perte est une réclamation séparée" — cette moitié du raisonnement (401 inchangé)
+      restait juste, mais avait été appliquée à tort aussi au 601.
+    - Nouvelle table `purchase_loss_recoveries` (append-only, même patron que
+      `order_payments`) + RPC `record_purchase_loss_recovery` (`transporteurs.gerer`) : chaque
+      remboursement du transporteur devient une ligne, débite 521 (trésorerie)/crédite 4098.
+      Recouvrement partiel possible, refusé au-delà du reste dû.
+    - **Bug trouvé et corrigé en vérification live (0090)** : `purchase_losses` est déjà en
+      append-only depuis 0020 (`fn_block_mutation`) — un `update ... set recovered_amount`
+      dans le premier jet de la RPC (0089) était donc systématiquement bloqué. Corrigé en
+      calculant le montant recouvré par somme des lignes `purchase_loss_recoveries` (comme
+      `orders.amount_paid` vs `order_payments`, mais sans colonne dénormalisée puisque la
+      ligne parente ne peut pas être mise à jour) plutôt qu'en le stockant sur la ligne
+      immuable.
+    - `PurchaseLossesPage.tsx` : colonne "Recouvrement" (statut En attente/Partiel/Recouvré +
+      montant), action "Recouvrement" (formulaire montant, `AmountInput`) gardée par
+      `transporteurs.gerer`, panneau "Détails" avec l'historique des recouvrements.
+    - Vérifié en direct sur Formation via RPC (création d'un bon avec perte, écriture
+      601/4098 confirmée équilibrée, recouvrement partiel puis complémentaire jusqu'au solde
+      exact, dépassement refusé) ; `npm run typecheck && npm run lint && npm run test && npm run build`
+      propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

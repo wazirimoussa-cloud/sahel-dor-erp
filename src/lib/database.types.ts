@@ -1100,6 +1100,45 @@ export type Database = {
           },
         ]
       }
+      purchase_loss_recoveries: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          purchase_loss_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          purchase_loss_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          purchase_loss_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_loss_recoveries_purchase_loss_id_fkey"
+            columns: ["purchase_loss_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_losses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_loss_recoveries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_losses: {
         Row: {
           created_at: string
@@ -2326,6 +2365,22 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      record_purchase_loss_recovery: {
+        Args: { p_amount: number; p_loss_id: string }
+        Returns: {
+          amount: number
+          created_at: string
+          id: string
+          purchase_loss_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_loss_recoveries"
           isOneToOne: true
           isSetofReturn: false
         }
