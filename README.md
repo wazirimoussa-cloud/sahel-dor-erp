@@ -1891,6 +1891,29 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       du curseur (frappe séquentielle, backspace à travers un espace de groupement),
       partie décimale, signe, valeur vide → `undefined` (jamais `0`), clamp `min` au blur.
 
+86. **Correction du prix unitaire par défaut sur `create_purchase`/`create_production`/
+    `create_transformation`** (`0085_corrige_fallback_prix_unitaire_defaut.sql`) : trouvé en
+    vérification live (une perte constatée à la réception affichait une valeur ~130x à ~1500x
+    trop élevée sur Formation). Les trois RPC utilisaient `products.purchase_cost` comme prix
+    **par défaut** d'une ligne quand l'appelant ne précise pas de `unit_cost` — or
+    `purchase_cost` est documenté comme un coût **global** (« Prix global d'achat, coût total
+    d'acquisition », `0075_prix_de_revient_produit.sql`), pas un prix unitaire.
+    `products.unit_cost` (« prix de revient », déjà calculé par unité) est le bon fallback.
+    - **Impact réel** : aucun écran de saisie (`NewPurchaseForm.tsx`,
+      `NewProductionForm.tsx`, `NewTransformationForm.tsx`) ne propose de champ prix par
+      ligne — ce fallback se déclenchait donc **systématiquement**, à chaque bon d'achat/
+      production créés via l'UI normale.
+    - **Production non corrompue** : vérifié avant correction — `purchase_items` y était
+      vide (aucun bon d'achat créé depuis la remise à blanc du 01/08), donc aucune écriture
+      comptable réelle affectée. Seules les données de test de Formation portent des
+      montants historiques erronés (non corrigés rétroactivement — écritures append-only).
+    - Correctif volontairement minimal (confirmé avec l'utilisateur) : seul le fallback
+      change, `coalesce(unit_cost, purchase_cost)` → `coalesce(unit_cost, unit_cost)` — pas
+      d'ajout de champ prix par ligne dans les formulaires pour cette passe.
+    - Vérifié en direct : `create_purchase` sans `unit_cost` explicite stocke désormais le
+      prix de revient réel (65 000 FCFA/bidon pour "Huile Bidon 20L") au lieu du coût global
+      du lot initial (10 000 000 FCFA).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
