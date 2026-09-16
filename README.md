@@ -2239,6 +2239,35 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        cas de stock insuffisant) — logique couverte par le code Postgres déjà confirmé en
        investigation directe (RPC), risque résiduel faible.
 
+101. **Vérification du stock avant émission et avant validation d'un bon de commande** :
+     jusqu'ici rien ne vérifiait qu'un magasin avait assez de stock pour une commande avant
+     que la contrainte `product_stocks_stock_check` (base) ne bloque, opaquement, au moment
+     de la validation (point 100) — c'est exactement ce qui a produit le cas réel
+     investigué (12 t de Riz Birmane commandées sur le magasin ALOMARO, qui n'avait aucun
+     stock enregistré pour ce produit). Autre piège trouvé en creusant : le menu déroulant
+     produit de `NewOrderForm.tsx` affichait `products.stock`, un **total toutes sociétés/
+     magasins confondus** — un vendeur pouvait voir "stock : 1450" alors que le magasin
+     choisi pour la commande était à 0.
+     - Nouveau hook `useWarehouseStock(warehouseId)` (`useWarehouses.ts`) : lit
+       `product_stocks` filtré par magasin.
+     - `NewOrderForm.tsx` : dès qu'un magasin est choisi, le menu produit affiche le stock
+       **de ce magasin** (plus le total global, trompeur dans ce contexte) ; à la soumission,
+       chaque ligne est comparée au stock du magasin — une quantité excédentaire bloque
+       l'émission avec un message précis par ligne (`Stock insuffisant à ce magasin
+       (disponible : X)`), sans jamais atteindre `create_order`.
+     - `OrderDetailPage.tsx` : `findStockShortage()` (nouveau) refait la même vérification
+       juste avant `validate_order`, car le stock peut avoir bougé entre l'émission (souvent
+       un vendeur) et la validation (souvent un superviseur, plus tard) — c'est précisément
+       ce décalage qui a produit le cas réel. En cas de manque, liste chaque produit
+       concerné (demandé vs disponible) au lieu de tenter la RPC et de retomber sur le
+       message générique de `describeOrderActionError` (point 100, conservé comme filet de
+       sécurité si la vérification réseau échoue elle-même).
+     - Le `CHECK` en base reste le garde-fou ultime (une vérification côté appli n'empêche pas
+       une course entre deux commandes concurrentes sur le même magasin) — ces deux ajouts
+       sont préventifs, pas un remplacement.
+     - Vérifié : `npm run typecheck && npm run lint && npm run test && npm run build`
+       propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

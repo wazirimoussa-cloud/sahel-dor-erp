@@ -11,6 +11,7 @@ import {
   useRecordPayment,
   useOrderPayments,
 } from "@/features/orders/useOrders";
+import { supabase } from "@/lib/supabase";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { AmountInput } from "@/components/ui/AmountInput";
@@ -33,6 +34,41 @@ function describeOrderActionError(err: unknown): string {
     return "Stock insuffisant dans le magasin de cette commande pour couvrir la quantité demandée.";
   }
   return "Action refusée (droits insuffisants ou bon de commande déjà traité).";
+}
+
+// Vérifie le stock du magasin de la commande juste avant de tenter la validation --
+// complète la vérification déjà faite à l'émission (NewOrderForm) : le stock peut avoir
+// bougé entre la création (souvent faite par un vendeur) et la validation (souvent faite
+// plus tard par un superviseur, cf. le cas réel qui a révélé ce problème). Une réponse
+// nulle (erreur réseau) ne bloque pas la validation : product_stocks_stock_check reste le
+// garde-fou de dernier recours côté base, avec describeOrderActionError comme message de
+// repli.
+async function findStockShortage(
+  warehouseId: string | null | undefined,
+  items: { quantity: number; products: { id: string; name: string; unit: string } | null }[],
+): Promise<string | null> {
+  if (!warehouseId) return null;
+  const productIds = items.map((item) => item.products?.id).filter((id): id is string => Boolean(id));
+  if (productIds.length === 0) return null;
+
+  const { data, error } = await supabase
+    .from("product_stocks")
+    .select("product_id, stock")
+    .eq("warehouse_id", warehouseId)
+    .in("product_id", productIds);
+  if (error) return null;
+
+  const stockByProduct = new Map(data.map((row) => [row.product_id, row.stock]));
+  const shortages = items
+    .filter((item) => item.products && item.quantity > (stockByProduct.get(item.products.id) ?? 0))
+    .map((item) => {
+      const product = item.products as { id: string; name: string; unit: string };
+      const available = stockByProduct.get(product.id) ?? 0;
+      return `${product.name} (demandé : ${item.quantity} ${product.unit}, disponible : ${available} ${product.unit})`;
+    });
+
+  if (shortages.length === 0) return null;
+  return `Stock insuffisant dans ce magasin pour valider : ${shortages.join(" ; ")}.`;
 }
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -123,6 +159,7 @@ export function OrderDetailPage() {
   const clientRelation = order.clients as { name: string } | { name: string }[] | null;
   const clientName = Array.isArray(clientRelation) ? clientRelation[0]?.name : clientRelation?.name;
   const orderId = order.id;
+  const orderWarehouseId = order.warehouse_id;
   const orderCreatedAt = order.created_at;
   const orderPaymentStatusLabel = PAYMENT_LABELS[order.payment_status] ?? order.payment_status;
   const orderStatusLabel = ORDER_STATUS_LABELS[order.status] ?? order.status;
@@ -168,6 +205,14 @@ export function OrderDetailPage() {
     )
       return;
     setActionError(null);
+    const shortage = await findStockShortage(
+      orderWarehouseId,
+      items.map((item) => ({ quantity: item.quantity, products: productInfoOf(item) ?? null })),
+    );
+    if (shortage) {
+      setActionError(shortage);
+      return;
+    }
     try {
       await validateOrder.mutateAsync(orderId);
     } catch (err) {

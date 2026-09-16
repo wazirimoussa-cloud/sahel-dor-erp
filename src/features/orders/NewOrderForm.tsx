@@ -3,7 +3,7 @@ import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
-import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveWarehouses, useWarehouseStock } from "@/features/warehouses/useWarehouses";
 import { useActiveClients } from "@/features/clients/useClients";
 import { useCreateOrder } from "@/features/orders/useOrders";
 import { Button } from "@/components/ui/Button";
@@ -36,6 +36,8 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
     control,
     handleSubmit,
     reset,
+    watch,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<OrderFormValues>({
     resolver: zodResolver(orderSchema),
@@ -44,8 +46,42 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
+  const warehouseId = watch("warehouseId");
+  const { data: warehouseStock, isLoading: isLoadingWarehouseStock } = useWarehouseStock(
+    warehouseId || undefined,
+  );
+  const stockByProduct = new Map((warehouseStock ?? []).map((row) => [row.product_id, row.stock]));
+
   async function onSubmit(values: OrderFormValues) {
     setServerError(null);
+
+    // Vérification côté appli, à l'émission du bon de commande, avant toute tentative de
+    // validation : product_stocks_stock_check ne bloque qu'à la validation (sortie de
+    // stock réelle), trop tard pour prévenir — un vendeur ne découvrait le problème que si
+    // et quand un superviseur validait, avec un message opaque. Ici on compare directement
+    // au stock du magasin choisi (pas products.stock, un total global qui peut être non nul
+    // alors que ce magasin précis est vide).
+    if (warehouseId && isLoadingWarehouseStock) {
+      setServerError("Chargement du stock de ce magasin en cours — réessayez dans un instant.");
+      return;
+    }
+
+    let hasShortage = false;
+    values.items.forEach((item, index) => {
+      const available = stockByProduct.get(item.productId) ?? 0;
+      if (item.quantity > available) {
+        hasShortage = true;
+        setError(`items.${index}.quantity`, {
+          type: "manual",
+          message: `Stock insuffisant à ce magasin (disponible : ${available})`,
+        });
+      }
+    });
+    if (hasShortage) {
+      setServerError("Quantité(s) supérieure(s) au stock disponible dans ce magasin — voir le détail ci-dessous.");
+      return;
+    }
+
     try {
       await createOrder.mutateAsync({
         warehouseId: values.warehouseId,
@@ -118,11 +154,16 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
               {...register(`items.${index}.productId` as const)}
             >
               <option value="">— Choisir —</option>
-              {products?.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} (stock : {product.stock} {product.unit})
-                </option>
-              ))}
+              {products?.map((product) => {
+                const stockLabel = warehouseId
+                  ? `stock à ce magasin : ${stockByProduct.get(product.id) ?? 0}`
+                  : `stock total : ${product.stock}`;
+                return (
+                  <option key={product.id} value={product.id}>
+                    {product.name} ({stockLabel} {product.unit})
+                  </option>
+                );
+              })}
             </select>
             {errors.items?.[index]?.productId && (
               <p className="mt-1 text-xs text-red-600">{errors.items[index]?.productId?.message}</p>
@@ -149,6 +190,9 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
                 />
               )}
             />
+            {errors.items?.[index]?.quantity && (
+              <p className="mt-1 text-xs text-red-600">{errors.items[index]?.quantity?.message}</p>
+            )}
           </div>
 
           <Button type="button" variant="secondary" onClick={() => remove(index)}>

@@ -59,6 +59,25 @@ export function useAllWarehouses() {
   });
 }
 
+// Stock par produit pour un magasin donné — utilisé pour vérifier la disponibilité avant
+// l'émission ou la validation d'un bon de commande (product_stocks_stock_check en base
+// bloque déjà le passage sous 0, mais avec un message opaque ; ce hook permet de vérifier
+// et d'avertir en amont, côté application).
+export function useWarehouseStock(warehouseId: string | undefined) {
+  return useQuery({
+    queryKey: ["product_stocks", warehouseId],
+    enabled: Boolean(warehouseId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("product_stocks")
+        .select("product_id, stock")
+        .eq("warehouse_id", warehouseId as string);
+      if (error) throw error;
+      return data;
+    },
+  });
+}
+
 export function useWarehouse(warehouseId: string | undefined) {
   return useQuery({
     queryKey: ["warehouses", warehouseId],
