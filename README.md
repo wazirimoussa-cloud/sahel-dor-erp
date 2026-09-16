@@ -2297,6 +2297,31 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        précis (stock retombé à 10 après la première approbation) sans jamais tenter la RPC.
        `npm run typecheck && npm run lint && npm run test && npm run build` propres.
 
+103. **Faille corrigée : n'importe quel employé connecté pouvait lire tous les salaires**
+     (migration `0099`, trouvée lors d'un audit de sécurité pré-lancement) : `employees_select`,
+     `payslips_select`, `salary_advances_select` et `leave_records_select` (modules `0063`/
+     `0064`/`0065`) ne vérifiaient que la société, jamais une attribution — contrairement à
+     leurs policies `insert`/`update`, déjà gardées par `paie.gerer`. N'importe quel compte de
+     la société (magasinier, vendeur...) pouvait donc interroger directement ces tables et voir
+     le salaire exact de tous les employés, en contournant entièrement `requiredModule="paie"`
+     côté frontend (une gate de navigation, pas une barrière de sécurité — RLS est la seule
+     frontière réelle sur Supabase).
+     - `paie.consulter` existait depuis `0063` (seedé, proposé dans l'écran d'attribution,
+       provisionné aux comptes de test) mais n'était référencé dans **aucune** policy RLS ni
+       aucun `hasAttribution()` côté frontend — un droit purement décoratif jusqu'ici.
+     - Correction : les 4 policies exigent désormais `has_attribution('paie.gerer')` **ou**
+       `has_attribution('paie.consulter', 'consultative')`, en plus du filtre société. Le "ou"
+       avec `paie.gerer` est nécessaire : `EmployeesPage.tsx`/`PayePage.tsx` chargent déjà la
+       liste sans condition sur `canManage` (seuls les boutons d'action le sont) — un compte
+       n'ayant que `paie.gerer` doit continuer à voir la liste pour pouvoir la gérer, exactement
+       comme avant cette correction. Aucun changement frontend nécessaire.
+     - Vérifié en direct sur Formation, requêtes REST directes (hors UI, pour confirmer que la
+       barrière est bien au niveau base) : `magasinier.formation` (aucune attribution paie)
+       obtient désormais 0 ligne sur les 4 tables ; `comptable.formation` (`paie.gerer`) continue
+       de lire les 2 employés existants normalement, aucune régression.
+     - Migration appliquée directement (`supabase db push`), effective immédiatement sur
+       Formation et Production (base partagée) — aucun déploiement frontend requis.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
