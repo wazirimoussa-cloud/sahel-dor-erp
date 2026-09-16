@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useCompanies, useCreateUser } from "@/features/users/useUsers";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { describeMutationError } from "@/lib/errorMessages";
 
 const userSchema = z.object({
   login: z
@@ -40,8 +41,8 @@ export function UserForm({ onCreated }: { onCreated?: () => void }) {
       await createUser.mutateAsync(values);
       reset({ login: "", companyId: values.companyId });
       onCreated?.();
-    } catch {
-      setServerError("Création refusée (identifiant déjà utilisé, format invalide, ou droits insuffisants).");
+    } catch (err) {
+      setServerError(describeMutationError(err, "Création refusée (droits insuffisants)."));
     }
   }
 

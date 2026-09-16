@@ -5,6 +5,7 @@ import { ClientForm } from "@/features/clients/ClientForm";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { describeMutationError } from "@/lib/errorMessages";
 
 export function ClientsPage() {
   const { hasAttribution } = useAuth();
@@ -25,8 +26,8 @@ export function ClientsPage() {
     setActionError(null);
     try {
       await setClientActive.mutateAsync({ clientId, active });
-    } catch {
-      setActionError("Modification du statut refusée (droits insuffisants).");
+    } catch (err) {
+      setActionError(describeMutationError(err, "Modification du statut refusée (droits insuffisants)."));
     }
   }
 

@@ -7,6 +7,7 @@ import { useActiveEmployees } from "@/features/payroll/useEmployees";
 import { useCreateLeaveRecord, type LeaveType } from "@/features/payroll/useLeaveRecords";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { describeMutationError } from "@/lib/errorMessages";
 
 const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   conge_paye: "Congé payé",
@@ -54,8 +55,8 @@ export function LeaveRecordForm({ onCreated }: { onCreated?: () => void }) {
       });
       reset({ employeeId: "", type: "conge_paye", startDate: "", endDate: "", reason: "" });
       onCreated?.();
-    } catch {
-      setServerError("Enregistrement refusé (employé invalide, ou rôle non autorisé).");
+    } catch (err) {
+      setServerError(describeMutationError(err, "Enregistrement refusé (rôle non autorisé)."));
     }
   }
 

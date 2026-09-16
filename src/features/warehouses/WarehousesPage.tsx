@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { describeMutationError } from "@/lib/errorMessages";
 
 export function WarehousesPage() {
   const { hasAttribution } = useAuth();
@@ -27,8 +28,8 @@ export function WarehousesPage() {
     setActionError(null);
     try {
       await setWarehouseActive.mutateAsync({ warehouseId, active });
-    } catch {
-      setActionError("Modification du statut refusée (droits insuffisants).");
+    } catch (err) {
+      setActionError(describeMutationError(err, "Modification du statut refusée (droits insuffisants)."));
     }
   }
 

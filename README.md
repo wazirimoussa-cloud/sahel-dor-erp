@@ -2347,6 +2347,43 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        direct sur Formation après application : tableau de bord Finance (la requête la plus
        lourde de l'app) recalcule les mêmes montants qu'avant, aucune erreur console.
 
+105. **Messages d'erreur génériques étendus à 11 formulaires supplémentaires** (point 100
+     généralisé, dernière trouvaille de l'audit pré-lancement) : la plupart des RPC lèvent déjà
+     des erreurs explicites en français (`RAISE EXCEPTION`) — le vrai problème n'était pas
+     l'absence de message clair côté base, mais des `catch` qui le jetaient systématiquement au
+     profit d'un texte fixe listant 2-4 causes possibles, sans jamais dire laquelle s'est
+     produite.
+     - **`src/lib/errorMessages.ts`** (nouveau) : `describeMutationError(err, fallback)`
+       affiche le message reçu tel quel s'il ressemble à un message métier lisible, et retombe
+       sur `fallback` s'il ressemble à un message brut de contrainte Postgres (gabarit anglais
+       fixe, jamais compréhensible — ex. `new row for relation... violates check constraint`) ;
+       `isCheckConstraintViolation(err, name)` reste nécessaire à part pour distinguer un cas
+       précis (comme `product_stocks_stock_check`, déjà géré au cas par cas pour les commandes
+       et les pertes de stock).
+     - Appliqué à `NewPayslipForm`, `SalaryAdvanceForm`, `LeaveRecordForm`, `NewPurchaseForm`,
+       `NewProductionForm`, `WarehousesPage`, `SuppliersPage`, `ClientsPage` — le message de
+       repli reste volontairement proche de l'ancien (surtout "droits insuffisants") : pour ces
+       tables, il n'y a pas de deuxième cause réelle cachée derrière le message générique,
+       contrairement aux cas ci-dessous.
+     - **`StockMovementForm`** (mouvement manuel direct, pas de RPC) et **`TransferStockForm`**
+       (RPC `transfer_stock`) : même bug qu'au point 100, jamais corrigé pour ces deux écrans —
+       une sortie/ajustement manuel dépassant le stock du magasin heurte le même `product_stocks_
+       stock_check` que les commandes, jusqu'ici noyé dans un message générique. Distingué avec
+       `isCheckConstraintViolation`, le reste des erreurs de `transfer_stock` (magasin/produit
+       introuvable, société différente...) passe par `describeMutationError`.
+     - **`UserForm`** (`useCreateUser`, `create-user` Edge Function) : cas à part — le message
+       réel (`{ error: "Cet identifiant est déjà utilisé" }`) n'était pas dans `error.message`
+       de l'erreur levée (`FunctionsHttpError.message` est un texte générique fixe, "Edge
+       Function returned a non-2xx status code" — le vrai corps n'est accessible qu'en relisant
+       `error.context.json()`, jamais extrait automatiquement par le SDK). Corrigé à la source
+       dans `useUsers.ts` plutôt que dans le formulaire.
+     - Vérifié en direct sur Formation, les 3 mécanismes distincts en jeu : `StockMovementForm`
+       affiche désormais "Stock insuffisant dans ce magasin pour cette sortie ou cet ajustement"
+       (au lieu du message générique) pour une sortie manuelle dépassant le stock disponible ;
+       `UserForm` affiche désormais "Cet identifiant est déjà utilisé" (au lieu du message
+       générique) pour un identifiant en double. `npm run typecheck && npm run lint && npm run
+       test && npm run build` propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

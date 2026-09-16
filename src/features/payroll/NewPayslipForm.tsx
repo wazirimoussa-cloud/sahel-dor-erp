@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AmountInput } from "@/components/ui/AmountInput";
 import { formatNumber } from "@/lib/format";
+import { describeMutationError } from "@/lib/errorMessages";
 
 const payslipSchema = z.object({
   employeeId: z.string().uuid("Choisissez un employé"),
@@ -59,10 +60,8 @@ export function NewPayslipForm({ onCreated }: { onCreated?: () => void }) {
         advanceRepaidId: "",
       });
       onCreated?.();
-    } catch {
-      setServerError(
-        "Bulletin refusé (employé invalide, retenues supérieures au brut, avance déjà remboursée, ou rôle non autorisé).",
-      );
+    } catch (err) {
+      setServerError(describeMutationError(err, "Bulletin refusé (rôle non autorisé)."));
     }
   }
 

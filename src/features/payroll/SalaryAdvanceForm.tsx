@@ -7,6 +7,7 @@ import { useCreateSalaryAdvance } from "@/features/payroll/useSalaryAdvances";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { describeMutationError } from "@/lib/errorMessages";
 
 const advanceSchema = z.object({
   employeeId: z.string().uuid("Choisissez un employé"),
@@ -35,8 +36,8 @@ export function SalaryAdvanceForm({ onCreated }: { onCreated?: () => void }) {
       await createAdvance.mutateAsync(values);
       reset({ employeeId: "", amount: 0, reason: "" });
       onCreated?.();
-    } catch {
-      setServerError("Avance refusée (employé invalide, ou rôle non autorisé).");
+    } catch (err) {
+      setServerError(describeMutationError(err, "Avance refusée (rôle non autorisé)."));
     }
   }
 

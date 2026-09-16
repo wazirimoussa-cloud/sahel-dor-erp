@@ -5,6 +5,7 @@ import { SupplierForm } from "@/features/suppliers/SupplierForm";
 import { Card } from "@/components/ui/Card";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { describeMutationError } from "@/lib/errorMessages";
 
 export function SuppliersPage() {
   const { hasAttribution } = useAuth();
@@ -25,8 +26,8 @@ export function SuppliersPage() {
     setActionError(null);
     try {
       await setSupplierActive.mutateAsync({ supplierId, active });
-    } catch {
-      setActionError("Modification du statut refusée (droits insuffisants).");
+    } catch (err) {
+      setActionError(describeMutationError(err, "Modification du statut refusée (droits insuffisants)."));
     }
   }
 

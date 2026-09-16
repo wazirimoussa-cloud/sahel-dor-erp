@@ -9,6 +9,7 @@ import { useAllTransporters } from "@/features/transporters/useTransporters";
 import { useCreatePurchase } from "@/features/purchases/usePurchases";
 import { Button } from "@/components/ui/Button";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { describeMutationError } from "@/lib/errorMessages";
 
 // transporterId/transportFee optionnels mais liés : connus dès la création (pas seulement à
 // la réception comme pour la déclaration de perte) pour pouvoir payer l'avance transport
@@ -74,8 +75,8 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
         items: [{ productId: "", quantity: 1 }],
       });
       onCreated?.();
-    } catch {
-      setServerError("Bon d'achat refusé (fournisseur/magasin/produit invalide, ou rôle non autorisé).");
+    } catch (err) {
+      setServerError(describeMutationError(err, "Bon d'achat refusé (rôle non autorisé)."));
     }
   }
 

@@ -7,6 +7,21 @@ import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
 import { useTransferStock } from "@/features/stock/useTransactions";
 import { Button } from "@/components/ui/Button";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { describeMutationError, isCheckConstraintViolation } from "@/lib/errorMessages";
+
+// transfer_stock() lève déjà des erreurs explicites pour la plupart des cas (magasin/
+// produit introuvable, société différente, quantité invalide) -- describeMutationError les
+// affiche telles quelles. Seul le manque de stock au magasin source reste un CHECK Postgres
+// opaque (product_stocks_stock_check), distingué ici comme pour describeOrderActionError.
+function describeTransferError(err: unknown): string {
+  if (isCheckConstraintViolation(err, "product_stocks_stock_check")) {
+    return "Stock insuffisant au magasin source pour ce transfert.";
+  }
+  return describeMutationError(
+    err,
+    "Transfert refusé (stock insuffisant au magasin source, ou rôle non autorisé).",
+  );
+}
 
 const transferSchema = z
   .object({
@@ -46,8 +61,8 @@ export function TransferStockForm() {
         quantity: values.quantity,
       });
       reset();
-    } catch {
-      setServerError("Transfert refusé (stock insuffisant au magasin source).");
+    } catch (err) {
+      setServerError(describeTransferError(err));
     }
   }
 

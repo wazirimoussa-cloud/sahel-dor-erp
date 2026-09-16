@@ -9,6 +9,18 @@ import { useCreateTransaction } from "@/features/stock/useTransactions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { describeMutationError, isCheckConstraintViolation } from "@/lib/errorMessages";
+
+// Sortie/ajustement négatif direct sur transactions (pas de RPC) : le trigger
+// fn_apply_transaction_stock applique le même CHECK que pour les commandes
+// (product_stocks_stock_check) -- message opaque en base, distingué ici comme pour
+// describeOrderActionError.
+function describeStockMovementError(err: unknown): string {
+  if (isCheckConstraintViolation(err, "product_stocks_stock_check")) {
+    return "Stock insuffisant dans ce magasin pour cette sortie ou cet ajustement.";
+  }
+  return describeMutationError(err, "Mouvement refusé (produit/magasin invalide, ou rôle non autorisé).");
+}
 
 const movementSchema = z.object({
   productId: z.string().uuid("Choisissez un produit"),
@@ -63,8 +75,8 @@ export function StockMovementForm() {
         expiryDate: values.type === "IN" ? values.expiryDate : undefined,
       });
       reset();
-    } catch {
-      setServerError("Mouvement refusé (stock insuffisant ou produit invalide).");
+    } catch (err) {
+      setServerError(describeStockMovementError(err));
     }
   }
 

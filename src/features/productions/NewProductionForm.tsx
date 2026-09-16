@@ -8,6 +8,7 @@ import { useCreateProduction } from "@/features/productions/useProductions";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AmountInput } from "@/components/ui/AmountInput";
+import { describeMutationError } from "@/lib/errorMessages";
 
 const productionSchema = z.object({
   warehouseId: z.string().uuid("Choisissez un magasin"),
@@ -52,8 +53,8 @@ export function NewProductionForm({ onCreated }: { onCreated?: () => void }) {
       });
       reset({ warehouseId: values.warehouseId, items: [{ productId: "", quantity: 1, expiryDate: "" }] });
       onCreated?.();
-    } catch {
-      setServerError("Production refusée (magasin/produit invalide, ou rôle non autorisé).");
+    } catch (err) {
+      setServerError(describeMutationError(err, "Production refusée (rôle non autorisé)."));
     }
   }
 

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import type { AttributionLevel } from "@/auth/AuthContext";
 import { rangeFor, splitPage } from "@/lib/usePagination";
@@ -67,7 +68,23 @@ export function useCreateUser() {
           },
         },
       );
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError.message est un texte générique fixe ("Edge Function
+        // returned a non-2xx status code") -- le vrai message ({ error: "..." })
+        // n'est disponible qu'en relisant le corps de la réponse HTTP (voir la
+        // doc de FunctionsHttpError dans le SDK), jamais extrait automatiquement.
+        if (error instanceof FunctionsHttpError) {
+          let message = error.message;
+          try {
+            const body = (await error.context.json()) as { error?: string };
+            if (typeof body.error === "string") message = body.error;
+          } catch {
+            // corps non exploitable -- on garde le message générique
+          }
+          throw new Error(message);
+        }
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
