@@ -2384,6 +2384,41 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        générique) pour un identifiant en double. `npm run typecheck && npm run lint && npm run
        test && npm run build` propres.
 
+106. **Double authentification (MFA/TOTP)** (point de l'audit pré-lancement, volet
+     application — l'activation Supabase Auth elle-même n'a rien nécessité côté projet,
+     `supabase.auth.mfa` était déjà disponible nativement) : enrôlement volontaire par
+     compte, comme prévu.
+     - **`src/features/account/MfaSettings.tsx`** (nouveau, intégré à `/account`) :
+       activer déclenche `mfa.enroll({factorType:'totp'})`, affiche le QR code
+       (`totp.qr_code`) et la clé en secours, demande le code à 6 chiffres pour confirmer
+       (`mfa.challengeAndVerify`) ; bouton Désactiver (`mfa.unenroll`) une fois actif.
+       Nettoie automatiquement tout facteur `unverified` laissé par une tentative
+       abandonnée avant d'en recréer un (Supabase autorise plusieurs facteurs en
+       parallèle, ça s'accumulerait sinon).
+     - **`AuthProvider.tsx`** : nouvel état `needsMfaChallenge`, vrai quand
+       `mfa.getAuthenticatorAssuranceLevel()` renvoie `currentLevel: 'aal1'` avec
+       `nextLevel: 'aal2'` — un compte a un facteur vérifié mais ne l'a pas encore saisi
+       cette session (`signInWithPassword` réussit et renvoie une session valide même
+       dans ce cas, l'API ne bloque jamais le 1ᵉʳ facteur seul ; c'est à l'appli de vérifier
+       le niveau d'assurance séparément).
+     - **`src/auth/MfaChallengePage.tsx`** (nouveau, route `/mfa-challenge`) +
+       **`ProtectedRoute.tsx`** (garde ajoutée, même patron que `mustChangePassword`) :
+       tant que `needsMfaChallenge` est vrai, toute route protégée redirige vers cette
+       page — impossible de contourner en naviguant directement vers une URL protégée.
+     - **Portée volontairement limitée à l'enrôlement + l'exigence au niveau
+       application** : aucune policy RLS n'exige `aal2` pour les actions sensibles
+       (`utilisateurs.gerer` notamment) à ce stade — l'ajouter maintenant verrouillerait
+       immédiatement tout admin réel n'ayant pas encore activé son propre facteur, avant
+       même d'avoir pu le faire. Cette exigence en base reste une suite possible, une fois
+       les comptes admin réels effectivement enrôlés.
+     - Vérifié en direct sur Formation (`admin.formation`), TOTP généré côté navigateur via
+       Web Crypto (HMAC-SHA1, RFC 6238) à partir de la clé retournée par `enroll()`, sans
+       app d'authentification externe : activation réussie, déconnexion/reconnexion
+       exigeant bien le code, un code erroné rejeté puis le bon code accepté, navigation
+       directe vers une route protégée bloquée tant que le code n'est pas saisi,
+       désactivation propre en fin de test (compte de test, pas de facteur à conserver).
+       `npm run typecheck && npm run lint && npm run test && npm run build` propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

@@ -4,6 +4,7 @@ import { LoginPage } from "@/auth/LoginPage";
 import { ProtectedRoute } from "@/auth/ProtectedRoute";
 import { ResetPasswordPage } from "@/auth/ResetPasswordPage";
 import { ForcePasswordChangePage } from "@/auth/ForcePasswordChangePage";
+import { MfaChallengePage } from "@/auth/MfaChallengePage";
 import { AppShell } from "@/components/layout/AppShell";
 
 // Chargées à la demande par route (React.lazy) plutôt qu'au chargement initial : le
@@ -108,6 +109,7 @@ export function AppRoutes() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/force-password-change" element={<ForcePasswordChangePage />} />
+        <Route path="/mfa-challenge" element={<MfaChallengePage />} />
         <Route
           path="/"
           element={

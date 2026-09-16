@@ -34,6 +34,14 @@ export interface AuthContextValue {
   signOut: () => Promise<void>;
   hasAttribution: (actionKey: string, minLevel?: AttributionLevel) => boolean;
   hasModuleAccess: (module: string) => boolean;
+  // true dès qu'un facteur MFA est vérifié sur le compte mais que la session en cours
+  // n'a été authentifiée qu'au 1er facteur (mot de passe) -- le second facteur reste à
+  // saisir avant d'accéder à l'application (voir MfaChallengePage, ProtectedRoute).
+  needsMfaChallenge: boolean;
+  // Recalcule needsMfaChallenge -- à appeler après un enrôlement, une vérification ou
+  // une désactivation MFA, l'événement Supabase correspondant n'étant pas garanti
+  // déclencher onAuthStateChange de façon synchrone et immédiate.
+  refreshMfaStatus: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);

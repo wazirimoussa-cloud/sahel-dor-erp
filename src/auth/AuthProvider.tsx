@@ -58,6 +58,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [deactivatedMessage, setDeactivatedMessage] = useState<string | null>(null);
+  const [needsMfaChallenge, setNeedsMfaChallenge] = useState(false);
+
+  async function checkMfaStatus() {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    setNeedsMfaChallenge(Boolean(data && data.currentLevel === "aal1" && data.nextLevel === "aal2"));
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -67,11 +73,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           setSession(null);
           setProfile(null);
+          setNeedsMfaChallenge(false);
           setLoading(false);
         }
         setSentryUser(null);
         return;
       }
+
+      // Un facteur MFA vérifié mais pas encore challengé cette session (currentLevel
+      // aal1, nextLevel aal2) ne doit jamais laisser passer un profil/des données
+      // métier tant que le 2e facteur n'est pas saisi -- vérifié avant toute autre
+      // chose, même si signInWithPassword() a déjà renvoyé une session "valide" (c'est
+      // le comportement normal de l'API : le 1er facteur seul suffit à obtenir une
+      // session, le niveau d'assurance est une information séparée).
+      if (mounted) await checkMfaStatus();
 
       const nextProfile = await loadProfile(nextSession.user.id);
 
@@ -84,6 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           setSession(null);
           setProfile(null);
+          setNeedsMfaChallenge(false);
           setDeactivatedMessage(DEACTIVATED_MESSAGE);
           setLoading(false);
         }
@@ -150,6 +166,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signOut,
         hasAttribution,
         hasModuleAccess,
+        needsMfaChallenge,
+        refreshMfaStatus: checkMfaStatus,
       }}
     >
       {children}

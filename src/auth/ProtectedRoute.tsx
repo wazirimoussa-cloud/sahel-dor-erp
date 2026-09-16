@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 // Ce garde ne fait que de l'UX (masquer/rediriger dans l'interface) : la sécurité réelle
 // est appliquée par les policies RLS côté Supabase, jamais uniquement ici.
 export function ProtectedRoute({ children, requiredModule }: ProtectedRouteProps) {
-  const { session, profile, loading, hasModuleAccess } = useAuth();
+  const { session, profile, loading, hasModuleAccess, needsMfaChallenge } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -19,6 +19,10 @@ export function ProtectedRoute({ children, requiredModule }: ProtectedRouteProps
 
   if (!session) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (needsMfaChallenge && location.pathname !== "/mfa-challenge") {
+    return <Navigate to="/mfa-challenge" replace />;
   }
 
   if (profile?.mustChangePassword && location.pathname !== "/force-password-change") {

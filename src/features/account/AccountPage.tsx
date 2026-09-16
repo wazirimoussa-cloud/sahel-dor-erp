@@ -1,5 +1,6 @@
 import { useAuth } from "@/auth/useAuth";
 import { ChangePasswordForm } from "@/features/account/ChangePasswordForm";
+import { MfaSettings } from "@/features/account/MfaSettings";
 import { Card } from "@/components/ui/Card";
 
 export function AccountPage() {
@@ -17,6 +18,11 @@ export function AccountPage() {
       <Card>
         <h2 className="mb-4 text-sm font-medium text-gray-700">Changer mon mot de passe</h2>
         <ChangePasswordForm />
+      </Card>
+
+      <Card>
+        <h2 className="mb-4 text-sm font-medium text-gray-700">Double authentification</h2>
+        <MfaSettings />
       </Card>
     </div>
   );
