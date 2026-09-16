@@ -2268,6 +2268,35 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
      - Vérifié : `npm run typecheck && npm run lint && npm run test && npm run build`
        propres.
 
+102. **Même vérification de stock pour les pertes de stock déclarées par le magasinier**
+     (point 101 étendu) : `request_stock_loss()`/`approve_stock_loss()` suivent exactement le
+     même schéma en deux temps que les commandes (déclaration par le magasinier → approbation
+     par le Contrôleur) et souffraient du même angle mort — rien ne vérifiait la quantité
+     déclarée contre le stock réellement disponible avant que `product_stocks_stock_check`
+     (sans lot ciblé) ou `fn_consume_specific_lot` (avec lot ciblé, message déjà clair en base
+     mais **jamais affiché** : `StockLossRequestsPage.tsx` n'avait aucun `catch` sur
+     l'approbation/le rejet) ne bloque à l'approbation. Portée confirmée avec l'utilisateur :
+     uniquement la vérification de quantité, aucun mécanisme de recouvrement financier — les
+     pertes de stock (contrairement aux pertes transport, point 89) ne sont pas remboursées, il
+     n'y a rien à recouvrer.
+     - `RequestStockLossForm.tsx` : le menu produit affiche le stock du magasin choisi (comme
+       les commandes) ; à la déclaration, la quantité est comparée soit au reliquat du lot ciblé
+       (`stock_lots.quantity_remaining`, si un lot est choisi) soit au stock du magasin (sinon,
+       FEFO automatique) — la quantité reconditionnée n'a pas cette vérification, c'est une
+       entrée de stock, jamais une nouvelle sortie.
+     - `StockLossRequestsPage.tsx` : `findStockLossShortage()` (nouveau) refait la même
+       vérification juste avant `approve_stock_loss` (le stock a pu bouger entre déclaration et
+       approbation, comme pour les commandes) et affiche le manque précisément par ligne.
+       `describeStockLossActionError()` (nouveau) + un vrai `catch` sur l'approbation et le
+       rejet — absents jusqu'ici, un échec RPC (y compris le message déjà clair de
+       `fn_consume_specific_lot`) ne s'affichait donc jamais, silencieusement.
+     - Vérifié en direct sur Formation : déclaration bloquée sans stock magasin suffisant,
+       déclaration bloquée sans reliquat de lot suffisant, puis un scénario complet en 2
+       déclarations sur le même magasin/produit (15 unité disponibles) — la première (5)
+       approuvée normalement, la seconde (12) bloquée à l'approbation avec le nouveau message
+       précis (stock retombé à 10 après la première approbation) sans jamais tenter la RPC.
+       `npm run typecheck && npm run lint && npm run test && npm run build` propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

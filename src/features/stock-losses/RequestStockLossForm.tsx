@@ -3,7 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
-import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
+import { useActiveWarehouses, useWarehouseStock } from "@/features/warehouses/useWarehouses";
 import { useRequestStockLoss } from "@/features/stock-losses/useStockLossRequests";
 import { useStockLots } from "@/features/stock/useStockLots";
 import { lotStatus } from "@/lib/stockDisplay";
@@ -48,6 +48,7 @@ export function RequestStockLossForm() {
     watch,
     reset,
     setValue,
+    setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -57,6 +58,7 @@ export function RequestStockLossForm() {
   const isRepackaging = watch("isRepackaging");
   const selectedProductId = watch("productId");
   const selectedWarehouseId = watch("warehouseId");
+  const selectedLotId = watch("lotId");
 
   const matchingLots = useMemo(
     () =>
@@ -65,6 +67,16 @@ export function RequestStockLossForm() {
       ),
     [lots, selectedProductId, selectedWarehouseId],
   );
+
+  // Même vérification qu'à l'émission d'un bon de commande (NewOrderForm) : rien ne
+  // comparait la quantité déclarée au stock réellement disponible avant que
+  // product_stocks_stock_check (ou fn_consume_specific_lot pour un lot ciblé) ne bloque,
+  // opaquement, seulement à l'approbation par le Contrôleur.
+  const { data: warehouseStock, isLoading: isLoadingWarehouseStock } = useWarehouseStock(
+    selectedWarehouseId || undefined,
+  );
+  const stockByProduct = new Map((warehouseStock ?? []).map((row) => [row.product_id, row.stock]));
+  const targetedLot = selectedLotId ? matchingLots.find((lot) => lot.id === selectedLotId) : undefined;
 
   // Un lot sélectionné pour un produit/magasin donné ne veut plus rien dire si le
   // produit ou le magasin change ensuite -- react-hook-form garde la valeur en mémoire
@@ -76,6 +88,35 @@ export function RequestStockLossForm() {
   async function onSubmit(values: FormValues) {
     setServerError(null);
     setSuccessMessage(null);
+
+    // La quantité reconditionnée n'a pas besoin de cette vérification : c'est une entrée
+    // (IN) qui suit la quantité déclarée en perte, jamais une nouvelle sortie de stock.
+    if (values.lotId) {
+      const available = targetedLot?.quantity_remaining ?? 0;
+      if (values.quantity > available) {
+        setError("quantity", {
+          type: "manual",
+          message: `Quantité restante insuffisante sur ce lot (disponible : ${available})`,
+        });
+        setServerError("Quantité supérieure au restant sur le lot ciblé — voir le détail ci-dessous.");
+        return;
+      }
+    } else {
+      if (selectedWarehouseId && isLoadingWarehouseStock) {
+        setServerError("Chargement du stock de ce magasin en cours — réessayez dans un instant.");
+        return;
+      }
+      const available = stockByProduct.get(values.productId) ?? 0;
+      if (values.quantity > available) {
+        setError("quantity", {
+          type: "manual",
+          message: `Stock insuffisant à ce magasin (disponible : ${available})`,
+        });
+        setServerError("Quantité supérieure au stock disponible dans ce magasin — voir le détail ci-dessous.");
+        return;
+      }
+    }
+
     try {
       await requestLoss.mutateAsync({
         productId: values.productId,
@@ -105,11 +146,16 @@ export function RequestStockLossForm() {
             {...register("productId")}
           >
             <option value="">— Choisir —</option>
-            {products?.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} ({product.unit})
-              </option>
-            ))}
+            {products?.map((product) => {
+              const stockLabel = selectedWarehouseId
+                ? `stock à ce magasin : ${stockByProduct.get(product.id) ?? 0}`
+                : `stock total : ${product.stock}`;
+              return (
+                <option key={product.id} value={product.id}>
+                  {product.name} ({stockLabel} {product.unit})
+                </option>
+              );
+            })}
           </select>
           {errors.productId && <p className="mt-1 text-xs text-red-600">{errors.productId.message}</p>}
         </div>

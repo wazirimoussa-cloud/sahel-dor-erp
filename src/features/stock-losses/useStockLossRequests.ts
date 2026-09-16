@@ -9,7 +9,7 @@ export function useStockLossRequests(page: number, pageSize: number) {
       const { data, error } = await supabase
         .from("stock_loss_requests")
         .select(
-          "id, quantity, repackaged_quantity, reason, status, rejection_reason, created_at, reviewed_at, products(name, unit), warehouses(name), requester:users!requested_by(email), reviewer:users!reviewed_by(email), stock_lots(lot_number, expiry_date)",
+          "id, product_id, warehouse_id, lot_id, quantity, repackaged_quantity, reason, status, rejection_reason, created_at, reviewed_at, products(name, unit), warehouses(name), requester:users!requested_by(email), reviewer:users!reviewed_by(email), stock_lots(lot_number, expiry_date)",
         )
         .order("created_at", { ascending: false })
         .range(...rangeFor(page, pageSize));

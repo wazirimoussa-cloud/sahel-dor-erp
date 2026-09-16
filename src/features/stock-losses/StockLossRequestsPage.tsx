@@ -11,6 +11,57 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { supabase } from "@/lib/supabase";
+
+// Même vérification qu'à la validation d'un bon de commande (OrderDetailPage) : le stock
+// peut avoir bougé entre la déclaration (magasinier) et l'approbation (Contrôleur, souvent
+// plus tard). Un lot ciblé est vérifié contre son propre reliquat (fn_consume_specific_lot
+// le referait de toute façon en base, mais avec un message déjà clair -- ici on l'affiche
+// simplement avant plutôt que de laisser échouer la RPC) ; sans lot ciblé (FEFO
+// automatique), contre le stock du magasin (product_stocks_stock_check, message opaque en
+// base, comme pour les commandes).
+async function findStockLossShortage(
+  warehouseId: string,
+  productId: string,
+  lotId: string | null,
+  quantity: number,
+  unit: string,
+): Promise<string | null> {
+  if (lotId) {
+    const { data, error } = await supabase
+      .from("stock_lots")
+      .select("quantity_remaining")
+      .eq("id", lotId)
+      .maybeSingle();
+    if (error || !data) return null;
+    if (quantity > data.quantity_remaining) {
+      return `Quantité restante insuffisante sur le lot ciblé (disponible : ${data.quantity_remaining} ${unit}, demandé : ${quantity} ${unit}).`;
+    }
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("product_stocks")
+    .select("stock")
+    .eq("warehouse_id", warehouseId)
+    .eq("product_id", productId)
+    .maybeSingle();
+  if (error) return null;
+  const available = data?.stock ?? 0;
+  if (quantity > available) {
+    return `Stock insuffisant dans ce magasin pour approuver cette perte (disponible : ${available} ${unit}, demandé : ${quantity} ${unit}).`;
+  }
+  return null;
+}
+
+function describeStockLossActionError(err: unknown): string {
+  const code = (err as { code?: string } | null)?.code;
+  const message = (err as { message?: string } | null)?.message ?? "";
+  if (code === "23514" && message.includes("product_stocks_stock_check")) {
+    return "Stock insuffisant dans ce magasin pour approuver cette perte.";
+  }
+  return message || "Action refusée (droits insuffisants ou demande déjà traitée).";
+}
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "En attente",
@@ -50,9 +101,49 @@ export function StockLossRequestsPage() {
   const reject = useRejectStockLoss();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
 
   const canRequest = hasAttribution("pertes_stock.declarer");
   const canApprove = hasAttribution("pertes_stock.approuver");
+
+  async function handleApprove(request: {
+    id: string;
+    product_id: string;
+    warehouse_id: string;
+    lot_id: string | null;
+    quantity: number;
+    products: { name: string; unit: string } | { name: string; unit: string }[] | null;
+  }) {
+    setActionErrors((prev) => ({ ...prev, [request.id]: "" }));
+    const productInfo = Array.isArray(request.products) ? request.products[0] : request.products;
+    const shortage = await findStockLossShortage(
+      request.warehouse_id,
+      request.product_id,
+      request.lot_id,
+      request.quantity,
+      productInfo?.unit ?? "",
+    );
+    if (shortage) {
+      setActionErrors((prev) => ({ ...prev, [request.id]: shortage }));
+      return;
+    }
+    try {
+      await approve.mutateAsync(request.id);
+    } catch (err) {
+      setActionErrors((prev) => ({ ...prev, [request.id]: describeStockLossActionError(err) }));
+    }
+  }
+
+  async function handleReject(requestId: string) {
+    setActionErrors((prev) => ({ ...prev, [requestId]: "" }));
+    try {
+      await reject.mutateAsync({ requestId, rejectionReason });
+      setRejectingId(null);
+      setRejectionReason("");
+    } catch (err) {
+      setActionErrors((prev) => ({ ...prev, [requestId]: describeStockLossActionError(err) }));
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -143,7 +234,7 @@ export function StockLossRequestsPage() {
                         <div className="flex flex-col gap-2">
                           <Button
                             disabled={approve.isPending}
-                            onClick={() => void approve.mutateAsync(r.id)}
+                            onClick={() => void handleApprove(r)}
                           >
                             Approuver
                           </Button>
@@ -164,14 +255,7 @@ export function StockLossRequestsPage() {
                               <Button
                                 variant="danger"
                                 disabled={reject.isPending || rejectionReason.trim().length < 3}
-                                onClick={() =>
-                                  void reject
-                                    .mutateAsync({ requestId: r.id, rejectionReason })
-                                    .then(() => {
-                                      setRejectingId(null);
-                                      setRejectionReason("");
-                                    })
-                                }
+                                onClick={() => void handleReject(r.id)}
                               >
                                 Confirmer le rejet
                               </Button>
@@ -180,6 +264,11 @@ export function StockLossRequestsPage() {
                             <Button variant="danger" onClick={() => setRejectingId(r.id)}>
                               Rejeter
                             </Button>
+                          )}
+                          {actionErrors[r.id] && (
+                            <p role="alert" className="text-xs text-red-600">
+                              {actionErrors[r.id]}
+                            </p>
                           )}
                         </div>
                       )}
