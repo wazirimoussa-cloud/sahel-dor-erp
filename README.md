@@ -2322,6 +2322,31 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
      - Migration appliquée directement (`supabase db push`), effective immédiatement sur
        Formation et Production (base partagée) — aucun déploiement frontend requis.
 
+104. **15 index manquants ajoutés** (migration `0100`, autre trouvaille de l'audit pré-lancement) :
+     Postgres n'indexe jamais automatiquement une colonne de clé étrangère (contrairement à la
+     clé primaire ou une contrainte `unique`) — comparaison de la liste complète des `create
+     index` existants aux colonnes `references public....` de tout le schéma, faute d'accès
+     direct à la base (`supabase db dump` indisponible, Docker absent de cet environnement).
+     - **`company_id`, filtré par RLS sur *toute* requête sur ces tables, jusqu'ici sans
+       index** : `stock_lots`, `stock_loss_requests`, `fixed_assets`, et les 3 tables du module
+       paie (`employees`, `payslips`, `salary_advances`, `leave_records`) — ces 4 dernières
+       viennent justement de gagner un second `has_attribution()` par ligne lue (point 103), un
+       filtre `company_id` indexé limite d'autant mieux le volume de lignes évaluées.
+     - **Clés de jointure/filtre réellement utilisées côté application** (pas ajoutées par
+       précaution) : `stock_lots.source_transaction_id` (jointure exacte de la requête la plus
+       lourde de l'app, `useFinancialStatements.ts`, point 63) ; `purchases.warehouse_id`/
+       `supplier_id`/`transporter_id` (filtres et agrégations de `PurchasesPage`,
+       `usePurchasingPeriodSummary` "top fournisseurs", `PurchaseLossesPage`) ;
+       `orders.user_id` (agrégation "top créateurs" de `useSalesPeriodSummary`) ;
+       `salary_advances.employee_id` (`useSalaryAdvances.ts` filtre déjà dessus) ;
+       `journal_entries.entry_date` (la colonne sur laquelle un futur filtre de date devra
+       porter pour corriger la requête du point 63, toujours non filtrée côté base) ;
+       `logs.user_id` (jointure utilisée par la policy RLS de `logs` pour vérifier la société,
+       cette table n'ayant pas de colonne `company_id` propre).
+     - Purement additif (`create index`, aucune donnée ni règle d'accès modifiée) — vérifié en
+       direct sur Formation après application : tableau de bord Finance (la requête la plus
+       lourde de l'app) recalcule les mêmes montants qu'avant, aucune erreur console.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
