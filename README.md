@@ -2181,6 +2181,47 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       comptable associé (taux de référence manuel uniquement) : aucun impact financier, juste
       une citation d'article à vérifier si la bonne source est un jour trouvée.
 
+99. **Retenue sur le transport : la perte constatée est déduite du solde du transporteur**
+    (migrations `0097`/`0098`) : le transporteur est payé en 2 fois — une avance au départ
+    des camions, un solde à la livraison/déchargement. Décision confirmée avec
+    l'utilisateur : en cas de perte constatée, son montant est déduit du solde plutôt que de
+    rester une créance séparée à recouvrer en espèces. Jusqu'ici l'app ne suivait même pas le
+    coût du transport lui-même (seulement la valeur des marchandises perdues, point 92) —
+    transporteur/montant sont donc désormais connus dès la **création** du bon d'achat
+    (`NewPurchaseForm.tsx`, champs optionnels), pas seulement à la réception comme pour la
+    déclaration de perte.
+    - **Répartition 50/50 fixe** (pas configurable, comme décrit) : `transport_fee/2` par
+      tranche, toujours calculé côté serveur (jamais fourni par l'appelant).
+    - **`pay_transport_advance()`** : débite 611 "Transports sur achats" (confirmé via
+      plan-comptable-ohada.com/compte/61)/crédite 521, pour la moitié du montant.
+    - **`pay_transport_balance()`** : exige que l'avance soit payée et le bon d'achat reçu
+      (sinon aucune perte connue — garde-fou ajouté en `0098` après relecture). Débite 611 du
+      solde prévu en entier (le service a été rendu), crédite 521 du montant réellement
+      décaissé (solde − pertes), et crédite **4098** de la déduction — un recouvrement par
+      compensation plutôt qu'en espèces, qui réduit la créance déjà comptabilisée à la
+      réception par `receive_purchase()` (**inchangée**, toujours 100% en 4098 comme avant).
+      Si la perte dépasse le solde disponible, l'excédent reste en 4098 : le mécanisme de
+      recouvrement déjà existant (`record_purchase_loss_recovery`, point 92) continue de
+      fonctionner sans aucune modification pour cet excédent, et pour les transporteurs sans
+      montant de transport renseigné (retour intégral au comportement actuel).
+    - **Intégration avec le recouvrement existant** : la déduction est répartie (FIFO par
+      date) sur les lignes `purchase_losses` du bon d'achat comme des lignes
+      `purchase_loss_recoveries` de source `'solde_transport'` (nouvelle colonne `source`,
+      `'cash'` par défaut pour l'historique existant) — garantit que
+      `record_purchase_loss_recovery()` (qui somme toutes les sources) refuse tout
+      recouvrement en espèces au-delà du reste réellement dû après déduction, sans aucun
+      changement à cette fonction.
+    - `PurchaseLossesPage.tsx` : historique des recouvrements distingue "Espèces" et "Déduit
+      du solde transport". `PurchaseDetailPage.tsx` : carte Transport avec statut
+      avance/solde et boutons d'action, gardés par `transporteurs.gerer`.
+    - Vérifié en direct sur Formation via RPC, 3 scénarios : perte < solde (déduction
+      partielle + paiement du reliquat, ex. 500 000 prévu − 435 000 perte = 65 000 payé) ;
+      perte > solde (déduction plafonnée à 100 000, solde payé = 0, excédent de 335 000
+      confirmé recouvrable ensuite via `record_purchase_loss_recovery`, refusé au-delà) ;
+      tous les garde-fous testés (double avance, double solde, solde sans avance, solde avant
+      réception). `npm run typecheck && npm run lint && npm run test && npm run build`
+      propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

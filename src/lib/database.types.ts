@@ -1112,6 +1112,7 @@ export type Database = {
           created_at: string
           id: string
           purchase_loss_id: string
+          source: string
           user_id: string
         }
         Insert: {
@@ -1119,6 +1120,7 @@ export type Database = {
           created_at?: string
           id?: string
           purchase_loss_id: string
+          source?: string
           user_id: string
         }
         Update: {
@@ -1126,6 +1128,7 @@ export type Database = {
           created_at?: string
           id?: string
           purchase_loss_id?: string
+          source?: string
           user_id?: string
         }
         Relationships: [
@@ -1210,6 +1213,48 @@ export type Database = {
           },
         ]
       }
+      purchase_transport_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          installment: string
+          purchase_id: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          installment: string
+          purchase_id: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          installment?: string
+          purchase_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_transport_payments_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_transport_payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchases: {
         Row: {
           company_id: string
@@ -1223,6 +1268,8 @@ export type Database = {
           repackage_count: number | null
           status: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          transport_fee: number | null
+          transporter_id: string | null
           truck_plate: string | null
           user_id: string
           warehouse_id: string
@@ -1239,6 +1286,8 @@ export type Database = {
           repackage_count?: number | null
           status?: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          transport_fee?: number | null
+          transporter_id?: string | null
           truck_plate?: string | null
           user_id: string
           warehouse_id: string
@@ -1255,6 +1304,8 @@ export type Database = {
           repackage_count?: number | null
           status?: Database["public"]["Enums"]["purchase_status"]
           supplier_id?: string
+          transport_fee?: number | null
+          transporter_id?: string | null
           truck_plate?: string | null
           user_id?: string
           warehouse_id?: string
@@ -1272,6 +1323,13 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchases_transporter_id_fkey"
+            columns: ["transporter_id"]
+            isOneToOne: false
+            referencedRelation: "transporters"
             referencedColumns: ["id"]
           },
           {
@@ -2105,6 +2163,8 @@ export type Database = {
           repackage_count: number | null
           status: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          transport_fee: number | null
+          transporter_id: string | null
           truck_plate: string | null
           user_id: string
           warehouse_id: string
@@ -2219,6 +2279,8 @@ export type Database = {
           repackage_count: number | null
           status: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          transport_fee: number | null
+          transporter_id: string | null
           truck_plate: string | null
           user_id: string
           warehouse_id: string
@@ -2321,6 +2383,40 @@ export type Database = {
       }
       has_module_access: { Args: { p_module: string }; Returns: boolean }
       log_page_visit: { Args: { module: string }; Returns: undefined }
+      pay_transport_advance: {
+        Args: { p_purchase_id: string }
+        Returns: {
+          amount: number
+          created_at: string
+          id: string
+          installment: string
+          purchase_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_transport_payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pay_transport_balance: {
+        Args: { p_purchase_id: string }
+        Returns: {
+          amount: number
+          created_at: string
+          id: string
+          installment: string
+          purchase_id: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_transport_payments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       receive_purchase: {
         Args: {
           losses?: Json
@@ -2344,6 +2440,8 @@ export type Database = {
           repackage_count: number | null
           status: Database["public"]["Enums"]["purchase_status"]
           supplier_id: string
+          transport_fee: number | null
+          transporter_id: string | null
           truck_plate: string | null
           user_id: string
           warehouse_id: string
@@ -2382,6 +2480,7 @@ export type Database = {
           created_at: string
           id: string
           purchase_loss_id: string
+          source: string
           user_id: string
         }
         SetofOptions: {

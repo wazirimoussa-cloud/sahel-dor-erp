@@ -5,22 +5,33 @@ import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
 import { useActiveSuppliers } from "@/features/suppliers/useSuppliers";
 import { useActiveWarehouses } from "@/features/warehouses/useWarehouses";
+import { useAllTransporters } from "@/features/transporters/useTransporters";
 import { useCreatePurchase } from "@/features/purchases/usePurchases";
 import { Button } from "@/components/ui/Button";
 import { AmountInput } from "@/components/ui/AmountInput";
 
-const purchaseSchema = z.object({
-  supplierId: z.string().uuid("Choisissez un fournisseur"),
-  warehouseId: z.string().uuid("Choisissez un magasin"),
-  items: z
-    .array(
-      z.object({
-        productId: z.string().uuid("Choisissez un produit"),
-        quantity: z.coerce.number().positive("La quantité doit être positive"),
-      }),
-    )
-    .min(1, "Ajoutez au moins une ligne"),
-});
+// transporterId/transportFee optionnels mais liés : connus dès la création (pas seulement à
+// la réception comme pour la déclaration de perte) pour pouvoir payer l'avance transport
+// avant le départ des camions -- voir pay_transport_advance/pay_transport_balance (0097).
+const purchaseSchema = z
+  .object({
+    supplierId: z.string().uuid("Choisissez un fournisseur"),
+    warehouseId: z.string().uuid("Choisissez un magasin"),
+    transporterId: z.string().optional(),
+    transportFee: z.number().positive("Le montant du transport doit être positif").optional(),
+    items: z
+      .array(
+        z.object({
+          productId: z.string().uuid("Choisissez un produit"),
+          quantity: z.coerce.number().positive("La quantité doit être positive"),
+        }),
+      )
+      .min(1, "Ajoutez au moins une ligne"),
+  })
+  .refine((v) => !!v.transporterId === !!v.transportFee, {
+    message: "Le transporteur et le montant du transport vont ensemble : les deux ou aucun",
+    path: ["transportFee"],
+  });
 
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
@@ -28,6 +39,7 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
   const { data: products } = useActiveProducts();
   const { data: suppliers } = useActiveSuppliers();
   const { data: warehouses } = useActiveWarehouses();
+  const { data: transporters } = useAllTransporters();
   const createPurchase = useCreatePurchase();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -50,11 +62,15 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
       await createPurchase.mutateAsync({
         supplierId: values.supplierId,
         warehouseId: values.warehouseId,
+        transporterId: values.transporterId || undefined,
+        transportFee: values.transportFee,
         items: values.items,
       });
       reset({
         supplierId: values.supplierId,
         warehouseId: values.warehouseId,
+        transporterId: "",
+        transportFee: undefined,
         items: [{ productId: "", quantity: 1 }],
       });
       onCreated?.();
@@ -105,6 +121,49 @@ export function NewPurchaseForm({ onCreated }: { onCreated?: () => void }) {
           </select>
           {errors.warehouseId && (
             <p className="mt-1 text-xs text-red-600">{errors.warehouseId.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="purchase-transporterId" className="mb-1 block text-xs font-medium text-gray-600">
+            Transporteur (optionnel)
+          </label>
+          <select
+            id="purchase-transporterId"
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            {...register("transporterId")}
+          >
+            <option value="">— Aucun —</option>
+            {transporters?.map((transporter) => (
+              <option key={transporter.id} value={transporter.id}>
+                {transporter.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="purchase-transportFee" className="mb-1 block text-xs font-medium text-gray-600">
+            Montant du transport (optionnel)
+          </label>
+          <Controller
+            control={control}
+            name="transportFee"
+            render={({ field }) => (
+              <AmountInput
+                id="purchase-transportFee"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+              />
+            )}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Payé en 2 fois : la moitié au départ, la moitié à la livraison (déduite des pertes
+            constatées).
+          </p>
+          {errors.transportFee && (
+            <p className="mt-1 text-xs text-red-600">{errors.transportFee.message}</p>
           )}
         </div>
       </div>

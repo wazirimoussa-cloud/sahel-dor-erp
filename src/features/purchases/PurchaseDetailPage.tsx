@@ -7,6 +7,8 @@ import {
   useReceivePurchase,
   useCancelPurchase,
   usePurchaseLosses,
+  usePayTransportAdvance,
+  usePayTransportBalance,
 } from "@/features/purchases/usePurchases";
 import { useAllTransporters } from "@/features/transporters/useTransporters";
 import { Card } from "@/components/ui/Card";
@@ -55,11 +57,15 @@ export function PurchaseDetailPage() {
   const { data: transporters } = useAllTransporters();
   const receivePurchase = useReceivePurchase();
   const cancelPurchase = useCancelPurchase();
+  const payTransportAdvance = usePayTransportAdvance();
+  const payTransportBalance = usePayTransportBalance();
   const [actionError, setActionError] = useState<string | null>(null);
+  const [transportError, setTransportError] = useState<string | null>(null);
 
   const canReceive = hasAttribution("achats.receptionner");
   const canCancel = hasAttribution("achats.annuler");
   const canViewLandedCost = hasAttribution("comptabilite.consulter_prix_revient", "consultative");
+  const canManageTransport = hasAttribution("transporteurs.gerer");
 
   const {
     register: registerReception,
@@ -136,6 +142,43 @@ export function PurchaseDetailPage() {
   const driverPhone = purchase.driver_phone;
   const repackageCount = purchase.repackage_count;
   const observation = purchase.observation;
+
+  const purchaseTransporterRelation = purchase.transporters as
+    | { id: string; name: string }
+    | { id: string; name: string }[]
+    | null;
+  const purchaseTransporter = Array.isArray(purchaseTransporterRelation)
+    ? purchaseTransporterRelation[0]
+    : purchaseTransporterRelation;
+  const transportPayments = (purchase.purchase_transport_payments ?? []) as {
+    installment: "avance" | "solde";
+    amount: number;
+    created_at: string;
+    users: { email: string } | { email: string }[] | null;
+  }[];
+  const avancePaid = transportPayments.find((p) => p.installment === "avance");
+  const soldePaid = transportPayments.find((p) => p.installment === "solde");
+  const transportHalf = purchase.transport_fee ? purchase.transport_fee / 2 : 0;
+
+  async function handlePayTransportAdvance() {
+    setTransportError(null);
+    try {
+      await payTransportAdvance.mutateAsync(purchaseId);
+    } catch {
+      setTransportError("Paiement de l'avance refusé (droits insuffisants ou déjà payée).");
+    }
+  }
+
+  async function handlePayTransportBalance() {
+    setTransportError(null);
+    try {
+      await payTransportBalance.mutateAsync(purchaseId);
+    } catch {
+      setTransportError(
+        "Paiement du solde refusé (droits insuffisants, avance non payée, bon d'achat non reçu, ou solde déjà payé).",
+      );
+    }
+  }
 
   async function buildPurchasePdf() {
     const products = items.map((item) => {
@@ -353,6 +396,69 @@ export function PurchaseDetailPage() {
           </tfoot>
         </table>
       </Card>
+
+      {purchaseTransporter && purchase.transport_fee && (
+        <Card>
+          <h2 className="mb-3 text-sm font-medium text-gray-700">Transport</h2>
+          <p className="mb-3 text-xs text-gray-500">
+            {purchaseTransporter.name} — {formatNumber(purchase.transport_fee)} FCFA au total,
+            payé en 2 fois ({formatNumber(transportHalf)} FCFA chacune) : l'avance au départ,
+            le solde à la livraison (déduit des pertes constatées à la réception).
+          </p>
+          <div className="flex flex-wrap items-center gap-6">
+            <div>
+              <p className="text-xs font-medium text-gray-500">Avance</p>
+              {avancePaid ? (
+                <p className="text-sm text-green-700">
+                  {formatNumber(avancePaid.amount)} FCFA payée le{" "}
+                  {new Date(avancePaid.created_at).toLocaleDateString("fr-FR")}
+                </p>
+              ) : canManageTransport ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => void handlePayTransportAdvance()}
+                  disabled={payTransportAdvance.isPending}
+                >
+                  Payer l'avance ({formatNumber(transportHalf)} FCFA)
+                </Button>
+              ) : (
+                <p className="text-sm text-gray-400">Non payée</p>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-medium text-gray-500">Solde</p>
+              {soldePaid ? (
+                <p className="text-sm text-green-700">
+                  {formatNumber(soldePaid.amount)} FCFA payé le{" "}
+                  {new Date(soldePaid.created_at).toLocaleDateString("fr-FR")}
+                  {soldePaid.amount < transportHalf && " (déduction de perte appliquée)"}
+                </p>
+              ) : canManageTransport && purchase.status === "received" && avancePaid ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => void handlePayTransportBalance()}
+                  disabled={payTransportBalance.isPending}
+                >
+                  Payer le solde (jusqu'à {formatNumber(transportHalf)} FCFA)
+                </Button>
+              ) : (
+                <p className="text-sm text-gray-400">
+                  {purchase.status !== "received"
+                    ? "En attente de réception"
+                    : !avancePaid
+                      ? "En attente du paiement de l'avance"
+                      : "Non payé"}
+                </p>
+              )}
+            </div>
+          </div>
+          {transportError && (
+            <p role="alert" className="mt-3 text-xs text-red-600">
+              {transportError}
+            </p>
+          )}
+        </Card>
+      )}
 
       <div className="flex gap-3">
         <Button variant="secondary" onClick={() => void handleDownloadPdf()}>

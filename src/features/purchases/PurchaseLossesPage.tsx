@@ -21,6 +21,11 @@ const recoverySchema = z.object({
 });
 type RecoveryFormValues = z.infer<typeof recoverySchema>;
 
+const RECOVERY_SOURCE_LABELS: Record<string, string> = {
+  cash: "Espèces",
+  solde_transport: "Déduit du solde transport",
+};
+
 function RecoveryHistoryRows({ lossId }: { lossId: string }) {
   const { data: recoveries, isLoading } = usePurchaseLossRecoveries(lossId);
   if (isLoading) return <p className="py-2 text-xs text-gray-500">Chargement…</p>;
@@ -37,6 +42,7 @@ function RecoveryHistoryRows({ lossId }: { lossId: string }) {
             <tr key={r.id} className="border-b border-gray-100">
               <td className="py-1 pr-3">{new Date(r.created_at).toLocaleString("fr-FR")}</td>
               <td className="py-1 pr-3">{formatNumber(r.amount)} FCFA</td>
+              <td className="py-1 pr-3">{RECOVERY_SOURCE_LABELS[r.source] ?? r.source}</td>
               <td className="py-1">{email ?? "—"}</td>
             </tr>
           );

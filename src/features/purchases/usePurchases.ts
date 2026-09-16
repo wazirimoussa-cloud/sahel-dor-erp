@@ -41,7 +41,7 @@ export function usePurchase(purchaseId: string | undefined) {
       const { data, error } = await supabase
         .from("purchases")
         .select(
-          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate, vat_reduced_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt, vat_reduced, unit_cost))",
+          "id, status, created_at, received_at, receipt_number, driver_name, truck_plate, driver_phone, repackage_count, observation, user_id, users(email), suppliers(name, address), warehouses(name), companies(vat_rate, vat_reduced_rate), purchase_items(id, quantity, unit_cost, products(id, name, unit, vat_exempt, vat_reduced, unit_cost)), transporter_id, transport_fee, transporters(id, name), purchase_transport_payments(installment, amount, created_at, users(email))",
         )
         .eq("id", purchaseId as string)
         .single();
@@ -57,12 +57,16 @@ export function useCreatePurchase() {
     mutationFn: async (params: {
       supplierId: string;
       warehouseId: string;
+      transporterId?: string;
+      transportFee?: number;
       items: PurchaseItemInput[];
     }) => {
       const { error } = await supabase.rpc("create_purchase", {
         payload: {
           supplier_id: params.supplierId,
           warehouse_id: params.warehouseId,
+          transporter_id: params.transporterId || undefined,
+          transport_fee: params.transportFee,
           items: params.items.map((item) => ({
             product_id: item.productId,
             quantity: item.quantity,
@@ -74,6 +78,39 @@ export function useCreatePurchase() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["purchases"] });
+    },
+  });
+}
+
+// pay_transport_advance/pay_transport_balance (0097) : le montant de chaque tranche (moitié
+// du transport_fee saisi à la création) est toujours calculé côté serveur, jamais fourni par
+// l'appelant -- ces mutations ne prennent donc qu'un purchaseId.
+export function usePayTransportAdvance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (purchaseId: string) => {
+      const { error } = await supabase.rpc("pay_transport_advance", { p_purchase_id: purchaseId });
+      if (error) throw error;
+    },
+    onSuccess: (_data, purchaseId) => {
+      void queryClient.invalidateQueries({ queryKey: ["purchases", purchaseId] });
+    },
+  });
+}
+
+// Le solde déduit automatiquement les pertes déjà constatées sur ce bon d'achat -- rien à
+// transmettre côté client, le montant réellement décaissé est déterminé côté serveur.
+export function usePayTransportBalance() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (purchaseId: string) => {
+      const { error } = await supabase.rpc("pay_transport_balance", { p_purchase_id: purchaseId });
+      if (error) throw error;
+    },
+    onSuccess: (_data, purchaseId) => {
+      void queryClient.invalidateQueries({ queryKey: ["purchases", purchaseId] });
+      void queryClient.invalidateQueries({ queryKey: ["purchase_loss_recoveries", "totals"] });
+      void queryClient.invalidateQueries({ queryKey: ["purchase_losses"] });
     },
   });
 }
@@ -204,7 +241,7 @@ export function usePurchaseLossRecoveries(lossId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("purchase_loss_recoveries")
-        .select("id, amount, created_at, users(email)")
+        .select("id, amount, source, created_at, users(email)")
         .eq("purchase_loss_id", lossId as string)
         .order("created_at", { ascending: false });
       if (error) throw error;
