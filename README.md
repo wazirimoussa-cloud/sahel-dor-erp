@@ -2222,6 +2222,23 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
       réception). `npm run typecheck && npm run lint && npm run test && npm run build`
       propres.
 
+100. **Message d'erreur trompeur sur la validation/annulation d'un bon de commande corrigé**
+     (`OrderDetailPage.tsx`) : trouvé en investigation live — un refus de validation affichait
+     systématiquement "droits insuffisants ou bon de commande déjà traité", même quand la
+     vraie cause était tout autre. Cas concret : `superviseur.formation` avait bien
+     `ventes.valider_commande` en opérationnel, le vrai refus venait d'un **stock
+     insuffisant** dans le magasin de la commande (la contrainte `product_stocks_stock_check`
+     aurait fait passer le stock sous 0) — un code Postgres `23514` avalé par un `catch`
+     générique qui ne regardait jamais l'erreur reçue.
+     - `describeOrderActionError()` (nouveau, local au fichier) distingue ce cas précis
+       (code `23514` + message contenant `product_stocks_stock_check`) du reste, qui garde
+       le message générique existant — appliqué à `handleValidate()` et `handleCancel()`,
+       les deux partageant le même risque.
+     - Vérifié : `npm run typecheck && npm run lint && npm run test && npm run build`
+       propres. Pas de vérification UI live du nouveau message (nécessiterait de recréer un
+       cas de stock insuffisant) — logique couverte par le code Postgres déjà confirmé en
+       investigation directe (RPC), risque résiduel faible.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

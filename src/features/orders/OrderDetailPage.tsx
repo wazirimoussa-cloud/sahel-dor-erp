@@ -20,6 +20,21 @@ import { formatNumber } from "@/lib/format";
 import { ORDER_STATUS_LABELS, ORDER_STATUS_CLASSES } from "@/lib/orderDisplay";
 import { computeVatBreakdown } from "@/lib/vat";
 
+// Distingue les causes d'échec de validate_order()/cancel_order() plutôt que le message
+// générique unique d'avant -- trouvé en vérification live (superviseur.formation, droits
+// corrects, refus dû en réalité à un stock insuffisant dans le magasin de la commande, pas
+// aux droits). Code Postgres 23514 = violation de contrainte CHECK ; product_stocks_stock_check
+// est la seule contrainte de ce type que ces deux RPC peuvent déclencher (stock qui
+// passerait sous 0 dans le magasin concerné).
+function describeOrderActionError(err: unknown): string {
+  const code = (err as { code?: string } | null)?.code;
+  const message = (err as { message?: string } | null)?.message ?? "";
+  if (code === "23514" && message.includes("product_stocks_stock_check")) {
+    return "Stock insuffisant dans le magasin de cette commande pour couvrir la quantité demandée.";
+  }
+  return "Action refusée (droits insuffisants ou bon de commande déjà traité).";
+}
+
 const PAYMENT_LABELS: Record<string, string> = {
   unpaid: "Impayé",
   partial: "Partiel",
@@ -155,8 +170,8 @@ export function OrderDetailPage() {
     setActionError(null);
     try {
       await validateOrder.mutateAsync(orderId);
-    } catch {
-      setActionError("Action refusée (droits insuffisants ou bon de commande déjà traité).");
+    } catch (err) {
+      setActionError(describeOrderActionError(err));
     }
   }
 
@@ -165,8 +180,8 @@ export function OrderDetailPage() {
     setActionError(null);
     try {
       await cancelOrder.mutateAsync(orderId);
-    } catch {
-      setActionError("Action refusée (droits insuffisants ou bon de commande déjà traité).");
+    } catch (err) {
+      setActionError(describeOrderActionError(err));
     }
   }
 
