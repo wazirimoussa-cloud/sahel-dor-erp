@@ -127,6 +127,13 @@ jobs:
         with:
           name: db-backup-${{ needs.dump.outputs.stamp }}
 
+      - name: Debug temporaire -- empreinte du secret (à retirer une fois le run vert)
+        env:
+          RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_TEST_DB_URL }}
+        run: |
+          printf '%s' "$RESTORE_DB_URL" | sha256sum
+          echo "longueur: ${#RESTORE_DB_URL}"
+
       - name: Restaurer dans le projet jetable et vérifier
         env:
           RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_TEST_DB_URL }}
