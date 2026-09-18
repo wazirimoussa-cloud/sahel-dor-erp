@@ -5,10 +5,11 @@ import { useAuth } from "@/auth/useAuth";
 import { useCreateSupplier } from "@/features/suppliers/useSuppliers";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { phoneSchema } from "@/lib/contactValidation";
 
 const supplierSchema = z.object({
   name: z.string().min(1, "Nom requis"),
-  phone: z.string().optional(),
+  phone: phoneSchema,
   email: z.string().email("Email invalide").optional().or(z.literal("")),
   address: z.string().optional(),
 });
@@ -46,6 +47,7 @@ export function SupplierForm({ onCreated }: { onCreated?: () => void }) {
           Téléphone
         </label>
         <Input id="supplier-phone" {...register("phone")} />
+        {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>}
       </div>
       <div>
         <label htmlFor="supplier-email" className="mb-1 block text-xs font-medium text-gray-600">

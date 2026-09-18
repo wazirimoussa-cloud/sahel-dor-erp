@@ -2419,6 +2419,70 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        désactivation propre en fin de test (compte de test, pas de facteur à conserver).
        `npm run typecheck && npm run lint && npm run test && npm run build` propres.
 
+107. **Trois derniers points mineurs de l'audit pré-lancement corrigés** :
+     - **Politique de mot de passe renforcée** (`src/lib/passwordPolicy.ts`, nouveau,
+       partagé par `ChangePasswordForm.tsx` et `ResetPasswordPage.tsx`) : au minimum 8
+       caractères déjà en place, avec désormais au moins une lettre et un chiffre — pas de
+       caractère spécial imposé (ERP interne à effectif réduit, une règle trop stricte
+       pousse surtout à noter le mot de passe quelque part).
+     - **Téléphone validé sur clients/fournisseurs/transporteurs** (`src/lib/
+       contactValidation.ts`, nouveau, `phoneSchema` partagé par les 4 formulaires
+       concernés — `ClientForm`, `SupplierForm`, `TransporterForm`, l'édition inline de
+       `TransportersPage`) : chiffres/espaces/tirets/parenthèses/`+` acceptés, sans préfixe
+       pays imposé — écarte le texte qui n'est clairement pas un numéro, sans imposer de
+       format régional strict. L'adresse reste en texte libre (aucun format universel à
+       valider).
+     - **Requête États financiers bornée à `endDate`** (`useFinancialStatements.ts`) : le
+       bilan a besoin du solde cumulé de chaque compte depuis toujours jusqu'à `endDate`
+       (impossible de filtrer sur `startDate` sans fausser ces soldes), mais rien après
+       `endDate` n'est jamais utilisé — `accountTotals()` le filtrait déjà silencieusement
+       côté JS. Borner la requête (`'.lte("entry_date", endBound)`) réduit le volume
+       transféré/scanné sans changer aucun résultat (`computeFinancialStatements.test.ts`
+       inchangé et toujours vert).
+     - Vérifié : `npm run typecheck && npm run lint && npm run test && npm run build`
+       propres (81 tests, dont les 49 déjà existants).
+
+108. **Test de régression RLS écrit — et une 4ᵉ fuite inter-société réelle trouvée et
+     corrigée du même coup** : le rapport d'audit avait relevé que le même bug (une policy
+     qui vérifie `has_attribution(...)` mais oublie de filtrer sur la société) s'était déjà
+     produit 2 fois (`users_select`/`users_admin_write`, `companies_admin_write`) avant
+     d'être trouvé une 3ᵉ fois sur le module paie (point 103) — recommandation : un test
+     automatisé pour éviter une 4ᵉ occurrence.
+     - **`tests/unit/rlsAttributionScoping.test.ts`** (nouveau) : lit directement les 101
+       migrations SQL (aucune connexion Supabase requise), rejoue tous les `create policy`/
+       `drop policy` dans l'ordre chronologique pour reconstruire l'état courant de chaque
+       policy, puis vérifie que toute policy contenant `has_attribution(` référence aussi
+       `company_id`/`current_company_id()` dans le même corps. Limite assumée : analyse
+       textuelle (pas un vrai parseur SQL) — repose sur une convention déjà constante dans
+       tout le dépôt (le corps d'une policy est une expression booléenne simple, jamais un
+       sous-bloc contenant lui-même un point-virgule).
+     - **En l'exécutant une première fois, le test a immédiatement trouvé une 4ᵉ occurrence
+       réelle, jamais corrigée** : `user_attributions_select` (et `set_user_attributions()`,
+       la RPC d'écriture correspondante) n'avaient jamais été rescopées à la société.
+       Historique précis : `0034_set_user_attributions_cross_company.sql` avait
+       délibérément retiré ce filtre, en argumentant qu'un seul admin gérait Production ET
+       Formation indifféremment via les Edge Functions `service_role` (non affectées par ce
+       filtre RLS, qui les contourne de toute façon). Mais `0074` a ensuite inversé cette
+       posture pour `users_select`/`users_admin_write` — chaque société n'est plus censée
+       voir/gérer que ses propres comptes — sans que `user_attributions_select` et
+       `set_user_attributions()` ne soient mises à jour en conséquence. Concrètement : un
+       compte avec `utilisateurs.gerer` dans n'importe quelle société pouvait encore lire
+       ET modifier les attributions de n'importe quel utilisateur de n'importe quelle autre
+       société, en appelant l'API directement (l'écran Utilisateurs ne l'exposait plus
+       depuis `0074`, qui a déjà company-scopé `users_select` — aucun changement de
+       comportement UI attendu de ce correctif).
+     - **`0101_scope_attributions_a_la_societe.sql`** : ajoute la jointure via `users`
+       (`user_attributions` n'a pas de `company_id` propre, comme `logs`) à
+       `user_attributions_select`, et le même filtre à l'existence de `p_user_id` dans
+       `set_user_attributions()`.
+     - Vérifié : le test de régression passe (32/32, y compris la policy corrigée) ; en
+       direct sur Formation, `admin.formation` continue de lire et d'enregistrer
+       normalement les attributions d'un compte de sa propre société (aucune régression) —
+       pas de second compte d'une autre société disponible pour vérifier le blocage
+       inter-société en direct, la garantie repose sur le test de régression + la
+       cohérence avec `users_select`/`logs_select`, déjà éprouvés selon le même schéma.
+       `npm run typecheck && npm run lint && npm run test && npm run build` propres.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

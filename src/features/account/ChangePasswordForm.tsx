@@ -6,11 +6,12 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { passwordSchema, PASSWORD_POLICY_HINT } from "@/lib/passwordPolicy";
 
 const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Mot de passe actuel requis"),
-    newPassword: z.string().min(8, "8 caractères minimum"),
+    newPassword: passwordSchema,
     confirmPassword: z.string().min(1, "Confirmation requise"),
   })
   .refine((values) => values.newPassword === values.confirmPassword, {
@@ -89,6 +90,7 @@ export function ChangePasswordForm({ onSuccess }: { onSuccess?: () => void } = {
           autoComplete="new-password"
           {...register("newPassword")}
         />
+        <p className="mt-1 text-xs text-gray-500">{PASSWORD_POLICY_HINT}</p>
         {errors.newPassword && <p className="mt-1 text-xs text-red-600">{errors.newPassword.message}</p>}
       </div>
 

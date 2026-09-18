@@ -243,9 +243,18 @@ export function useFinancialStatements(startDate: string, endDate: string) {
           .from("transactions")
           .select("product_id, type, quantity, created_at")
           .lte("created_at", endBound),
+        // Le bilan a besoin du solde cumulé de chaque compte depuis toujours jusqu'à
+        // endDate (accountTotals() ci-dessus, bornes "undefined, endDate") -- impossible
+        // de filtrer sur startDate côté base sans fausser ces soldes. En revanche rien
+        // après endDate n'est jamais utilisé (ni le compte de résultat borné à la
+        // période, ni le bilan cumulé "jusqu'à endDate") : borner à endBound réduit le
+        // volume transféré/scanné sans changer aucun résultat (accountTotals() filtrait
+        // déjà silencieusement ces lignes côté JS -- trouvé en audit pré-lancement,
+        // README point 63/106).
         supabase
           .from("journal_entries")
-          .select("entry_date, journal_entry_lines(debit, credit, chart_of_accounts(code))"),
+          .select("entry_date, journal_entry_lines(debit, credit, chart_of_accounts(code))")
+          .lte("entry_date", endBound),
         supabase.from("companies").select("capital_social").eq("id", companyId).single(),
         supabase
           .from("fixed_assets")

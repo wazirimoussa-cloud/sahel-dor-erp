@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Pagination } from "@/components/ui/Pagination";
 import { usePagination } from "@/lib/usePagination";
+import { phoneSchema } from "@/lib/contactValidation";
 
 const editTransporterSchema = z.object({
   name: z.string().min(1, "Nom requis"),
-  phone: z.string().optional(),
+  phone: phoneSchema,
   email: z.string().email("Email invalide").optional().or(z.literal("")),
   address: z.string().optional(),
 });
@@ -131,6 +132,9 @@ export function TransportersPage() {
                               Téléphone
                             </label>
                             <Input id="edit-transporter-phone" {...register("phone")} />
+                            {errors.phone && (
+                              <p className="mt-1 text-xs text-red-600">{errors.phone.message}</p>
+                            )}
                           </div>
                           <div>
                             <label

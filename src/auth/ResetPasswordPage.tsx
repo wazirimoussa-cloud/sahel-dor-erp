@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { EnvBanner } from "@/components/layout/EnvBanner";
 import logo from "@/assets/logo.webp";
+import { passwordSchema, PASSWORD_POLICY_HINT } from "@/lib/passwordPolicy";
 
 // Page atteinte via le lien reçu par email ("mot de passe oublié", admin uniquement —
 // voir supabase/functions/request-password-reset). L'identité est déjà prouvée par le
@@ -17,7 +18,7 @@ import logo from "@/assets/logo.webp";
 // à ChangePasswordForm.
 const resetSchema = z
   .object({
-    newPassword: z.string().min(8, "8 caractères minimum"),
+    newPassword: passwordSchema,
     confirmPassword: z.string().min(1, "Confirmation requise"),
   })
   .refine((values) => values.newPassword === values.confirmPassword, {
@@ -69,6 +70,7 @@ export function ResetPasswordPage() {
                 autoComplete="new-password"
                 {...register("newPassword")}
               />
+              <p className="mt-1 text-xs text-gray-500">{PASSWORD_POLICY_HINT}</p>
               {errors.newPassword && (
                 <p className="mt-1 text-xs text-red-600">{errors.newPassword.message}</p>
               )}
