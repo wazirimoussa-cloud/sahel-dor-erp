@@ -72,6 +72,13 @@ jobs:
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
+          # ubuntu-latest embarque deja un postgresql-client-16 sur le PATH avant celui-ci
+          # (paquet different, meme nom de binaire) -- sans cette ligne, "pg_dump" tout
+          # court continue de resoudre vers la version 16 malgre l'installation ci-dessus,
+          # et refuse de dumper un serveur 17.6 (trouve en executant le workflow : "aborting
+          # because of server version mismatch"). GITHUB_PATH place ce dossier avant le
+          # reste du PATH pour toutes les etapes suivantes de ce job.
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
 
       - name: Dump
         id: do_dump
@@ -101,6 +108,7 @@ jobs:
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
           sudo apt-get update
           sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
 
       - uses: actions/download-artifact@v4
         with:
