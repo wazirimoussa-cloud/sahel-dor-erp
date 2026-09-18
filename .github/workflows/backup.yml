@@ -66,12 +66,12 @@ jobs:
     outputs:
       stamp: ${{ steps.do_dump.outputs.stamp }}
     steps:
-      - name: Installer postgresql-client 16 (PGDG)
+      - name: Installer postgresql-client 17 (PGDG)
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
           sudo apt-get update
-          sudo apt-get install -y postgresql-client-16
+          sudo apt-get install -y postgresql-client-17
 
       - name: Dump
         id: do_dump
@@ -95,12 +95,12 @@ jobs:
     if: needs.guard.outputs.restore_ready == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Installer postgresql-client 16 (PGDG)
+      - name: Installer postgresql-client 17 (PGDG)
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
           sudo apt-get update
-          sudo apt-get install -y postgresql-client-16
+          sudo apt-get install -y postgresql-client-17
 
       - uses: actions/download-artifact@v4
         with:
