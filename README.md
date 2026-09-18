@@ -2483,6 +2483,41 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        cohérence avec `users_select`/`logs_select`, déjà éprouvés selon le même schéma.
        `npm run typecheck && npm run lint && npm run test && npm run build` propres.
 
+109. **Sauvegarde nocturne étendue à une vérification automatique de restauration**
+     (dernier point critique de l'audit pré-lancement) : `.github/workflows/backup.yml`
+     dumpait déjà chaque nuit, mais rien ne vérifiait jamais que le fichier produit se
+     restaurait réellement — un dump corrompu ou tronqué serait passé inaperçu pendant
+     des mois. Le blocage local (`supabase db dump` exige Docker, absent de cette machine
+     de développement) ne concerne que cet environnement : les runners GitHub Actions
+     installent leur propre `postgresql-client` via `apt-get`, sans Docker.
+     - Nouveau job `restore-test` : télécharge l'artefact du dump qui vient d'être produit,
+       le restaure (`pg_restore --clean --if-exists --no-owner --no-privileges`) dans un
+       **second** projet Supabase, jetable et vide — jamais la source — puis vérifie qu'au
+       moins une ligne existe réellement dans `companies` après restauration (pas
+       seulement que la commande a réussi : un `pg_restore` peut réussir syntaxiquement
+       sur un fichier partiellement corrompu sans avoir restauré grand-chose).
+       `--clean --if-exists` rend l'opération idempotente d'une nuit à l'autre.
+     - Second secret requis, `SUPABASE_RESTORE_TEST_DB_URL` (job `guard` étendu avec un
+       second drapeau `restore_ready`, ignore proprement ce job tant qu'il manque — la
+       sauvegarde elle-même n'est jamais bloquée par son absence).
+     - Un projet Supabase gratuit et complètement vierge existait déjà sans être utilisé
+       (ref `fvayodtstgbebnaihdwz`, "sahel", confirmé via `supabase migration list`
+       — aucune des 101 migrations n'y a jamais été appliquée) : candidat naturel comme
+       cible jetable, à réutiliser plutôt qu'à recréer.
+     - **Hors de portée sans accès humain, malgré une tentative de contournement** :
+       `gh` CLI absent de cette machine, aucun jeton GitHub dans l'environnement, et le
+       mot de passe Postgres d'un projet (source et cible) n'est ni exposé ni réinitialisable
+       via la CLI Supabase authentifiée (`supabase projects`/`secrets` ne couvrent pas ce
+       rôle) — seul le tableau de bord Supabase (Project Settings → Database → Connection
+       string, avec réinitialisation du mot de passe si besoin) le donne. Les deux secrets
+       GitHub restent donc à ajouter manuellement ; une fois les deux en place, tout le
+       reste (sauvegarde + vérification de restauration) tourne seul chaque nuit, sans
+       action supplémentaire.
+     - Vérifié : YAML validé (`js-yaml`), logique de dépendance entre jobs relue à la main
+       (`guard` → `dump` → `restore-test`, chacun avec son propre garde-fou de secret
+       manquant). Aucune exécution réelle possible sans les secrets — non testé en
+       conditions réelles à ce stade.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

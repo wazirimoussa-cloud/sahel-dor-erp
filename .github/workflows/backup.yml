@@ -3,14 +3,27 @@ name: Sauvegarde BdD (nuit)
 # Stopgap gratuit en attendant l'activation des sauvegardes Supabase (plan Pro) et du
 # PITR -- voir docs/plan-remediation.md, point 1.
 #
-# Prérequis : ajouter le secret SUPABASE_DB_URL dans
-#   Settings → Secrets and variables → Actions
-# = la chaîne de connexion Postgres directe du projet
-#   (Supabase → Project Settings → Database → Connection string → URI,
-#    en remplaçant le mot de passe). Utiliser de préférence un rôle en lecture seule.
+# Prérequis (2 secrets, Settings → Secrets and variables → Actions) :
+#   SUPABASE_DB_URL              chaîne de connexion Postgres du projet source
+#                                 (partagé Formation+Production) -- Supabase → Project
+#                                 Settings → Database → Connection string → URI, en
+#                                 remplaçant le mot de passe. Rôle en lecture seule de
+#                                 préférence.
+#   SUPABASE_RESTORE_TEST_DB_URL chaîne de connexion Postgres d'un projet Supabase
+#                                 JETABLE et VIDE, dédié uniquement à vérifier que
+#                                 chaque sauvegarde restaure correctement -- jamais le
+#                                 même projet que la source. Un projet gratuit existe
+#                                 déjà pour ça (ref fvayodtstgbebnaihdwz, "sahel"),
+#                                 encore complètement vierge au moment de l'écriture de
+#                                 ce commentaire.
 #
-# Tant que le secret n'est pas défini, le job "dump" est ignoré proprement (pas d'échec).
-# Restauration : pg_restore --clean --no-owner --no-privileges -d "<url>" backup-<stamp>.dump
+# Tant que SUPABASE_DB_URL n'est pas défini, tout est ignoré proprement (pas d'échec).
+# Tant que SUPABASE_RESTORE_TEST_DB_URL n'est pas défini (mais SUPABASE_DB_URL l'est),
+# seule la sauvegarde tourne -- le test de restauration démarre automatiquement dès que
+# ce second secret est ajouté, sans autre action nécessaire.
+#
+# Restauration manuelle (à partir d'un artefact téléchargé) :
+#   pg_restore --clean --if-exists --no-owner --no-privileges -d "<url>" backup-<stamp>.dump
 
 on:
   schedule:
@@ -25,23 +38,33 @@ jobs:
   guard:
     runs-on: ubuntu-latest
     outputs:
-      ready: ${{ steps.check.outputs.ready }}
+      dump_ready: ${{ steps.check.outputs.dump_ready }}
+      restore_ready: ${{ steps.check.outputs.restore_ready }}
     steps:
       - id: check
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_TEST_DB_URL }}
         run: |
           if [ -n "$DB_URL" ]; then
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+            echo "dump_ready=true" >> "$GITHUB_OUTPUT"
           else
             echo "::warning::SUPABASE_DB_URL non configuré — sauvegarde ignorée."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "dump_ready=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$DB_URL" ] && [ -n "$RESTORE_DB_URL" ]; then
+            echo "restore_ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::SUPABASE_RESTORE_TEST_DB_URL non configuré — vérification de restauration ignorée."
+            echo "restore_ready=false" >> "$GITHUB_OUTPUT"
           fi
 
   dump:
     needs: guard
-    if: needs.guard.outputs.ready == 'true'
+    if: needs.guard.outputs.dump_ready == 'true'
     runs-on: ubuntu-latest
+    outputs:
+      stamp: ${{ steps.do_dump.outputs.stamp }}
     steps:
       - name: Installer postgresql-client 16 (PGDG)
         run: |
@@ -51,17 +74,54 @@ jobs:
           sudo apt-get install -y postgresql-client-16
 
       - name: Dump
+        id: do_dump
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           stamp=$(date -u +%Y%m%dT%H%M%SZ)
-          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          echo "stamp=$stamp" >> "$GITHUB_OUTPUT"
           pg_dump "$DB_URL" --no-owner --no-privileges --format=custom --file="backup-$stamp.dump"
           ls -lh "backup-$stamp.dump"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: db-backup-${{ env.STAMP }}
+          name: db-backup-${{ steps.do_dump.outputs.stamp }}
           path: backup-*.dump
           retention-days: 30
           if-no-files-found: error
+
+  restore-test:
+    needs: [guard, dump]
+    if: needs.guard.outputs.restore_ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Installer postgresql-client 16 (PGDG)
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: db-backup-${{ needs.dump.outputs.stamp }}
+
+      - name: Restaurer dans le projet jetable et vérifier
+        env:
+          RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_TEST_DB_URL }}
+        run: |
+          # --clean --if-exists : idempotent d'une nuit à l'autre (le projet jetable
+          # garde le schéma de la veille, --clean le fait tomber proprement avant de
+          # tout recréer depuis le dump du jour -- jamais un DROP DATABASE, seulement
+          # les objets que le dump connaît).
+          pg_restore --clean --if-exists --no-owner --no-privileges -d "$RESTORE_DB_URL" backup-*.dump
+
+          # Vérification réelle, pas seulement "la commande n'a pas échoué" : la
+          # restauration d'un fichier tronqué ou d'un mauvais dump peut réussir
+          # syntaxiquement tout en ne restaurant aucune ligne.
+          count=$(psql "$RESTORE_DB_URL" -tAc "select count(*) from companies")
+          echo "Lignes restaurées dans companies : $count"
+          if [ "$count" -lt 1 ]; then
+            echo "::error::Restauration vide -- 0 ligne dans companies après pg_restore. La sauvegarde de cette nuit n'est probablement pas fiable."
+            exit 1
+          fi
