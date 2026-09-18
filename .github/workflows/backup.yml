@@ -23,7 +23,20 @@ name: Sauvegarde BdD (nuit)
 # ce second secret est ajouté, sans autre action nécessaire.
 #
 # Restauration manuelle (à partir d'un artefact téléchargé) :
-#   pg_restore --clean --if-exists --no-owner --no-privileges -d "<url>" backup-<stamp>.dump
+#   pg_restore --clean --if-exists --no-owner --no-privileges --schema=public -d "<url>" backup-<stamp>.dump
+#
+# Portée délibérément limitée au schéma "public" (nos données métier) -- trouvé en
+# exécutant le workflow pour la première fois : un dump complet embarque aussi les
+# schémas internes de Supabase (auth, storage, realtime, extensions...), possédés par des
+# rôles internes Supabase verrouillés (supabase_auth_admin, etc.), pas par "postgres" --
+# pg_restore échoue à chaque ALTER TABLE ... ENABLE ROW LEVEL SECURITY et event trigger de
+# ces schémas ("must be owner of table ...", "Non-superuser owned event trigger..."), ~789
+# erreurs sur un run réel. Inutile de toute façon : tout projet Supabase neuf recrée déjà
+# ses propres schémas auth/storage/realtime à jour -- les restaurer nous-mêmes casserait
+# plus qu'autre chose. Limite assumée : ce stopgap ne sauvegarde PAS les comptes de
+# connexion (auth.users, mots de passe) -- en cas de restauration réelle après perte totale,
+# les quelques comptes de l'équipe sont à recréer via l'écran Utilisateurs (create-user),
+# pas à restaurer depuis ce dump.
 
 on:
   schedule:
@@ -87,7 +100,7 @@ jobs:
         run: |
           stamp=$(date -u +%Y%m%dT%H%M%SZ)
           echo "stamp=$stamp" >> "$GITHUB_OUTPUT"
-          pg_dump "$DB_URL" --no-owner --no-privileges --format=custom --file="backup-$stamp.dump"
+          pg_dump "$DB_URL" --no-owner --no-privileges --format=custom --schema=public --file="backup-$stamp.dump"
           ls -lh "backup-$stamp.dump"
 
       - uses: actions/upload-artifact@v4
@@ -122,7 +135,7 @@ jobs:
           # garde le schéma de la veille, --clean le fait tomber proprement avant de
           # tout recréer depuis le dump du jour -- jamais un DROP DATABASE, seulement
           # les objets que le dump connaît).
-          pg_restore --clean --if-exists --no-owner --no-privileges -d "$RESTORE_DB_URL" backup-*.dump
+          pg_restore --clean --if-exists --no-owner --no-privileges --schema=public -d "$RESTORE_DB_URL" backup-*.dump
 
           # Vérification réelle, pas seulement "la commande n'a pas échoué" : la
           # restauration d'un fichier tronqué ou d'un mauvais dump peut réussir
