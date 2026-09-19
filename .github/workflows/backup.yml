@@ -127,13 +127,6 @@ jobs:
         with:
           name: db-backup-${{ needs.dump.outputs.stamp }}
 
-      - name: Debug temporaire -- empreinte du secret (à retirer une fois le run vert)
-        env:
-          RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_TEST_DB_URL }}
-        run: |
-          printf '%s' "$RESTORE_DB_URL" | sha256sum
-          echo "longueur: ${#RESTORE_DB_URL}"
-
       - name: Restaurer dans le projet jetable et vérifier
         env:
           RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_TEST_DB_URL }}
@@ -142,7 +135,16 @@ jobs:
           # garde le schéma de la veille, --clean le fait tomber proprement avant de
           # tout recréer depuis le dump du jour -- jamais un DROP DATABASE, seulement
           # les objets que le dump connaît).
-          pg_restore --clean --if-exists --no-owner --no-privileges --schema=public -d "$RESTORE_DB_URL" backup-*.dump
+          #
+          # "|| true" volontaire : sur un projet encore vierge (première restauration),
+          # "DROP POLICY IF EXISTS x ON table" échoue avec "relation table does not
+          # exist" -- IF EXISTS protège la policy, pas la table sous-jacente, et
+          # Postgres refuse la commande si la table n'existe pas du tout. pg_restore
+          # retourne alors un exit code non-nul même quand la restauration a en réalité
+          # parfaitement réussi (les CREATE TABLE/CREATE POLICY/COPY qui suivent ne sont
+          # pas affectés). On ne se fie donc jamais à ce seul exit code -- la vérification
+          # réelle est le comptage de lignes juste en dessous.
+          pg_restore --clean --if-exists --no-owner --no-privileges --schema=public -d "$RESTORE_DB_URL" backup-*.dump || true
 
           # Vérification réelle, pas seulement "la commande n'a pas échoué" : la
           # restauration d'un fichier tronqué ou d'un mauvais dump peut réussir
