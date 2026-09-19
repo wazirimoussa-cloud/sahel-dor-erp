@@ -2500,23 +2500,40 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
      - Second secret requis, `SUPABASE_RESTORE_TEST_DB_URL` (job `guard` étendu avec un
        second drapeau `restore_ready`, ignore proprement ce job tant qu'il manque — la
        sauvegarde elle-même n'est jamais bloquée par son absence).
-     - Un projet Supabase gratuit et complètement vierge existait déjà sans être utilisé
-       (ref `fvayodtstgbebnaihdwz`, "sahel", confirmé via `supabase migration list`
-       — aucune des 101 migrations n'y a jamais été appliquée) : candidat naturel comme
-       cible jetable, à réutiliser plutôt qu'à recréer.
-     - **Hors de portée sans accès humain, malgré une tentative de contournement** :
-       `gh` CLI absent de cette machine, aucun jeton GitHub dans l'environnement, et le
-       mot de passe Postgres d'un projet (source et cible) n'est ni exposé ni réinitialisable
-       via la CLI Supabase authentifiée (`supabase projects`/`secrets` ne couvrent pas ce
-       rôle) — seul le tableau de bord Supabase (Project Settings → Database → Connection
-       string, avec réinitialisation du mot de passe si besoin) le donne. Les deux secrets
-       GitHub restent donc à ajouter manuellement ; une fois les deux en place, tout le
-       reste (sauvegarde + vérification de restauration) tourne seul chaque nuit, sans
-       action supplémentaire.
-     - Vérifié : YAML validé (`js-yaml`), logique de dépendance entre jobs relue à la main
-       (`guard` → `dump` → `restore-test`, chacun avec son propre garde-fou de secret
-       manquant). Aucune exécution réelle possible sans les secrets — non testé en
-       conditions réelles à ce stade.
+     - **Incident évité de justesse, corrigé** : le projet initialement pris pour cible
+       jetable (ref `fvayodtstgbebnaihdwz`, "sahel") avait été jugé vide uniquement parce
+       que `supabase migration list --linked` n'y montrait aucune migration de Sahel d'Or
+       appliquée — preuve insuffisante, il s'agissait en réalité de la base de production
+       **d'un tout autre projet réel, ERP Boulangerie** (confirmé via son `.env.local`).
+       Un run a restauré dedans avant que l'erreur ne soit repérée (noms de table
+       incohérents avec le schéma Sahel d'Or dans le log d'échec) ; lecture complète du
+       log : chaque opération destructrice a échoué proprement sur les propres protections
+       d'intégrité de Postgres (dépendances, "already exists"), aucune perte de données
+       réelle. Remédiation appliquée : mot de passe de ce projet régénéré par précaution
+       (exposé une fois en clair dans une capture d'écran plus tôt), projet mis en pause
+       (n'était plus utilisé), et un **nouveau projet Supabase authentiquement vierge**
+       créé spécifiquement pour cet usage (`sahel-dor-erp-restore-test`,
+       ref `yluuoyulsxnrxfcgzbzq`) — plus jamais de réutilisation d'un projet existant
+       sans vérification croisée contre tous les autres projets connus (voir mémoire
+       *"Never assume a project is disposable"*).
+     - **Hors de portée sans accès humain** : `gh` CLI absent de cette machine, aucun
+       jeton GitHub dans l'environnement, et le mot de passe Postgres d'un projet n'est
+       ni exposé ni réinitialisable via la CLI Supabase authentifiée — seul le tableau de
+       bord web (Project Settings → Database → Reset password) le permet, en tapant le
+       mot de passe directement (jamais de copier-coller du mot de passe lui-même par
+       l'agent). Les deux secrets GitHub (`SUPABASE_DB_URL`, `SUPABASE_RESTORE_TEST_DB_URL`)
+       ont été ajoutés manuellement avec guidage pas-à-pas dans le navigateur partagé.
+     - **Bug supplémentaire trouvé et corrigé en conditions réelles** : sur la toute
+       première restauration dans un projet réellement vierge, `pg_restore --clean
+       --if-exists` échoue quand même (`DROP POLICY IF EXISTS x ON table` refuse si
+       `table` n'existe pas du tout — `IF EXISTS` protège la policy, pas la table sous-
+       jacente) alors que la restauration réussit en réalité (les `CREATE TABLE`/`COPY`
+       qui suivent ne sont pas affectés). Ajout d'un `|| true` documenté sur cette ligne ;
+       la vraie vérification reste, comme prévu, le comptage de lignes juste après.
+     - **Vérifié en conditions réelles, run vert de bout en bout** : `guard` → `dump` →
+       `restore-test` tous verts, "Lignes restaurées dans `companies` : 2" (Formation +
+       Production, valeur exacte attendue). Le pipeline tourne désormais seul chaque nuit
+       sans action supplémentaire.
 
 ## Limites connues / pistes pour la suite
 
