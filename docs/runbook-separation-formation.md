@@ -6,9 +6,18 @@ Sépare Formation dans son propre projet Supabase. Point 2 de `plan-remediation.
 facturation) · `[C]` = fait par Claude (code / config / SQL lecture seule).
 
 **État actuel** : un seul projet Supabase `parbrpqsotkpwxoqlmcn` (org `abaanxeexqjfgrzlxvmr`,
-eu-west-1) héberge Production (`company_id …001`) et Formation (`…0f0`). Un second projet
-`fvayodtstgbebnaihdwz` (« sahel ») existe déjà dans l'org, non lié, contenu inconnu —
-**à confirmer avant la Phase B** : le réutiliser (s'il est vide) ou en créer un dédié.
+eu-west-1) héberge Production (`company_id …001`) et Formation (`…0f0`).
+
+**Bloqué avant la Phase B (2026-09-19)** : l'org est au plan Free, limité à 2 projets actifs.
+Les deux slots sont pris : le projet partagé ci-dessus, et `sahel-dor-erp-restore-test`
+(ref `yluuoyulsxnrxfcgzbzq`, créé pour le job `restore-test` de
+`.github/workflows/backup.yml` — voir README point 109). Le second projet initialement
+envisagé comme réutilisable, `fvayodtstgbebnaihdwz` (« sahel »), s'est révélé être la base
+de **production d'un autre projet réel, ERP Boulangerie** (pas vide) — mis en pause, jamais
+à réutiliser ici. Créer un 3ᵉ projet pour Formation nécessite donc soit de passer l'org au
+plan Pro (25 $/mois), soit de mettre en pause un des deux projets actuels (aucun des deux
+n'est un bon candidat : le partagé est en service, le restore-test vient d'être remis en
+état de marche). **Décision utilisateur requise avant de poursuivre la Phase B.**
 
 **Décisions** : projet vierge + seed reconstruit (pas de copie de Production) ; Formation
 garde le `company_id …0f0` ; tier Free.
