@@ -2577,6 +2577,29 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        prévue — le recouvrement est simplement refusé une fois la perte intégralement
        soldée (recouvrement + write-off = total), correction manuelle à faire si ce cas
        rare survient.
+111. **Chevauchement entre commandes en attente sur le même stock** : vérifié en direct sur
+     Formation que la validation d'une commande en attente est déjà bloquée proprement
+     (`findStockShortage`, point 79/80) quand une autre commande a déjà consommé le stock
+     entre-temps — confirmé en créant deux bons pour 6 unités chacun sur un stock de 10 au
+     même magasin : le premier valide normalement, le second est bloqué avec un message
+     exact ("demandé : 6, disponible : 4"), sans corruption de données (garde-fou en base,
+     `product_stocks_stock_check`, en dernier recours).
+     - Le superviseur (`ventes.valider_commande`) n'avait cependant pas de moyen de
+       résoudre lui-même ce blocage — `ventes.annuler_commande` restait consultative par
+       défaut pour ce profil. Aucun conflit d'attribution entre "Valider" et "Annuler" une
+       commande (seules les paires créer/valider commande, créer/réceptionner achat,
+       déclarer/approuver perte de stock sont mutuellement exclusives,
+       `attribution_conflicts`, 0032) : accordé au compte de test `superviseur.formation`,
+       vérifié en direct (annulation de la commande bloquée, résolution en une action).
+     - **Visibilité en amont ajoutée** (nouveau hook `usePendingDemandByProduct`,
+       [useOrders.ts](src/features/orders/useOrders.ts)) : purement informatif, ne bloque
+       jamais la création ni la validation (les garde-fous existants restent les seuls
+       réels) —
+       - [NewOrderForm.tsx](src/features/orders/NewOrderForm.tsx) : avertissement sous la
+         quantité si une autre commande en attente porte déjà sur ce produit à ce magasin.
+       - [OrderDetailPage.tsx](src/features/orders/OrderDetailPage.tsx) : bandeau sur une
+         commande en attente listant les produits concernés par un chevauchement, avec le
+         stock restant estimé, visible avant même de tenter "Valider".
 
 ## Limites connues / pistes pour la suite
 

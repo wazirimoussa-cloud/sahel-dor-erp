@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useActiveProducts } from "@/features/products/useProducts";
 import { useActiveWarehouses, useWarehouseStock } from "@/features/warehouses/useWarehouses";
 import { useActiveClients } from "@/features/clients/useClients";
-import { useCreateOrder } from "@/features/orders/useOrders";
+import { useCreateOrder, usePendingDemandByProduct } from "@/features/orders/useOrders";
 import { Button } from "@/components/ui/Button";
 import { AmountInput } from "@/components/ui/AmountInput";
 
@@ -51,6 +51,10 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
     warehouseId || undefined,
   );
   const stockByProduct = new Map((warehouseStock ?? []).map((row) => [row.product_id, row.stock]));
+  // Purement informatif -- prévient qu'une AUTRE commande en attente porte déjà sur ce
+  // produit à ce magasin, sans jamais bloquer la création (voir onSubmit, seul le stock
+  // réellement disponible bloque).
+  const { data: pendingDemandByProduct } = usePendingDemandByProduct(warehouseId || undefined);
 
   async function onSubmit(values: OrderFormValues) {
     setServerError(null);
@@ -139,7 +143,13 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
         </div>
       </div>
 
-      {fields.map((field, index) => (
+      {fields.map((field, index) => {
+        const selectedProductId = watch(`items.${index}.productId` as const);
+        const pendingDemand = selectedProductId
+          ? (pendingDemandByProduct?.get(selectedProductId) ?? 0)
+          : 0;
+        const trulyAvailable = (stockByProduct.get(selectedProductId) ?? 0) - pendingDemand;
+        return (
         <div key={field.id} className="flex flex-wrap items-end gap-3">
           <div>
             <label
@@ -193,13 +203,20 @@ export function NewOrderForm({ onCreated }: { onCreated?: () => void }) {
             {errors.items?.[index]?.quantity && (
               <p className="mt-1 text-xs text-red-600">{errors.items[index]?.quantity?.message}</p>
             )}
+            {pendingDemand > 0 && (
+              <p className="mt-1 text-xs text-amber-600">
+                {pendingDemand} déjà demandé(s) par d'autres commandes en attente sur ce
+                magasin — reste réellement disponible avant leur validation : {trulyAvailable}.
+              </p>
+            )}
           </div>
 
           <Button type="button" variant="secondary" onClick={() => remove(index)}>
             Retirer
           </Button>
         </div>
-      ))}
+        );
+      })}
 
       {errors.items?.root && <p className="text-xs text-red-600">{errors.items.root.message}</p>}
 

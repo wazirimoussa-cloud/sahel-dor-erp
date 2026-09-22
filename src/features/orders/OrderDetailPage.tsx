@@ -10,8 +10,10 @@ import {
   useCancelOrder,
   useRecordPayment,
   useOrderPayments,
+  usePendingDemandByProduct,
 } from "@/features/orders/useOrders";
 import { supabase } from "@/lib/supabase";
+import { useWarehouseStock } from "@/features/warehouses/useWarehouses";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { AmountInput } from "@/components/ui/AmountInput";
@@ -95,6 +97,12 @@ export function OrderDetailPage() {
   const { hasAttribution } = useAuth();
   const { data: order, isLoading, error } = useOrder(id);
   const { data: payments } = useOrderPayments(id);
+  // Purement informatif -- prévient qu'une AUTRE commande en attente porte déjà sur le
+  // même magasin, avant que "Valider" n'échoue (findStockShortage reste le garde-fou
+  // réel). Appelé avant tout early return (règle des hooks) ; enabled=false tant que le
+  // magasin n'est pas encore chargé.
+  const { data: pendingDemandByProduct } = usePendingDemandByProduct(order?.warehouse_id, id);
+  const { data: orderWarehouseStock } = useWarehouseStock(order?.warehouse_id);
   const validateOrder = useValidateOrder();
   const cancelOrder = useCancelOrder();
   const recordPayment = useRecordPayment();
@@ -242,6 +250,21 @@ export function OrderDetailPage() {
     }
   }
 
+  // Purement informatif (voir usePendingDemandByProduct) : un message par produit de cette
+  // commande dont d'autres commandes en attente demandent déjà une quantité non nulle.
+  const stockByProductId = new Map((orderWarehouseStock ?? []).map((row) => [row.product_id, row.stock]));
+  const overlapWarnings = items
+    .map((item) => {
+      const productInfo = productInfoOf(item);
+      if (!productInfo) return null;
+      const pendingElsewhere = pendingDemandByProduct?.get(productInfo.id) ?? 0;
+      if (pendingElsewhere <= 0) return null;
+      const currentStock = stockByProductId.get(productInfo.id) ?? 0;
+      const stillAvailable = currentStock - pendingElsewhere;
+      return `D'autres commandes en attente portent aussi sur ${productInfo.name} à ce magasin (${pendingElsewhere} ${productInfo.unit} au total demandé ailleurs) — le stock disponible (${currentStock} ${productInfo.unit}) pourrait ne plus suffire au moment de la validation (reste estimé : ${stillAvailable} ${productInfo.unit}).`;
+    })
+    .filter((warning): warning is string => warning !== null);
+
   return (
     <div className="space-y-6">
       <div>
@@ -357,6 +380,14 @@ export function OrderDetailPage() {
         <p role="alert" className="text-sm text-red-600">
           {actionError}
         </p>
+      )}
+
+      {order.status === "pending" && overlapWarnings.length > 0 && (
+        <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-700">
+          {overlapWarnings.map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </div>
       )}
 
       {order.status === "pending" && (canValidate || canCancel) && (

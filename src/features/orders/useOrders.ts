@@ -50,6 +50,35 @@ export function useCreateOrder() {
   });
 }
 
+// Quantité déjà demandée par d'AUTRES commandes en attente, par produit, pour un magasin
+// donné -- ne bloque rien (product_stocks_stock_check + findStockShortage restent les
+// seuls garde-fous réels), sert uniquement à informer en amont qu'un chevauchement est
+// possible avant que la validation n'échoue. excludeOrderId retire la commande consultée
+// de son propre total (utilisé par OrderDetailPage, pas par NewOrderForm qui n'a pas
+// encore de commande à exclure).
+export function usePendingDemandByProduct(warehouseId: string | undefined, excludeOrderId?: string) {
+  return useQuery({
+    queryKey: ["orders", "pending_demand", warehouseId, excludeOrderId],
+    enabled: Boolean(warehouseId),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("order_items")
+        .select("product_id, quantity, orders!inner(id, status, warehouse_id)")
+        .eq("orders.status", "pending")
+        .eq("orders.warehouse_id", warehouseId as string);
+      if (error) throw error;
+      const totals = new Map<string, number>();
+      for (const row of data) {
+        const orderRelation = row.orders as { id: string } | { id: string }[] | null;
+        const order = Array.isArray(orderRelation) ? orderRelation[0] : orderRelation;
+        if (excludeOrderId && order?.id === excludeOrderId) continue;
+        totals.set(row.product_id, (totals.get(row.product_id) ?? 0) + row.quantity);
+      }
+      return totals;
+    },
+  });
+}
+
 export function useOrder(orderId: string | undefined) {
   return useQuery({
     queryKey: ["orders", orderId],
