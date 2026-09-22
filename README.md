@@ -2600,6 +2600,22 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        - [OrderDetailPage.tsx](src/features/orders/OrderDetailPage.tsx) : bandeau sur une
          commande en attente listant les produits concernés par un chevauchement, avec le
          stock restant estimé, visible avant même de tenter "Valider".
+     - **Harmonisé sur le tableau de bord Superviseur**, demandé explicitement (les deux
+       avertissements ci-dessus n'apparaissaient qu'en ouvrant une commande précise, pas
+       dans la file d'attente que le superviseur consulte en premier) —
+       [SupervisorDashboard.tsx](src/features/dashboard/SupervisorDashboard.tsx) :
+       - `useSupervisorSnapshot()` étendu pour inclure `warehouse_id`/`product_id` (déjà
+         chargé pour la liste "À valider", aucune requête supplémentaire).
+       - `computeOverlappingOrderIds()` : regroupe les commandes en attente par couple
+         (magasin, produit) — signal volontairement plus léger que
+         `usePendingDemandByProduct` (juste "il existe un chevauchement", pas le calcul
+         exact du stock restant, qui reste affiché avec les vrais chiffres sur la fiche de
+         la commande, un clic plus loin — deux niveaux de détail cohérents, pas de logique
+         dupliquée).
+       - Nouvelle `StatTile` "En chevauchement de stock" (4ᵉ carte de "Position actuelle",
+         même seuil non ambigu que "Proches de l'annulation automatique" : critique si
+         `> 0`) + badge "Chevauchement" (ambre, à côté du badge rouge "Urgente" existant)
+         sur chaque ligne concernée de la liste "À valider".
 
 ## Limites connues / pistes pour la suite
 

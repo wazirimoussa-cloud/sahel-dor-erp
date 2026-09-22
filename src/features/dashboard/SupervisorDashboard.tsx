@@ -81,13 +81,43 @@ function useSupervisorSnapshot() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, created_at, clients(name), order_items(quantity, unit_price)")
+        .select(
+          "id, created_at, warehouse_id, clients(name), order_items(product_id, quantity, unit_price)",
+        )
         .eq("status", "pending")
         .order("created_at", { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
   });
+}
+
+// Détecte, parmi les commandes déjà en attente (une seule requête, déjà chargée pour la
+// liste), celles qui partagent un couple (magasin, produit) avec au moins une autre --
+// même mécanisme que usePendingDemandByProduct
+// (src/features/orders/useOrders.ts/OrderDetailPage.tsx), mais volontairement plus léger
+// ici : juste "il existe un chevauchement possible", pas le calcul exact du stock restant
+// (qui reste affiché avec les vrais chiffres sur la fiche de la commande au clic sur
+// "Voir" -- deux niveaux de détail cohérents, pas de doublon de logique).
+function computeOverlappingOrderIds(
+  pendingOrders: { id: string; warehouse_id: string; order_items: { product_id: string }[] }[],
+): Set<string> {
+  const ordersByKey = new Map<string, Set<string>>();
+  for (const o of pendingOrders) {
+    for (const item of o.order_items) {
+      const key = `${o.warehouse_id}::${item.product_id}`;
+      const set = ordersByKey.get(key) ?? new Set<string>();
+      set.add(o.id);
+      ordersByKey.set(key, set);
+    }
+  }
+  const overlapping = new Set<string>();
+  for (const set of ordersByKey.values()) {
+    if (set.size > 1) {
+      for (const id of set) overlapping.add(id);
+    }
+  }
+  return overlapping;
 }
 
 export function SupervisorDashboard() {
@@ -109,6 +139,10 @@ export function SupervisorDashboard() {
   ).length;
   const urgentStatus: StatTileStatus | undefined =
     pendingOrders === undefined ? undefined : urgentCount > 0 ? "critical" : "ok";
+
+  const overlappingOrderIds = computeOverlappingOrderIds(pendingOrders ?? []);
+  const overlappingStatus: StatTileStatus | undefined =
+    pendingOrders === undefined ? undefined : overlappingOrderIds.size > 0 ? "critical" : "ok";
 
   const cancellationRatePct = summary?.cancellationRate == null ? null : summary.cancellationRate * 100;
   const priorCancellationRatePct =
@@ -194,7 +228,7 @@ export function SupervisorDashboard() {
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
           Position actuelle
         </p>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile
             label="Bons de commande à valider"
             value={formatRatio(pendingOrders?.length, "")}
@@ -214,6 +248,13 @@ export function SupervisorDashboard() {
             status={urgentStatus}
             href="/orders"
           />
+          <StatTile
+            label="En chevauchement de stock"
+            value={formatRatio(overlappingOrderIds.size, "")}
+            loading={snapshotLoading}
+            status={overlappingStatus}
+            href="/orders"
+          />
         </div>
       </div>
 
@@ -231,6 +272,7 @@ export function SupervisorDashboard() {
               const items = o.order_items as { quantity: number; unit_price: number }[];
               const total = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
               const isUrgent = businessHoursElapsed(o.created_at) >= URGENT_THRESHOLD_HOURS;
+              const isOverlapping = overlappingOrderIds.has(o.id);
               return (
                 <li key={o.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
                   <div>
@@ -241,6 +283,11 @@ export function SupervisorDashboard() {
                     {isUrgent && (
                       <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
                         Urgente
+                      </span>
+                    )}
+                    {isOverlapping && (
+                      <span className="ml-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                        Chevauchement
                       </span>
                     )}
                   </div>
