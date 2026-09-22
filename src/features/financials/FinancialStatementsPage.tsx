@@ -202,14 +202,26 @@ export function FinancialStatementsPage() {
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-2">
-                    Variation de stocks
+                    Pertes sur stock (période)
+                    <span className="ml-1 text-xs text-gray-500">
+                      (pertes magasin approuvées, valorisées au coût réel des lots sortis)
+                    </span>
+                  </td>
+                  <td className="py-2 text-right">
+                    {data.incomeStatement.pertesStock > 0 ? "− " : ""}
+                    {formatFCFA(data.incomeStatement.pertesStock)}
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-2">
+                    Variation de stocks (hors pertes)
                     <span className="ml-1 text-xs text-gray-500">
                       (stock fin − stock début de période, achats uniquement)
                     </span>
                   </td>
                   <td className="py-2 text-right">
-                    {data.incomeStatement.variationStock >= 0 ? "+ " : "− "}
-                    {formatFCFA(Math.abs(data.incomeStatement.variationStock))}
+                    {data.incomeStatement.variationStockHorsPertes >= 0 ? "+ " : "− "}
+                    {formatFCFA(Math.abs(data.incomeStatement.variationStockHorsPertes))}
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">

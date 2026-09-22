@@ -78,6 +78,32 @@ export function daysBetweenInclusive(startDate: string, endDate: string): number
   );
 }
 
+export interface StockLossValuedRow {
+  reviewed_at: string | null;
+  loss_value: number;
+}
+
+// Somme des pertes de stock approuvées dont la revue tombe dans la période -- loss_value
+// vient de la vue v_stock_loss_valued (0102_valorisation_pertes_stock.sql), déjà valorisée
+// au coût FEFO réel des lots consommés (pas au CUMP global comme le reste de ce fichier :
+// une perte cible un lot précis ou du FEFO générique, son coût réel est donc celui des lots
+// effectivement sortis, tracé par transaction_lot_allocations).
+export function computeStockLossValue(
+  valuedLosses: StockLossValuedRow[],
+  startDate: string,
+  endDate: string,
+): number {
+  const startBound = `${startDate}T00:00:00.000`;
+  const endBound = `${endDate}T23:59:59.999`;
+  let total = 0;
+  for (const row of valuedLosses) {
+    if (!row.reviewed_at) continue;
+    if (row.reviewed_at < startBound || row.reviewed_at > endBound) continue;
+    total += row.loss_value;
+  }
+  return total;
+}
+
 export interface StockRotationResult {
   rotationStock: number | null;
   rotationStockJours: number | null;

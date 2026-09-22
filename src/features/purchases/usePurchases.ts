@@ -175,6 +175,30 @@ export function useReceivePurchase() {
   });
 }
 
+// Passe le solde restant (ou une partie) d'une créance transport non recouvrée en perte
+// définitive -- débite 654 (charge réelle)/crédite 4098 (solde la créance), voir
+// write_off_purchase_loss (0103). Geste financier irréversible, gardé par une attribution
+// dédiée (transporteurs.abandonner_creance), distincte du recouvrement.
+export function useWriteOffPurchaseLoss() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (params: { lossId: string; amount: number; reason: string }) => {
+      const { error } = await supabase.rpc("write_off_purchase_loss", {
+        p_loss_id: params.lossId,
+        p_amount: params.amount,
+        p_reason: params.reason,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["purchase_losses"] });
+      void queryClient.invalidateQueries({ queryKey: ["purchase_loss_recoveries", "totals"] });
+      void queryClient.invalidateQueries({ queryKey: ["purchase_loss_writeoffs", "totals"] });
+      void queryClient.invalidateQueries({ queryKey: ["financial_statements"] });
+    },
+  });
+}
+
 export function usePurchaseLosses(purchaseId: string | undefined) {
   return useQuery({
     queryKey: ["purchase_losses", purchaseId],
@@ -221,6 +245,26 @@ export function useAllPurchaseLossRecoveredTotals() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("purchase_loss_recoveries")
+        .select("purchase_loss_id, amount");
+      if (error) throw error;
+      const totals = new Map<string, number>();
+      for (const row of data) {
+        totals.set(row.purchase_loss_id, (totals.get(row.purchase_loss_id) ?? 0) + row.amount);
+      }
+      return totals;
+    },
+  });
+}
+
+// Même principe que useAllPurchaseLossRecoveredTotals ci-dessus, pour les passages en
+// perte (purchase_loss_writeoffs, 0103) — nécessaire pour calculer le vrai "reste à
+// recouvrer" (total − recouvré − passé en perte) côté client.
+export function useAllPurchaseLossWrittenOffTotals() {
+  return useQuery({
+    queryKey: ["purchase_loss_writeoffs", "totals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("purchase_loss_writeoffs")
         .select("purchase_loss_id, amount");
       if (error) throw error;
       const totals = new Map<string, number>();

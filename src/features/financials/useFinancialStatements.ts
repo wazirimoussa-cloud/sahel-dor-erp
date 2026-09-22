@@ -11,6 +11,8 @@ import {
   stockValueAsOf,
   daysBetweenInclusive,
   computeStockRotation,
+  computeStockLossValue,
+  type StockLossValuedRow,
 } from "@/lib/stockValuation";
 
 interface AccountBalance {
@@ -34,6 +36,7 @@ export interface ComputeFinancialStatementsInput {
   }[];
   capitalSocial: number;
   fixedAssets: FixedAssetRow[];
+  stockLossValuedRows: StockLossValuedRow[];
 }
 
 // Calcule bilan + compte de résultat + analyse financière à partir de données déjà
@@ -51,6 +54,7 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
     journalEntries,
     capitalSocial,
     fixedAssets,
+    stockLossValuedRows,
   } = input;
 
   const immobilisationsNettes = fixedAssets.reduce(
@@ -97,6 +101,16 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
     accountTotals("601", startDate, endDate).debit -
     accountTotals("601", startDate, endDate).credit;
   const variationStock = stockEnd.total - stockStart.total;
+
+  // Pertes sur stock (période) : sous-ensemble de variationStock déjà correctement compté
+  // dans le résultat net (voir 0102_valorisation_pertes_stock.sql) -- juste redécoupé ici
+  // pour être visible en tant que tel plutôt que mélangé à la variation de stock générale.
+  // pertesStock est un montant positif (une charge) ; variationStock, négatif quand le
+  // stock diminue, contient déjà implicitement "-pertesStock" -- on le retire donc en
+  // ADDITIONNANT pertesStock (pas en le soustrayant) pour isoler le reste. Invariant :
+  // variationStockHorsPertes - pertesStock === variationStock.
+  const pertesStock = computeStockLossValue(stockLossValuedRows, startDate, endDate);
+  const variationStockHorsPertes = variationStock + pertesStock;
 
   // Résultat de cession d'immobilisations : produits de cession (775) − VCEAC (675),
   // sur la même période -- reflète en compte de résultat les écritures désormais
@@ -187,6 +201,8 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
       produits: produitsPeriode,
       charges: chargesPeriode,
       variationStock,
+      pertesStock,
+      variationStockHorsPertes,
       dotationsAmortissements,
       resultatCessionImmobilisations,
       resultatNet: resultatNetPeriode,
@@ -231,6 +247,7 @@ export function useFinancialStatements(startDate: string, endDate: string) {
         journalRes,
         companyRes,
         fixedAssetsRes,
+        stockLossValuedRes,
       ] = await Promise.all([
         supabase.from("products").select("id, name, unit"),
         supabase
@@ -261,6 +278,10 @@ export function useFinancialStatements(startDate: string, endDate: string) {
           .select(
             "id, name, category, acquisition_date, acquisition_cost, useful_life_years, disposal_date, depreciation_method, degressif_coefficient",
           ),
+        // Bornée à endBound pour la même raison que journal_entries ci-dessus :
+        // computeStockLossValue filtre déjà sur [startDate, endDate] côté JS, rien après
+        // endDate n'est jamais utilisé.
+        supabase.from("v_stock_loss_valued").select("reviewed_at, loss_value").lte("reviewed_at", endBound),
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -269,6 +290,7 @@ export function useFinancialStatements(startDate: string, endDate: string) {
       if (journalRes.error) throw journalRes.error;
       if (companyRes.error) throw companyRes.error;
       if (fixedAssetsRes.error) throw fixedAssetsRes.error;
+      if (stockLossValuedRes.error) throw stockLossValuedRes.error;
 
       // depreciation_method est une colonne text+check (pas un enum Postgres), donc
       // supabase gen types la génère en string simple -- cast vers le littéral union.
@@ -283,6 +305,13 @@ export function useFinancialStatements(startDate: string, endDate: string) {
         journalEntries: journalRes.data ?? [],
         capitalSocial: companyRes.data?.capital_social ?? 0,
         fixedAssets,
+        // loss_value ne peut être null en pratique (coalesce déjà appliqué dans la vue,
+        // 0102) -- Postgres ne peut simplement pas le prouver statiquement pour une
+        // colonne calculée, d'où le type nullable généré.
+        stockLossValuedRows: (stockLossValuedRes.data ?? []).map((row) => ({
+          reviewed_at: row.reviewed_at,
+          loss_value: row.loss_value ?? 0,
+        })),
       });
     },
   });

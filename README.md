@@ -2534,6 +2534,43 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        `restore-test` tous verts, "Lignes restaurées dans `companies` : 2" (Formation +
        Production, valeur exacte attendue). Le pipeline tourne désormais seul chaque nuit
        sans action supplémentaire.
+110. **Comptabilisation des pertes non recouvrables (stock + transport)** : audit demandé
+     avant de passer l'organisation Supabase au plan Pro (séparation Formation/Production,
+     mise de côté). Deux constats distincts :
+     - **Pertes de stock** (`stock_loss_requests`) : l'approbation sortait déjà le stock
+       via une transaction `ADJUSTMENT` consommant un lot précis ou en FEFO
+       (`transaction_lot_allocations`/`stock_lots`) — la valeur au CUMP réduisait donc déjà
+       correctement le résultat net via `variationStock` (`useFinancialStatements.ts`), mais
+       de façon invisible, indiscernable d'une simple sortie liée aux ventes. Nouvelle vue
+       `v_stock_loss_valued` (`0102_valorisation_pertes_stock.sql`, `security_invoker`,
+       aucune policy dédiée à maintenir) valorise chaque perte approuvée au coût FEFO réel
+       des lots effectivement sortis (perte sèche : allocations de la transaction
+       `ADJUSTMENT` ; reconditionnement : coût de l'intrant consommé moins valeur de
+       l'extrant récupéré). `computeStockLossValue()` (`stockValuation.ts`) et le compte de
+       résultat (`FinancialStatementsPage.tsx`) décomposent désormais "Variation de stocks"
+       en deux lignes — "Pertes sur stock (période)" et "Variation de stock (hors pertes)"
+       — **sans changer le résultat net total** (aucune nouvelle écriture comptable, pur
+       redécoupage d'affichage).
+     - **Pertes transport non recouvrées** (`purchase_losses`/compte `4098`) : vrai trou —
+       une créance jamais remboursée par le transporteur restait indéfiniment un actif
+       fictif, sans jamais devenir une charge réelle. Nouvelle action "Passer en perte"
+       (`0103_passage_perte_transport.sql`) : compte `654` "Pertes sur créances
+       irrécouvrables" (nouveau), table append-only `purchase_loss_writeoffs` (même patron
+       que `purchase_loss_recoveries`), RPC `write_off_purchase_loss` (débite 654/crédite
+       4098, motif obligatoire, partiel possible). Gardée par une **nouvelle attribution
+       dédiée** `transporteurs.abandonner_creance` — délibérément distincte de
+       `transporteurs.gerer` (qui gère déjà transporteurs + recouvrement) et **sans
+       backfill automatique** (contrairement au précédent de
+       `comptabilite.consulter_prix_revient`, point 45) : geste financier irréversible,
+       personne ne l'a par défaut, l'admin l'accorde explicitement. `PurchaseLossesPage.tsx`
+       gagne un bouton "Passer en perte" à côté de "Recouvrement" et un statut "Passé en
+       perte" distinct de "Recouvré". `record_purchase_loss_recovery` plafonne désormais
+       sur `recouvré + passé en perte ≤ total`.
+     - **Limite assumée, documentée en commentaire de migration** : si un transporteur
+       rembourse après un passage en perte total, aucune réouverture automatique n'est
+       prévue — le recouvrement est simplement refusé une fois la perte intégralement
+       soldée (recouvrement + write-off = total), correction manuelle à faire si ce cas
+       rare survient.
 
 ## Limites connues / pistes pour la suite
 

@@ -1148,6 +1148,48 @@ export type Database = {
           },
         ]
       }
+      purchase_loss_writeoffs: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          purchase_loss_id: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          purchase_loss_id: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          purchase_loss_id?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_loss_writeoffs_purchase_loss_id_fkey"
+            columns: ["purchase_loss_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_losses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_loss_writeoffs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_losses: {
         Row: {
           created_at: string
@@ -2099,7 +2141,35 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_stock_loss_valued: {
+        Row: {
+          company_id: string | null
+          id: string | null
+          loss_value: number | null
+          reviewed_at: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          id?: string | null
+          loss_value?: never
+          reviewed_at?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          id?: string | null
+          loss_value?: never
+          reviewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_loss_requests_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       approve_stock_loss: {
@@ -2671,6 +2741,23 @@ export type Database = {
         SetofOptions: {
           from: "*"
           to: "orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      write_off_purchase_loss: {
+        Args: { p_amount: number; p_loss_id: string; p_reason: string }
+        Returns: {
+          amount: number
+          created_at: string
+          id: string
+          purchase_loss_id: string
+          reason: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "purchase_loss_writeoffs"
           isOneToOne: true
           isSetofReturn: false
         }

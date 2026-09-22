@@ -25,6 +25,7 @@ function baseInput(overrides: Partial<ComputeFinancialStatementsInput> = {}): Co
     journalEntries: [],
     capitalSocial: 0,
     fixedAssets: [],
+    stockLossValuedRows: [],
     ...overrides,
   };
 }
@@ -157,6 +158,32 @@ describe("computeFinancialStatements", () => {
     expect(result.unvaluedStock).toEqual([
       { productId: "p2", name: "Sous-produit fabriqué", quantity: 50, unit: "kg" },
     ]);
+  });
+
+  it("décompose la variation de stock en pertes sur stock + reste, sans changer le total", () => {
+    const result = computeFinancialStatements(
+      baseInput({
+        products: [{ id: "p1", name: "Riz", unit: "sac" }],
+        purchaseLots: [{ product_id: "p1", quantity_received: 100, unit_cost: 500 }],
+        transactions: [
+          { product_id: "p1", type: "IN", quantity: 100, created_at: "2025-06-01T00:00:00.000" },
+          // Perte de stock approuvée pendant la période : ADJUSTMENT négatif, comme
+          // approve_stock_loss (0031/0067/0078).
+          { product_id: "p1", type: "ADJUSTMENT", quantity: -10, created_at: "2026-01-15T00:00:00.000" },
+        ],
+        stockLossValuedRows: [{ reviewed_at: "2026-01-15T00:00:00.000", loss_value: 5_000 }],
+      }),
+    );
+
+    expect(result.incomeStatement.variationStock).toBe(-5_000); // 90×500 − 100×500
+    expect(result.incomeStatement.pertesStock).toBe(5_000);
+    // Toute la baisse de stock vient de la perte ici -- rien d'autre à expliquer.
+    expect(result.incomeStatement.variationStockHorsPertes).toBe(0);
+    // Invariant : le redécoupage ne change jamais le total utilisé par resultatNet.
+    expect(
+      result.incomeStatement.variationStockHorsPertes - result.incomeStatement.pertesStock,
+    ).toBe(result.incomeStatement.variationStock);
+    expect(result.incomeStatement.resultatNet).toBe(-5_000); // inchangé par le redécoupage
   });
 
   it("une société sans aucune activité renvoie des totaux nuls et des ratios null (pas de division par zéro)", () => {
