@@ -225,6 +225,18 @@ export function FinancialStatementsPage() {
                   </td>
                 </tr>
                 <tr className="border-b border-gray-100">
+                  <td className="py-2">
+                    Pertes transport passées en perte (période)
+                    <span className="ml-1 text-xs text-gray-500">
+                      (créances transport abandonnées définitivement, compte 654)
+                    </span>
+                  </td>
+                  <td className="py-2 text-right">
+                    {data.incomeStatement.pertesTransport > 0 ? "− " : ""}
+                    {formatFCFA(data.incomeStatement.pertesTransport)}
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-100">
                   <td className="py-2">Dotations aux amortissements</td>
                   <td className="py-2 text-right">
                     − {formatFCFA(data.incomeStatement.dotationsAmortissements)}

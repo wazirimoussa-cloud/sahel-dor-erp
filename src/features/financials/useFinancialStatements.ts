@@ -112,6 +112,14 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
   const pertesStock = computeStockLossValue(stockLossValuedRows, startDate, endDate);
   const variationStockHorsPertes = variationStock + pertesStock;
 
+  // Pertes transport passées en perte définitive (période) : write_off_purchase_loss
+  // (0103) débite 654 -- contrairement aux pertes de stock ci-dessus, rien ne compte
+  // déjà cette charge ailleurs dans le résultat (4098 n'est pas un compte de stock),
+  // donc celle-ci doit réellement réduire resultatNetPeriode, pas juste être affichée.
+  const pertesTransport =
+    accountTotals("654", startDate, endDate).debit -
+    accountTotals("654", startDate, endDate).credit;
+
   // Résultat de cession d'immobilisations : produits de cession (775) − VCEAC (675),
   // sur la même période -- reflète en compte de résultat les écritures désormais
   // postées par dispose_fixed_asset (0066_cession_immobilisations.sql). Peut être
@@ -129,6 +137,7 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
     produitsPeriode -
     chargesPeriode +
     variationStock -
+    pertesTransport -
     dotationsAmortissements +
     resultatCessionImmobilisations;
 
@@ -203,6 +212,7 @@ export function computeFinancialStatements(input: ComputeFinancialStatementsInpu
       variationStock,
       pertesStock,
       variationStockHorsPertes,
+      pertesTransport,
       dotationsAmortissements,
       resultatCessionImmobilisations,
       resultatNet: resultatNetPeriode,

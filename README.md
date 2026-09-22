@@ -2564,7 +2564,13 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        `comptabilite.consulter_prix_revient`, point 45) : geste financier irréversible,
        personne ne l'a par défaut, l'admin l'accorde explicitement. `PurchaseLossesPage.tsx`
        gagne un bouton "Passer en perte" à côté de "Recouvrement" et un statut "Passé en
-       perte" distinct de "Recouvré". `record_purchase_loss_recovery` plafonne désormais
+       perte" distinct de "Recouvré". **Bug trouvé en vérification live** (Formation,
+       compte admin.formation, écriture réelle testée) : `computeFinancialStatements`
+       n'agrégeait `chargesPeriode` que sur le compte `601` — l'écriture 654/4098 était
+       bien posée et équilibrée dans le journal, mais totalement invisible du résultat net
+       affiché, à l'opposé du but recherché. Ajout d'une ligne dédiée "Pertes transport
+       passées en perte (période)" (compte `654`) directement soustraite de
+       `resultatNetPeriode`, avec un test unitaire dédié. `record_purchase_loss_recovery` plafonne désormais
        sur `recouvré + passé en perte ≤ total`.
      - **Limite assumée, documentée en commentaire de migration** : si un transporteur
        rembourse après un passage en perte total, aucune réouverture automatique n'est

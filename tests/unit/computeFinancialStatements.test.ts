@@ -186,6 +186,26 @@ describe("computeFinancialStatements", () => {
     expect(result.incomeStatement.resultatNet).toBe(-5_000); // inchangé par le redécoupage
   });
 
+  it("un passage en perte transport (compte 654) réduit réellement le résultat net", () => {
+    const result = computeFinancialStatements(
+      baseInput({
+        journalEntries: [
+          {
+            // write_off_purchase_loss (0103) : débite 654, crédite 4098.
+            entry_date: "2026-01-10T00:00:00.000",
+            journal_entry_lines: [
+              journalLine("654", 1_000_000, 0),
+              journalLine("4098", 0, 1_000_000),
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(result.incomeStatement.pertesTransport).toBe(1_000_000);
+    expect(result.incomeStatement.resultatNet).toBe(-1_000_000);
+  });
+
   it("une société sans aucune activité renvoie des totaux nuls et des ratios null (pas de division par zéro)", () => {
     const result = computeFinancialStatements(baseInput());
 
