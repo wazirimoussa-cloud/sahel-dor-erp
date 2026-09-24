@@ -2667,6 +2667,18 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        sous-tableaux (Bulletins, Avances, Congés — même structure que `PayePage.tsx`),
        export Excel séparé par sous-tableau (données trop différentes pour un export
        unique).
+     - **Vérifié en direct sur Formation** (déployé, `admin.formation` + `superviseur.formation`),
+       par lots : (1) Stock (filtre magasin testé, réduit correctement) + Production (état
+       vide affiché proprement, aucune production en Formation) ; (2) Achats (filtre statut
+       testé), Ventes, Pertes de stock, Pertes transport (statut "Passé en perte" bien
+       présent) ; (3) Paie (3 sous-tableaux), Journal comptable (exports PDF + Excel),
+       Utilisateurs (aucun mot de passe exposé), Journal d'audit (bandeau "500 entrées"
+       affiché sans filtre, disparaît dès qu'un filtre — ex. module `orders` — est posé).
+       Menu interne confirmé filtré par droits sur deux profils différents :
+       `admin.formation` voit les 11 états, `superviseur.formation` n'en voit que 8 (pas
+       Paie/Utilisateurs/Journal d'audit, cohérent avec ses attributions). Non-régression
+       vérifiée sur `/logs` (toujours plafonnée à 100, inchangée) et `/pertes-transport`
+       (hooks partagés avec l'état, aucune erreur console).
 
 ## Limites connues / pistes pour la suite
 
