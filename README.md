@@ -2616,6 +2616,57 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
          même seuil non ambigu que "Proches de l'annulation automatique" : critique si
          `> 0`) + badge "Chevauchement" (ambre, à côté du badge rouge "Urgente" existant)
          sur chaque ligne concernée de la liste "À valider".
+112. **Nouveau module « États »** — centre de rapports filtrables/exportables, demandé
+     explicitement pour "centraliser toutes les informations et permettre l'extraction pour
+     des analyses". Audit fait avant de construire (`Explore`) : sur 11 domaines candidats,
+     un seul (Mouvements de stock) avait déjà un vrai bandeau de filtres + export — les 10
+     autres (achats, ventes, pertes stock/transport, production, transformation, paie,
+     journal comptable, utilisateurs, **journal d'audit**) n'avaient ni filtre ni export de
+     liste, et le journal d'audit était en plus plafonné en dur à 100 lignes. Le module
+     comble donc un vrai manque partout, pas seulement une commodité.
+     - **Nouvelle route `/etats`** ([EtatsPage.tsx](src/features/reports/EtatsPage.tsx)),
+       sans `requiredModule` au niveau route (comme `/stock`) — chaque état listé dans le
+       menu interne est filtré individuellement par `hasModuleAccess(...)`, avec exactement
+       le même garde-fou que la page opérationnelle correspondante (`routes.tsx`) : un
+       profil qui n'a que `achats` ne voit qu'un seul état dans la liste, pas 11 avec 10
+       inaccessibles. Module **séparé** de Mouvements de stock (`/stock` reste inchangée,
+       formulaires opérationnels compris) — confirmé avec l'utilisateur.
+     - **Deux petits composants partagés**, justifiés à 11 usages (dépasse largement la
+       règle des trois occurrences déjà appliquée ailleurs, `orderDisplay.ts`/
+       `purchaseDisplay.ts`/`dateRange.ts`) :
+       [ReportDateRangeFilter.tsx](src/components/reports/ReportDateRangeFilter.tsx) (filtre
+       période, sans comparaison N-1 contrairement aux tableaux de bord — un état sert à
+       extraire, pas à comparer) et
+       [ReportExportButton.tsx](src/components/reports/ReportExportButton.tsx) (bouton
+       Excel avec état de chargement, appelle `exportRowsToExcel` existant,
+       [xlsx.ts](src/lib/xlsx.ts) jamais modifié). Aucun moteur de table générique — chaque
+       état garde sa propre table HTML, comme partout ailleurs dans ce projet.
+     - **Jeu de données complet, pas juste la page courante**, pour permettre une vraie
+       extraction — même patron que `fetchAllJournalEntries()` déjà présent dans
+       `JournalPage.tsx` (requête sans pagination). Nouveaux hooks dédiés à l'état pour les
+       domaines aujourd'hui paginés (Achats, Pertes de stock, Production, Transformation,
+       Utilisateurs, Journal d'audit) — **les pages/hooks opérationnels existants et leur
+       pagination ne sont jamais modifiés**, zéro risque de régression. Ventes et Pertes
+       transport n'ont pas eu besoin de nouveau hook : `useOrders()` et
+       `useAllPurchaseLosses()`/`useAllPurchaseLossRecoveredTotals()`/
+       `useAllPurchaseLossWrittenOffTotals()` ramenaient déjà l'intégralité des données,
+       filtrage entièrement côté client pour ces deux états. Seul changement à un hook
+       existant : `useAllPurchaseLosses()` gagne la colonne `product_id` (additive, ne
+       casse pas `PurchaseLossesPage.tsx`) pour permettre le filtre par produit sur l'état.
+     - **État Journal d'audit — corrige la vraie lacune trouvée** : `useLogs()`
+       (`/logs`) reste plafonnée à 100 lignes sans filtre, inchangée. Le nouveau
+       `useAuditLogReport` ([useAuditLogReport.ts](src/features/reports/useAuditLogReport.ts))
+       ajoute des filtres période/utilisateur/module/action ; sans aucun filtre posé, une
+       limite de 500 lignes s'applique avec un message explicite invitant à filtrer (évite
+       de rapatrier des années de journal en un clic) — dès qu'un filtre réduit la plage,
+       la limite disparaît.
+     - **État Journal comptable** : garde l'export PDF existant (`generateJournalPdf`,
+       réutilisé tel quel) et ajoute l'export Excel (aplati : une ligne par écriture
+       comptable, pas par ligne de journal).
+     - **État Paie** : un seul filtre période + employé partagé pour les trois
+       sous-tableaux (Bulletins, Avances, Congés — même structure que `PayePage.tsx`),
+       export Excel séparé par sous-tableau (données trop différentes pour un export
+       unique).
 
 ## Limites connues / pistes pour la suite
 

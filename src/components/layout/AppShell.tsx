@@ -25,6 +25,7 @@ import {
   Percent,
   IdCard,
   Wallet,
+  BarChart3,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/auth/useAuth";
@@ -74,6 +75,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/productions", label: "Production", icon: Factory, module: "production" },
   { to: "/transformations", label: "Transformation", icon: Layers, module: "transformation" },
   { to: "/stock", label: "Mouvements de stock", icon: ArrowLeftRight },
+  { to: "/etats", label: "États", icon: BarChart3 },
   { to: "/clients", label: "Clients", icon: Users, module: "clients" },
   { to: "/orders", label: "Bons de commande", icon: ShoppingCart, module: "ventes" },
   { to: "/chart-of-accounts", label: "Plan comptable", icon: BookOpen, module: "comptabilite" },

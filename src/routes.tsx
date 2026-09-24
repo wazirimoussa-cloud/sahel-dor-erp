@@ -20,6 +20,7 @@ const ProductsPage = lazy(() =>
   import("@/features/products/ProductsPage").then((m) => ({ default: m.ProductsPage })),
 );
 const StockPage = lazy(() => import("@/features/stock/StockPage").then((m) => ({ default: m.StockPage })));
+const EtatsPage = lazy(() => import("@/features/reports/EtatsPage").then((m) => ({ default: m.EtatsPage })));
 const OrdersPage = lazy(() => import("@/features/orders/OrdersPage").then((m) => ({ default: m.OrdersPage })));
 const OrderDetailPage = lazy(() =>
   import("@/features/orders/OrderDetailPage").then((m) => ({ default: m.OrderDetailPage })),
@@ -136,6 +137,16 @@ export function AppRoutes() {
             <ProtectedRoute>
               <AppShell>
                 <StockPage />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/etats"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <EtatsPage />
               </AppShell>
             </ProtectedRoute>
           }

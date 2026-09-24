@@ -224,7 +224,9 @@ export function useAllPurchaseLosses() {
       const { data, error } = await supabase
         .from("purchase_losses")
         .select(
-          "id, quantity_lost, unit_cost, reason, created_at, purchase_id, products(name, unit), transporters(id, name)",
+          // product_id ajouté pour PurchaseLossesReport.tsx (filtre par produit) -- champ
+          // additif, n'affecte pas les consommateurs existants (PurchaseLossesPage.tsx).
+          "id, quantity_lost, unit_cost, reason, created_at, purchase_id, product_id, products(name, unit), transporters(id, name)",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
