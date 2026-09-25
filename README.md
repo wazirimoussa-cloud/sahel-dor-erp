@@ -2679,6 +2679,34 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        Paie/Utilisateurs/Journal d'audit, cohérent avec ses attributions). Non-régression
        vérifiée sur `/logs` (toujours plafonnée à 100, inchangée) et `/pertes-transport`
        (hooks partagés avec l'état, aucune erreur console).
+113. **Audit RLS demandé explicitement** (2026-09-25), après avoir découvert que Formation
+     et Production partagent le même projet Supabase (`parbrpqsotkpwxoqlmcn`) — pas deux
+     bases isolées, deux sociétés (`companies`) dans la même base. Interrogation directe
+     de `pg_policies` (`npx supabase db query --linked`, pas juste lecture des migrations)
+     : 54 des 58 policies scopent déjà correctement par `company_id =
+     current_company_id()`. Reste trouvé : 4 policies (`fiscal_rate_history_select`,
+     `purchase_loss_recoveries_select`, `purchase_loss_writeoffs_select`,
+     `purchase_transport_payments_select`) gardaient un contournement legacy
+     `current_role_name() = 'admin' OR company_id = ...`, donnant une visibilité
+     cross-société au seul compte admin historique (`wazirimoussa@gmail.com`, `role_id`
+     legacy = 1) — aucun compte de test Formation n'était concerné (tous `role_id =
+     null` depuis le modèle attributions). Même motif déjà trouvé et corrigé 3 fois dans
+     l'historique du projet (0053, 0074, 0101). **Corrigé** (point 113,
+     `0104_retire_bypass_admin_cross_societe_restant.sql`) : les 4 policies ne
+     contiennent plus `current_role_name()` du tout — vérifié par requête directe sur
+     `pg_policies` après le `db push`, zéro occurrence restante dans le schéma. Le test
+     de régression [rlsAttributionScoping.test.ts](tests/unit/rlsAttributionScoping.test.ts)
+     (qui ne couvrait jusque-là que le motif `has_attribution()` sans scope société) a
+     été étendu pour verrouiller spécifiquement ce second motif
+     (`current_role_name() = 'admin'`) sur **toutes** les policies actuelles, pas
+     seulement celles qui utilisent `has_attribution()`.
+     - **Ce qui reste vrai, à ne pas oublier** : Formation et Production restent **une
+       seule instance Supabase physique** — aucune divergence de schéma possible entre
+       les deux, seulement une divergence de données par `company_id`. Une migration, un
+       trigger ou une policy RLS buggée affecte les deux sociétés simultanément (c'est
+       exactement le motif des 4 bugs cross-société trouvés à ce jour). Vérification en
+       direct sur Formation mise en pause à la demande de l'utilisateur le temps de
+       stabiliser ce point — voir mémoire dédiée côté agent.
 
 ## Limites connues / pistes pour la suite
 

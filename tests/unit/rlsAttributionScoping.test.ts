@@ -101,4 +101,21 @@ describe("policies RLS gardées par has_attribution() restent scopées à la soc
         `de toutes les sociétés. Corps analysé :\n${policy.body}`,
     ).toBe(true);
   });
+
+  // Trouvé en audit RLS (2026-09-25, demandé explicitement) : une variante du même bug,
+  // pas couverte par le test ci-dessus car sans has_attribution() -- 4 policies
+  // (fiscal_rate_history_select, purchase_loss_recoveries_select,
+  // purchase_loss_writeoffs_select, purchase_transport_payments_select) contournaient le
+  // scope société via `current_role_name() = 'admin' OR company_id = ...`, donnant à
+  // l'unique compte admin legacy (role_id = 1) une visibilité cross-société. Corrigé en
+  // 0104_retire_bypass_admin_cross_societe_restant.sql. Ce test verrouille : plus aucune
+  // policy actuelle ne doit réintroduire ce contournement.
+  it.each([...policies.entries()])("%s ne contourne pas le scope société via current_role_name() = 'admin'", (key, policy) => {
+    expect(
+      policy.body.includes("current_role_name() = 'admin'"),
+      `La policy "${key}" donne une visibilité cross-société à quiconque a current_role_name() = 'admin' ` +
+        `-- déjà corrigé 4 fois dans l'historique de ce projet (0053, 0074, 0101, 0104), ne pas réintroduire ` +
+        `ce motif. Corps analysé :\n${policy.body}`,
+    ).toBe(false);
+  });
 });
