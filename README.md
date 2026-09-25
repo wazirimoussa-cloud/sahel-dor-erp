@@ -2591,6 +2591,12 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        déclarer/approuver perte de stock sont mutuellement exclusives,
        `attribution_conflicts`, 0032) : accordé au compte de test `superviseur.formation`,
        vérifié en direct (annulation de la commande bloquée, résolution en une action).
+       **Accordé aussi sur Production** (2026-09-25) aux vrais comptes gérant/comptable
+       — `gerant@login.saheldor.internal` (déjà présent) et
+       `comptable@login.saheldor.internal` (ajouté, niveau opérationnelle) — via
+       insertion directe dans `user_attributions` (`npx supabase db query --linked`,
+       base partagée avec Formation, voir point 113) après confirmation explicite des
+       identifiants et de l'accord par l'utilisateur.
      - **Visibilité en amont ajoutée** (nouveau hook `usePendingDemandByProduct`,
        [useOrders.ts](src/features/orders/useOrders.ts)) : purement informatif, ne bloque
        jamais la création ni la validation (les garde-fous existants restent les seuls
