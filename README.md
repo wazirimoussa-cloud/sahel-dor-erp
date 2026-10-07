@@ -2713,6 +2713,35 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        exactement le motif des 4 bugs cross-société trouvés à ce jour). Vérification en
        direct sur Formation mise en pause à la demande de l'utilisateur le temps de
        stabiliser ce point — voir mémoire dédiée côté agent.
+114. **Audit pré-lancement (2026-10-07) — correctif des Edge Functions `create-user` et
+     `reset-password`.** Même famille de défaut que le point 113, mais côté fonctions :
+     elles vérifiaient `utilisateurs.gerer` puis écrivaient avec la clé `service_role`
+     (hors RLS) sans comparer la société de la cible à celle de l'appelant. Dans la base
+     partagée, un compte gérant les utilisateurs d'une société pouvait donc créer un
+     compte dans une autre (`companyId` pris tel quel dans le corps de la requête) ou
+     réinitialiser le mot de passe de n'importe quel `userId` (la migration 0101 les
+     avait laissées de côté, les jugeant « hors RLS donc non affectées »). **Corrigé** :
+     les deux appellent `current_company_id()` avec le JWT de l'appelant et refusent
+     (404 « Profil introuvable » pour `reset-password`, 403 pour `create-user`) si la
+     société ne correspond pas. L'écran Utilisateurs n'est pas affecté (le sélecteur de
+     société ne liste que celle de l'appelant, RLS sur `companies`). Vérifié en direct
+     après déploiement avec `admin.formation` : reset d'un compte Production archivé →
+     404, création dans la société Production → 403, reset d'un compte de la même
+     société → 200. Nouveau test de régression
+     [edgeFunctionsCompanyScoping.test.ts](tests/unit/edgeFunctionsCompanyScoping.test.ts)
+     : toute Edge Function utilisant `SERVICE_ROLE_KEY` doit référencer
+     `current_company_id` (seule exemption justifiée : `request-password-reset`, publique,
+     sans cible choisie par l'appelant) — vérifié qu'il échoue sur l'ancien code.
+     - **Points de l'audit encore ouverts** (réglages hors code, côté propriétaire) :
+       dépôt GitHub **public** alors que le README cite les comptes Formation et leur mot
+       de passe de test (à passer en privé) ; **aucune sauvegarde** (`backups: []`, PITR
+       désactivé) — à traiter avec le passage au plan Pro ; base unique Formation/
+       Production (à séparer une fois le plan Pro actif) ; protection contre les mots de
+       passe compromis désactivée (plan Pro) ; pas de `Content-Security-Policy` ;
+       `resolve_login_email` appelable sans connexion (énumération d'identifiants actifs) ;
+       pas de limite de débit sur `request-password-reset` ; `npm audit fix` à lancer
+       (2 des 4 vulnérabilités, sans casse) ; taux fiscaux toujours en attente de relecture
+       et politique de conservation/effacement des données personnelles à faire valider.
 
 ## Limites connues / pistes pour la suite
 

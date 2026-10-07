@@ -63,6 +63,20 @@ Deno.serve(async (req) => {
 
   const adminClient = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
+  // La clé service_role contourne la RLS : sans ce contrôle, un compte avec
+  // utilisateurs.gerer dans N'IMPORTE QUELLE société pouvait réinitialiser le mot de
+  // passe de n'importe quel utilisateur de la base partagée. Même message qu'un profil
+  // inexistant, pour ne pas révéler l'existence d'un compte d'une autre société.
+  const { data: callerCompanyId } = await callerClient.rpc("current_company_id");
+  const { data: target } = await adminClient
+    .from("users")
+    .select("company_id")
+    .eq("id", payload.userId)
+    .maybeSingle();
+  if (!callerCompanyId || !target || target.company_id !== callerCompanyId) {
+    return json({ error: "Profil introuvable" }, 404);
+  }
+
   const { error: updateAuthError } = await adminClient.auth.admin.updateUserById(payload.userId, {
     password: DEFAULT_PASSWORD,
   });

@@ -64,6 +64,13 @@ Deno.serve(async (req) => {
     return json({ error: "Champs manquants" }, 400);
   }
 
+  // companyId vient du client : sans ce contrôle, un compte avec utilisateurs.gerer dans
+  // une société pouvait créer un compte dans une autre (clé service_role, hors RLS).
+  const { data: callerCompanyId } = await callerClient.rpc("current_company_id");
+  if (!callerCompanyId || payload.companyId !== callerCompanyId) {
+    return json({ error: "Création refusée : société non autorisée" }, 403);
+  }
+
   // Identifiant à la place de l'email (0072_identifiants_login.sql) : normalisé puis
   // validé serveur (même règle que la contrainte SQL users_login_format) avant tout appel
   // Auth -- jamais confiance dans un format client, même si le formulaire valide déjà côté
