@@ -73,12 +73,10 @@ function useProductionSnapshot() {
 // matières premières en stock bas (bloquantes pour produire) -- pas de vision financière.
 // Le dashboard est visible via hasModuleAccess("production") || hasModuleAccess("transformation")
 // (condition OU entre deux modules distincts) : contrairement à Achats (module unique), les
-// liens et cartes de chaque famille doivent être gardés individuellement -- y compris ligne
-// par ligne dans les listes "Dernières productions"/"Dernières transformations", puisqu'un
-// profil peut n'avoir accès qu'à l'une des deux. Les données elles-mêmes restent toujours
-// affichées (la RLS n'est scopée qu'au niveau company_id, jamais par attribution -- même
-// convention que "Réceptions en attente" sur Magasin, visible même sans le module achats) ;
-// seule la navigation est gardée.
+// cartes de chaque famille sont gardées individuellement, puisqu'un profil peut n'avoir
+// accès qu'à l'une des deux. Depuis 0106 (RLS par
+// module), productions/transformations ne sont lisibles qu'avec leur module : la carte de
+// l'autre famille est masquée plutôt que d'afficher un faux zéro.
 export function ProductionDashboard() {
   const { hasModuleAccess } = useAuth();
   const [startDate, setStartDate] = useState(defaultStartDate);
@@ -137,46 +135,54 @@ export function ProductionDashboard() {
           Activité de la période
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile
-            label="Productions"
-            value={formatRatio(summary?.productionsCount, "")}
-            loading={summaryLoading}
-            delta={computeDelta(
-              summary?.productionsCount,
-              priorSummary?.productionsCount,
-              (diff) => `${Math.round(diff)}`,
-            )}
-            href={canSeeProduction ? "/productions" : undefined}
-          />
-          <StatTile
-            label="Valeur produite (productions)"
-            value={formatFcfa(summary?.productionsValue)}
-            loading={summaryLoading}
-            delta={computeDelta(summary?.productionsValue, priorSummary?.productionsValue, formatFcfa)}
-            href={canSeeProduction ? "/productions" : undefined}
-          />
-          <StatTile
-            label="Transformations"
-            value={formatRatio(summary?.transformationsCount, "")}
-            loading={summaryLoading}
-            delta={computeDelta(
-              summary?.transformationsCount,
-              priorSummary?.transformationsCount,
-              (diff) => `${Math.round(diff)}`,
-            )}
-            href={canSeeTransformation ? "/transformations" : undefined}
-          />
-          <StatTile
-            label="Valeur produite (transformations)"
-            value={formatFcfa(summary?.transformationsValue)}
-            loading={summaryLoading}
-            delta={computeDelta(
-              summary?.transformationsValue,
-              priorSummary?.transformationsValue,
-              formatFcfa,
-            )}
-            href={canSeeTransformation ? "/transformations" : undefined}
-          />
+          {canSeeProduction && (
+            <>
+              <StatTile
+                label="Productions"
+                value={formatRatio(summary?.productionsCount, "")}
+                loading={summaryLoading}
+                delta={computeDelta(
+                  summary?.productionsCount,
+                  priorSummary?.productionsCount,
+                  (diff) => `${Math.round(diff)}`,
+                )}
+                href="/productions"
+              />
+              <StatTile
+                label="Valeur produite (productions)"
+                value={formatFcfa(summary?.productionsValue)}
+                loading={summaryLoading}
+                delta={computeDelta(summary?.productionsValue, priorSummary?.productionsValue, formatFcfa)}
+                href="/productions"
+              />
+            </>
+          )}
+          {canSeeTransformation && (
+            <>
+              <StatTile
+                label="Transformations"
+                value={formatRatio(summary?.transformationsCount, "")}
+                loading={summaryLoading}
+                delta={computeDelta(
+                  summary?.transformationsCount,
+                  priorSummary?.transformationsCount,
+                  (diff) => `${Math.round(diff)}`,
+                )}
+                href="/transformations"
+              />
+              <StatTile
+                label="Valeur produite (transformations)"
+                value={formatFcfa(summary?.transformationsValue)}
+                loading={summaryLoading}
+                delta={computeDelta(
+                  summary?.transformationsValue,
+                  priorSummary?.transformationsValue,
+                  formatFcfa,
+                )}
+                href="/transformations"
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -196,67 +202,63 @@ export function ProductionDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-            Dernières productions
-          </p>
-          {snapshotLoading ? (
-            <p className="text-sm text-gray-500">Chargement…</p>
-          ) : snapshot && snapshot.recentProductions.length > 0 ? (
-            <ul className="space-y-2 text-sm text-gray-700">
-              {snapshot.recentProductions.map((p) => (
-                <li key={p.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
-                  <div>
-                    <span>{warehouseName(p.warehouses) ?? "—"}</span>
-                    <span className="ml-2 text-xs text-gray-500">
-                      {new Date(p.created_at).toLocaleDateString("fr-FR")}
-                    </span>
-                  </div>
-                  {canSeeProduction ? (
+        {canSeeProduction && (
+          <Card>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
+              Dernières productions
+            </p>
+            {snapshotLoading ? (
+              <p className="text-sm text-gray-500">Chargement…</p>
+            ) : snapshot && snapshot.recentProductions.length > 0 ? (
+              <ul className="space-y-2 text-sm text-gray-700">
+                {snapshot.recentProductions.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
+                    <div>
+                      <span>{warehouseName(p.warehouses) ?? "—"}</span>
+                      <span className="ml-2 text-xs text-gray-500">
+                        {new Date(p.created_at).toLocaleDateString("fr-FR")}
+                      </span>
+                    </div>
                     <Link to={`/productions/${p.id}`} className="text-brand-600 hover:underline">
                       Voir
                     </Link>
-                  ) : (
-                    <span className="text-xs text-gray-400">Voir</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-500">Aucune production pour le moment.</p>
-          )}
-        </Card>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">Aucune production pour le moment.</p>
+            )}
+          </Card>
+        )}
 
-        <Card>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-            Dernières transformations
-          </p>
-          {snapshotLoading ? (
-            <p className="text-sm text-gray-500">Chargement…</p>
-          ) : snapshot && snapshot.recentTransformations.length > 0 ? (
-            <ul className="space-y-2 text-sm text-gray-700">
-              {snapshot.recentTransformations.map((t) => (
-                <li key={t.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
-                  <div>
-                    <span>{warehouseName(t.warehouses) ?? "—"}</span>
-                    <span className="ml-2 text-xs text-gray-500">
-                      {new Date(t.created_at).toLocaleDateString("fr-FR")}
-                    </span>
-                  </div>
-                  {canSeeTransformation ? (
+        {canSeeTransformation && (
+          <Card>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
+              Dernières transformations
+            </p>
+            {snapshotLoading ? (
+              <p className="text-sm text-gray-500">Chargement…</p>
+            ) : snapshot && snapshot.recentTransformations.length > 0 ? (
+              <ul className="space-y-2 text-sm text-gray-700">
+                {snapshot.recentTransformations.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
+                    <div>
+                      <span>{warehouseName(t.warehouses) ?? "—"}</span>
+                      <span className="ml-2 text-xs text-gray-500">
+                        {new Date(t.created_at).toLocaleDateString("fr-FR")}
+                      </span>
+                    </div>
                     <Link to={`/transformations/${t.id}`} className="text-brand-600 hover:underline">
                       Voir
                     </Link>
-                  ) : (
-                    <span className="text-xs text-gray-400">Voir</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-500">Aucune transformation pour le moment.</p>
-          )}
-        </Card>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">Aucune transformation pour le moment.</p>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );

@@ -2397,6 +2397,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      consume_rate_limit: {
+        Args: { p_bucket: string; p_max: number; p_window: unknown }
+        Returns: boolean
+      }
       current_company_id: { Args: never; Returns: string }
       current_role_name: { Args: never; Returns: string }
       dispose_fixed_asset: {
@@ -2629,7 +2633,6 @@ export type Database = {
           table_name: string
         }[]
       }
-      resolve_login_email: { Args: { p_login: string }; Returns: string }
       set_user_attributions: {
         Args: { p_attributions: Json; p_user_id: string }
         Returns: undefined

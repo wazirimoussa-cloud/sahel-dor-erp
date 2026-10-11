@@ -155,12 +155,16 @@ export function WarehouseDashboard() {
             status={lowStockStatus}
             href="/products"
           />
-          <StatTile
-            label="Réceptions en attente"
-            value={formatRatio(stats?.pendingPurchasesCount, "")}
-            loading={statsLoading}
-            href={canSeeAchats ? "/purchases" : undefined}
-          />
+          {/* purchases n'est lisible qu'avec achats/transporteurs (0106) : sans le module,
+              la tuile afficherait un faux zéro -- masquée. */}
+          {canSeeAchats && (
+            <StatTile
+              label="Réceptions en attente"
+              value={formatRatio(stats?.pendingPurchasesCount, "")}
+              loading={statsLoading}
+              href="/purchases"
+            />
+          )}
           <StatTile
             label="Mouvements aujourd'hui"
             value={formatRatio(stats?.movementsTodayCount, "")}

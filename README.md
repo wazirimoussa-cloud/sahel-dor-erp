@@ -2743,6 +2743,78 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        (2 des 4 vulnérabilités, sans casse) ; taux fiscaux toujours en attente de relecture
        et politique de conservation/effacement des données personnelles à faire valider.
 
+115. **Durcissement des points d'entrée publics et des en-têtes (suite de l'audit du point
+     114).** Quatre des points restés ouverts, ceux qui relèvent du code :
+     - **`resolve_login_email` supprimée** (`0105_durcissement_endpoints_publics.sql`) :
+       publique, elle permettait de tester en masse, sans connexion et hors des limites de
+       Supabase Auth, si un identifiant existait et était actif. L'email Auth d'un compte
+       non-admin étant déterministe (`<login>@login.saheldor.internal`, point 64),
+       `LoginPage.tsx` le calcule désormais localement (`src/lib/loginEmail.ts`) : un
+       identifiant inconnu échoue à `signInWithPassword` avec la même erreur qu'un mauvais
+       mot de passe. Changement de comportement assumé : un compte **archivé** dont le mot de
+       passe est correct s'authentifie, n'obtient aucune donnée (`current_company_id()`
+       renvoie null, `0048`) et voit le message « compte désactivé » d'`AuthProvider` —
+       c'était déjà le cas de tout appel direct à l'API Auth avec l'email synthétique.
+       **Ordre de déploiement : frontend Vercel d'abord, `supabase db push` ensuite**, sinon
+       la connexion par identifiant casse entre les deux.
+     - **Limite de débit sur `request-password-reset`** : 10 demandes / 15 min par IP, 3 /
+       heure par email (haché SHA-256, la table ne garde aucune adresse), au-delà réponse
+       429 sans lecture ni envoi. Compteur générique `edge_rate_limits` +
+       `consume_rate_limit()` (service_role uniquement, RLS sans policy, verrou consultatif
+       par compteur, purge > 1 jour). Redéployer la fonction :
+       `npx supabase functions deploy request-password-reset --no-verify-jwt`.
+     - **`Content-Security-Policy`** ajoutée dans `vercel.json` : scripts limités à l'origine
+       + CDN Sentry (aucun script inline — l'ancien `onload` de la police dans `index.html`
+       est déplacé dans `src/main.tsx`), connexions vers `*.supabase.co` (HTTPS + WSS
+       Realtime) et `*.sentry.io`, `frame-ancestors 'none'`, `object-src 'none'`.
+       `style-src` garde `'unsafe-inline'` (styles injectés par les bibliothèques), risque
+       faible sans script inline. Vérifié sur le build servi avec ces en-têtes dans Chromium :
+       écran de connexion, police, génération PDF (jsPDF) et Excel (exceljs), zéro violation.
+     - **`npm audit fix`** : 17 → 12 vulnérabilités, toutes restantes en dépendances de
+       développement sauf `uuid` (via `exceljs`, modérée, ne concerne que v3/v5/v6 avec
+       tampon fourni — non utilisé). Le reste exige des montées de version majeures
+       (`tailwindcss` 4, `vitest`), hors de ce correctif.
+     - Restent côté propriétaire : dépôt GitHub à passer en privé, plan Pro Supabase
+       (sauvegardes gérées, protection des mots de passe compromis, séparation Formation).
+
+116. **RLS par module en lecture** (`0106_rls_lecture_par_module.sql`, chantier 4 du plan de
+     remédiation) : jusqu'ici commandes, achats, pertes, productions et transformations ne
+     filtraient que par société — n'importe quel compte pouvait les lire via l'API, la garde
+     `requiredModule` du frontend n'étant qu'une garde de navigation. Les écritures, elles,
+     passaient déjà toutes par des RPC `security definer` (vérifié : aucune écriture directe
+     depuis le frontend sur ces tables, aucune fonction non-definer qui les lise).
+     - **Matrice** (policy SELECT = société **et** module, tables enfants comprises) :
+       `orders`/`order_items`/`order_payments` → `ventes` ; `purchases` et ses 5 tables
+       enfants → `achats` ou `transporteurs` ; `stock_loss_requests` → `pertes_stock` ou un
+       module comptable (la vue `v_stock_loss_valued`, `security_invoker`, alimente le
+       bilan : sans cela ses montants seraient faux sans erreur visible) ; `productions` (+
+       lignes) → `production` ; `transformations` (+ entrées/sorties) → `transformation`.
+     - **Volontairement non restreint** : `transactions`, `stock_lots`, `product_stocks`,
+       `products` — l'écran Stock et la cloche d'alertes sont ouverts à tous par conception,
+       et les niveaux de stock servent à la vente, aux pertes, aux entrepôts et au bilan.
+       `user_attributions` était déjà verrouillée (point 108).
+     - **Tableaux de bord — décision du propriétaire : les tuiles hors module disparaissent**
+       (pas de RPC d'agrégat). Masquées par `hasModuleAccess()` pour ne jamais afficher un
+       faux zéro : « Réceptions en attente » (Magasin, sans `achats`), « Top clients »
+       (Finance, sans `ventes`), cartes pertes transport / pertes de stock (Logistique),
+       cartes production / transformation (Production). La cloche d'alertes n'affiche plus
+       les commandes en attente/impayées sans `ventes` (compte à 0 par RLS). Dans
+       l'historique des mouvements de stock, un achat masqué s'affiche `Achat #<id court>`
+       au lieu de `Achat #?`.
+     - Impact concret sur les profils Formation : le magasinier ne voit plus commandes,
+       productions ni transformations ; le gérant ne voit plus les pertes de stock ; le
+       comptable ne voit plus achats ni productions (il garde les commandes via
+       `ventes.encaisser_paiement`).
+     - Tests : `rlsAttributionScoping.test.ts` étendu (matrice verrouillée + aucune autre
+       policy permissive sur ces tables — elles s'additionnent ; vérifié qu'il échoue sans
+       `0106`) ; nouveau `tests/integration/rls-modules.test.ts` (requêtes REST directes par
+       profil contre Formation) — **non exécuté depuis l'environnement de développement**
+       (pas d'identifiants Formation).
+     - **À vérifier après `db push`** : `select tablename, policyname, cmd from pg_policies
+       where tablename in ('orders','purchases','productions','transformations',
+       'stock_loss_requests')` ne doit montrer qu'une policy `SELECT` par table (une policy
+       ajoutée hors migrations rouvrirait la lecture), puis `npm run test:integration`.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

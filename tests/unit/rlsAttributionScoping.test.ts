@@ -119,3 +119,52 @@ describe("policies RLS gardées par has_attribution() restent scopées à la soc
     ).toBe(false);
   });
 });
+
+// RLS par module en lecture (0106, chantier 4 du plan de remédiation) : ces tables ne
+// filtraient que par société, n'importe quel compte pouvait lire commandes, achats,
+// productions... via l'API. Ce test verrouille la matrice : la policy SELECT de chaque
+// table doit exiger le(s) module(s) attendu(s) ET rester scopée à la société. Une table
+// ajoutée ici sans policy correspondante, ou une policy recréée plus tard sans
+// has_module_access(...), fait échouer le test.
+const READ_MODULES: Record<string, string[]> = {
+  orders: ["ventes"],
+  order_items: ["ventes"],
+  order_payments: ["ventes"],
+  purchases: ["achats", "transporteurs"],
+  purchase_items: ["achats", "transporteurs"],
+  purchase_losses: ["achats", "transporteurs"],
+  purchase_loss_recoveries: ["achats", "transporteurs"],
+  purchase_loss_writeoffs: ["achats", "transporteurs"],
+  purchase_transport_payments: ["achats", "transporteurs"],
+  // + modules comptables : v_stock_loss_valued (security_invoker) alimente le bilan.
+  stock_loss_requests: ["pertes_stock", "comptabilite", "etats_financiers", "journal_comptable"],
+  productions: ["production"],
+  production_items: ["production"],
+  transformations: ["transformation"],
+  transformation_inputs: ["transformation"],
+  transformation_outputs: ["transformation"],
+};
+
+describe("lecture des tables métier gardée par module (0106)", () => {
+  const policies = currentPolicies();
+
+  it.each(Object.entries(READ_MODULES))("%s_select exige ses modules et la société", (table, modules) => {
+    const policy = policies.get(`${table}.${table}_select`);
+    expect(policy, `Aucune policy ${table}_select trouvée`).toBeDefined();
+    for (const module of modules) {
+      expect(policy!.body, `${table}_select ne vérifie pas has_module_access('${module}')`).toContain(
+        `has_module_access('${module}')`,
+      );
+    }
+    expect(policy!.body).toContain("current_company_id()");
+  });
+
+  it.each(Object.keys(READ_MODULES))("%s n'a aucune autre policy (elles s'additionnent)", (table) => {
+    const others = [...policies.keys()].filter((key) => key.startsWith(`${table}.`) && key !== `${table}.${table}_select`);
+    expect(
+      others,
+      `Policy supplémentaire sur ${table} : les policies permissives s'additionnent (OU), une policy ` +
+        `"for all" ou "for select" de plus rouvrirait la lecture à tous les comptes de la société.`,
+    ).toEqual([]);
+  });
+});

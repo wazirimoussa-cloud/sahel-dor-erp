@@ -11,7 +11,9 @@
     media, patron recommandé par Google Fonts) : la feuille de style Google Fonts n'a plus
     besoin d'être récupérée avant le premier rendu ; le repli Georgia (index.css) s'affiche
     entre-temps, remplacé dès que la police est prête (comportement déjà garanti par
-    display=swap, inchangé). <noscript> couvre le cas JS désactivé. -->
+    display=swap, inchangé). <noscript> couvre le cas JS désactivé. La bascule media est
+    faite dans src/main.tsx (pas d'attribut onload inline : bloqué par la
+    Content-Security-Policy de vercel.json, qui n'autorise aucun script inline). -->
     <link
       rel="preload"
       as="style"
@@ -19,9 +21,9 @@
     />
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
+      id="font-playfair"
       rel="stylesheet"
       media="print"
-      onload="this.media='all'"
     />
     <noscript>
       <link

@@ -1,9 +1,10 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { loginToEmail } from "@/lib/loginEmail";
 
 // Connexion par identifiant (login), pas par email -- reproduit le vrai flux de
-// LoginPage.tsx (0072_identifiants_login.sql) : résolution publique login -> email
-// synthétique via resolve_login_email, PUIS signInWithPassword. Extrait en helper
+// LoginPage.tsx (0072_identifiants_login.sql) : login -> email synthétique calculé
+// localement (loginToEmail, depuis 0105), PUIS signInWithPassword. Extrait en helper
 // partagé (remplace 6 copies quasi identiques) au moment de ce changement, plutôt que de
 // dupliquer la logique de résolution six fois.
 
@@ -36,13 +37,9 @@ export async function signInAs(role: keyof typeof CREDENTIALS): Promise<Supabase
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: resolvedEmail, error: resolveError } = await client.rpc("resolve_login_email", {
-    p_login: login as string,
-  });
-  if (resolveError || !resolvedEmail) {
-    throw new Error(
-      `Identifiant introuvable pour le profil ${role} (${login}) : ${resolveError?.message ?? "aucun compte actif avec cet identifiant"}`,
-    );
+  const resolvedEmail = loginToEmail(login as string);
+  if (!resolvedEmail) {
+    throw new Error(`Identifiant mal formé pour le profil ${role} (${login})`);
   }
 
   const { error } = await client.auth.signInWithPassword({

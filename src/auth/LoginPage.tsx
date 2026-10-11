@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { loginToEmail } from "@/lib/loginEmail";
 import { useAuth } from "@/auth/useAuth";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -63,13 +64,12 @@ export function LoginPage() {
       // Chemin admin : le seul compte à garder un email réel (voir README point 64).
       email = identifier;
     } else {
-      // Identifiant (login) : résolu en email interne synthétique avant authentification
-      // — resolve_login_email est publique (accessible avant toute session), voir
-      // 0072_identifiants_login.sql. Le type généré ne reflète pas la nullabilité réelle
-      // (fonction SQL scalaire) : un login inconnu renvoie bien `null` à l'exécution.
-      const { data: resolvedEmail } = await supabase.rpc("resolve_login_email", {
-        p_login: identifier,
-      });
+      // Identifiant (login) : email interne synthétique calculé localement (voir
+      // src/lib/loginEmail.ts). Un identifiant inconnu échoue à signInWithPassword avec
+      // la même erreur générique qu'un mauvais mot de passe. Un compte archivé peut
+      // s'authentifier mais n'a plus aucun accès (current_company_id() renvoie null) et
+      // AuthProvider le déconnecte aussitôt avec deactivatedMessage.
+      const resolvedEmail = loginToEmail(identifier);
       if (!resolvedEmail) {
         setServerError(GENERIC_LOGIN_ERROR);
         return;

@@ -13,7 +13,7 @@ _Journal_ en bas, et lier le numéro de migration / commit correspondant.
 | 1 | [Sauvegardes / PITR](#1-sauvegardes--pitr) | Critique | ½ j | en cours |
 | 2 | [Séparer Formation de Production](#2-séparer-formation-de-production) | Élevée | 1 j | à faire |
 | 3 | [Tests d'intégration en CI](#3-tests-dintégration-en-ci) | Élevée | 2-3 j | en cours |
-| 4 | [RLS par attribution](#4-rls-par-attribution) | Élevée | plusieurs j | à faire |
+| 4 | [RLS par attribution](#4-rls-par-attribution) | Élevée | plusieurs j | en cours |
 | 5 | [Perf du cœur comptable](#5-perf-du-cœur-comptable) | Moyenne | 1 j + | à faire |
 | 6 | [Dette légère](#6-dette-légère) | Faible | ~1 j cumulé | en cours |
 
@@ -42,12 +42,13 @@ exposition : perte de données = perte définitive.
 - [ ] Si RPO < 24h nécessaire : ajouter l'add-on **PITR** (7 jours).
 - [x] Stopgap : workflow GitHub Actions planifié `.github/workflows/backup.yml`
       (`pg_dump` custom-format quotidien à 02:00 UTC, artefact 30 j).
-- [ ] **Activer le stopgap** : ajouter le secret `SUPABASE_DB_URL` (chaîne de
+- [x] **Activer le stopgap** : ajouter le secret `SUPABASE_DB_URL` (chaîne de
       connexion Postgres, rôle lecture seule de préférence) dans
       _Settings → Secrets and variables → Actions_.
 - [ ] Faire évoluer le stopgap vers un bucket R2/S3 chiffré (l'artefact GitHub, 30 j,
       n'est qu'un dépannage court terme).
-- [ ] **Tester une restauration** sur un projet jetable — sinon ça ne compte pas.
+- [x] **Tester une restauration** sur un projet jetable — automatisé chaque nuit (job
+      `restore-test`, README point 109).
 
 **Fini quand** : une restauration a été testée avec succès et la procédure est écrite ici.
 
@@ -115,7 +116,7 @@ par Formation, `npm run test:integration` tourne vert contre Formation isolée e
 - [ ] Nouveau `tests/unit/businessHours.test.ts` — porter les 4 cas déjà vérifiés à
       la main pour `businessHoursElapsed` dans `SupervisorDashboard.tsx` (weekend
       traversé, span multi-jours, bornes).
-- [ ] Nouveau `tests/integration/rls-attributions.test.ts` — « utilisateur avec
+- [x] Nouveau `tests/integration/rls-modules.test.ts` (ex-`rls-attributions`, écrit, à exécuter contre Formation) — « utilisateur avec
       l'attribution X voit / ne voit pas la table Y ». Bloque les régressions du
       point 4.
 - [ ] 2-3 E2E Playwright sur le chemin critique : commande → validation → mouvement
@@ -141,16 +142,18 @@ d'intégration ne dépend plus d'un état partagé fragile.
   conflit + `fn_block_mutation`). Le trou est en **lecture**.
 
 **Actions** (table par table, de la plus sensible à la moins)
-- [ ] `payslips`, `payroll_*` → `has_attribution('paie.*')`.
-- [ ] `stock_loss_requests` → `has_attribution('pertes_stock.declarer' | '.approuver')`.
-- [ ] `transactions`, `stock_lots`, `product_stocks` → module `stock` / `entrepots`.
-- [ ] `purchases`, `purchase_items`, `purchase_losses` → module `achats` /
+- [x] `payslips`, `payroll_*` → `has_attribution('paie.*')` (`0099`, README point 103).
+- [x] `stock_loss_requests` → module `pertes_stock` ou comptable (`0106`).
+- [ ] ~~`transactions`, `stock_lots`, `product_stocks` → module `stock` / `entrepots`~~ —
+      abandonné : écran Stock et alertes ouverts à tous par conception, niveaux lus par
+      vente/pertes/bilan (README point 116).
+- [x] `purchases`, `purchase_items`, `purchase_losses` → module `achats` /
       `transporteurs`.
-- [ ] `orders`, `order_items`, `order_payments` → module `ventes`.
-- [ ] `productions`, `transformations` (+ lignes) → modules `production` /
+- [x] `orders`, `order_items`, `order_payments` → module `ventes` (`0106`).
+- [x] `productions`, `transformations` (+ lignes) → modules `production` /
       `transformation`.
-- [ ] Verrouiller `user_attributions` : un non-admin ne lit que ses propres lignes.
-- [ ] **Décision transverse** : les dashboards affichent des compteurs hors-module
+- [x] Verrouiller `user_attributions` : un non-admin ne lit que ses propres lignes (`0101`).
+- [x] **Décision transverse** (2026-10-11, propriétaire : **les tuiles disparaissent**) : les dashboards affichent des compteurs hors-module
       volontaires (ex. « Réceptions en attente » sur Magasin sans `achats`). Choix à
       acter : soit ces tuiles passent par une RPC `security definer` renvoyant
       seulement l'agrégat, soit elles disparaissent pour ces profils. Recommandation :
@@ -220,3 +223,6 @@ représentatif, et le temps ne croît plus linéairement avec l'historique.
 | 2026-09-10 | 1 | Stopgap sauvegarde nocturne (`backup.yml`) — reste à ajouter le secret `SUPABASE_DB_URL`. | `310b888` |
 | 2026-09-10 | 3 | CI verte après correctif : suite unitaire rendue hermétique (variables Supabase factices dans `vitest.config.ts`) — elle échouait en CI faute de `.env.local`. | `9db09e8` |
 | 2026-09-10 | 2 | Phase A séparation Formation : seed + script de provisioning des 5 comptes + runbook. Référentiel Formation extrait du projet partagé. Phases B/C/D en attente d'actions infra. | — |
+| 2026-09-19 | 1 | Secrets ajoutés, restauration vérifiée automatiquement chaque nuit sur un projet jetable dédié (README point 109). Reste : plan Pro / PITR, stockage chiffré hors GitHub. | `f2cc910` |
+| 2026-10-11 | — | Sécurité hors chantiers : `resolve_login_email` supprimée, limite de débit sur `request-password-reset`, CSP, `npm audit fix` (README point 115). | `0105` |
+| 2026-10-11 | 4 | RLS par module en lecture (`0106`) + tuiles hors module masquées. Reste : `explain analyze` après `db push`, exécution de `rls-modules.test.ts` contre Formation. | `0106` |
