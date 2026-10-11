@@ -69,6 +69,9 @@ export function FinancialDashboard() {
   const canSeeEtatsFinanciers = hasModuleAccess("etats_financiers");
   const canSeeJournal = hasModuleAccess("journal_comptable");
   const canSeeClients = hasModuleAccess("clients");
+  // orders n'est lisible qu'avec le module ventes (0106) : sans lui, "Top clients" serait
+  // toujours vide -- carte masquée.
+  const canSeeVentes = hasModuleAccess("ventes");
 
   const margeStatus: StatTileStatus | undefined =
     statements?.ratios.margeCommerciale == null
@@ -317,34 +320,36 @@ export function FinancialDashboard() {
             )}
           </Card>
 
-          <Card>
-            {canSeeClients ? (
-              <Link
-                to="/clients"
-                className="mb-3 block text-xs font-semibold uppercase tracking-wide text-brand-600 hover:underline"
-              >
-                Top clients (période) →
-              </Link>
-            ) : (
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-                Top clients (période)
-              </p>
-            )}
-            {topClientsLoading ? (
-              <p className="text-sm text-gray-500">Chargement…</p>
-            ) : topClients && topClients.length > 0 ? (
-              <ul className="space-y-2 text-sm text-gray-700">
-                {topClients.map((c) => (
-                  <li key={c.clientId} className="flex justify-between border-b border-gray-100 pb-1">
-                    <span>{c.name}</span>
-                    <span className="font-medium text-gray-800">{formatFcfa(c.total)}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-sm text-gray-500">Aucune commande validée sur cette période.</p>
-            )}
-          </Card>
+          {canSeeVentes && (
+            <Card>
+              {canSeeClients ? (
+                <Link
+                  to="/clients"
+                  className="mb-3 block text-xs font-semibold uppercase tracking-wide text-brand-600 hover:underline"
+                >
+                  Top clients (période) →
+                </Link>
+              ) : (
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
+                  Top clients (période)
+                </p>
+              )}
+              {topClientsLoading ? (
+                <p className="text-sm text-gray-500">Chargement…</p>
+              ) : topClients && topClients.length > 0 ? (
+                <ul className="space-y-2 text-sm text-gray-700">
+                  {topClients.map((c) => (
+                    <li key={c.clientId} className="flex justify-between border-b border-gray-100 pb-1">
+                      <span>{c.name}</span>
+                      <span className="font-medium text-gray-800">{formatFcfa(c.total)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-gray-500">Aucune commande validée sur cette période.</p>
+              )}
+            </Card>
+          )}
         </div>
       </div>
     </div>

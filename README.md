@@ -2777,6 +2777,44 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
      - Restent côté propriétaire : dépôt GitHub à passer en privé, plan Pro Supabase
        (sauvegardes gérées, protection des mots de passe compromis, séparation Formation).
 
+116. **RLS par module en lecture** (`0106_rls_lecture_par_module.sql`, chantier 4 du plan de
+     remédiation) : jusqu'ici commandes, achats, pertes, productions et transformations ne
+     filtraient que par société — n'importe quel compte pouvait les lire via l'API, la garde
+     `requiredModule` du frontend n'étant qu'une garde de navigation. Les écritures, elles,
+     passaient déjà toutes par des RPC `security definer` (vérifié : aucune écriture directe
+     depuis le frontend sur ces tables, aucune fonction non-definer qui les lise).
+     - **Matrice** (policy SELECT = société **et** module, tables enfants comprises) :
+       `orders`/`order_items`/`order_payments` → `ventes` ; `purchases` et ses 5 tables
+       enfants → `achats` ou `transporteurs` ; `stock_loss_requests` → `pertes_stock` ou un
+       module comptable (la vue `v_stock_loss_valued`, `security_invoker`, alimente le
+       bilan : sans cela ses montants seraient faux sans erreur visible) ; `productions` (+
+       lignes) → `production` ; `transformations` (+ entrées/sorties) → `transformation`.
+     - **Volontairement non restreint** : `transactions`, `stock_lots`, `product_stocks`,
+       `products` — l'écran Stock et la cloche d'alertes sont ouverts à tous par conception,
+       et les niveaux de stock servent à la vente, aux pertes, aux entrepôts et au bilan.
+       `user_attributions` était déjà verrouillée (point 108).
+     - **Tableaux de bord — décision du propriétaire : les tuiles hors module disparaissent**
+       (pas de RPC d'agrégat). Masquées par `hasModuleAccess()` pour ne jamais afficher un
+       faux zéro : « Réceptions en attente » (Magasin, sans `achats`), « Top clients »
+       (Finance, sans `ventes`), cartes pertes transport / pertes de stock (Logistique),
+       cartes production / transformation (Production). La cloche d'alertes n'affiche plus
+       les commandes en attente/impayées sans `ventes` (compte à 0 par RLS). Dans
+       l'historique des mouvements de stock, un achat masqué s'affiche `Achat #<id court>`
+       au lieu de `Achat #?`.
+     - Impact concret sur les profils Formation : le magasinier ne voit plus commandes,
+       productions ni transformations ; le gérant ne voit plus les pertes de stock ; le
+       comptable ne voit plus achats ni productions (il garde les commandes via
+       `ventes.encaisser_paiement`).
+     - Tests : `rlsAttributionScoping.test.ts` étendu (matrice verrouillée + aucune autre
+       policy permissive sur ces tables — elles s'additionnent ; vérifié qu'il échoue sans
+       `0106`) ; nouveau `tests/integration/rls-modules.test.ts` (requêtes REST directes par
+       profil contre Formation) — **non exécuté depuis l'environnement de développement**
+       (pas d'identifiants Formation).
+     - **À vérifier après `db push`** : `select tablename, policyname, cmd from pg_policies
+       where tablename in ('orders','purchases','productions','transformations',
+       'stock_loss_requests')` ne doit montrer qu'une policy `SELECT` par table (une policy
+       ajoutée hors migrations rouvrirait la lecture), puis `npm run test:integration`.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

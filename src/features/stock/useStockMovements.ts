@@ -98,7 +98,8 @@ function deriveLabel(tx: RawTransaction, direction: "IN" | "OUT"): string {
   if (tx.purchase_id && direction === "IN") {
     const purchase = one(tx.purchases);
     const supplier = purchase ? one(purchase.suppliers) : null;
-    return `Achat #${purchase?.receipt_number ?? "?"}${supplier ? ` — ${supplier.name}` : ""}`;
+    // purchase null = achat masqué par RLS (profil sans module achats/transporteurs, 0106).
+    return `Achat #${purchase?.receipt_number ?? tx.purchase_id.slice(0, 8)}${supplier ? ` — ${supplier.name}` : ""}`;
   }
   if (tx.production_id && direction === "IN") {
     return `Production #${tx.production_id.slice(0, 8)}`;

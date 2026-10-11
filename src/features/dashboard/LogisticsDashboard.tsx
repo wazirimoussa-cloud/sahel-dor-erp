@@ -95,6 +95,9 @@ function useLogisticsSnapshot() {
 // useLogisticsPeriodSummary.ts). Le dashboard est visible via hasModuleAccess("transporteurs")
 // || hasModuleAccess("pertes_stock") (condition OU entre deux modules distincts, même cas que
 // Production) -- chaque carte et chaque lien de navigation est gardé individuellement.
+// Depuis 0106 (RLS par module), une carte dont le module manque est masquée plutôt que
+// d'afficher un faux zéro : purchase_losses n'est lisible qu'avec achats/transporteurs,
+// stock_loss_requests qu'avec pertes_stock (ou un module comptable).
 export function LogisticsDashboard() {
   const { hasModuleAccess } = useAuth();
   const [startDate, setStartDate] = useState(defaultStartDate);
@@ -154,47 +157,55 @@ export function LogisticsDashboard() {
           Activité de la période
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatTile
-            label="Pertes constatées (réception)"
-            value={formatRatio(summary?.lossesCount, "")}
-            loading={summaryLoading}
-            delta={computeDelta(summary?.lossesCount, priorSummary?.lossesCount, (diff) => `${Math.round(diff)}`)}
-            href={canSeeTransporteurs ? "/pertes-transport" : undefined}
-          />
-          <StatTile
-            label="Valeur des pertes (réception)"
-            value={formatFcfa(summary?.lossesValue)}
-            loading={summaryLoading}
-            delta={computeDelta(summary?.lossesValue, priorSummary?.lossesValue, formatFcfa)}
-            href={canSeeTransporteurs ? "/pertes-transport" : undefined}
-          />
-          <StatTile
-            label="Pertes de stock déclarées"
-            value={formatRatio(summary?.declaredCount, "")}
-            loading={summaryLoading}
-            delta={computeDelta(
-              summary?.declaredCount,
-              priorSummary?.declaredCount,
-              (diff) => `${Math.round(diff)}`,
-            )}
-            href={canSeePertesStock ? "/pertes-stock" : undefined}
-          />
-          <StatTile
-            label="Taux d'approbation"
-            value={formatRatio(summary?.approvalRate == null ? null : summary.approvalRate * 100, " %")}
-            loading={summaryLoading}
-            status={approvalStatus}
-            delta={computeDelta(
-              summary?.approvalRate == null ? null : summary.approvalRate * 100,
-              priorSummary?.approvalRate == null ? null : priorSummary.approvalRate * 100,
-              (diff) => `${diff.toFixed(1)} pts`,
-            )}
-            secondaryLine={{
-              label: "Délai moyen d'approbation",
-              value: formatRatio(summary?.avgApprovalDelayDays, " j"),
-            }}
-            href={canSeePertesStock ? "/pertes-stock" : undefined}
-          />
+          {canSeeTransporteurs && (
+            <>
+              <StatTile
+                label="Pertes constatées (réception)"
+                value={formatRatio(summary?.lossesCount, "")}
+                loading={summaryLoading}
+                delta={computeDelta(summary?.lossesCount, priorSummary?.lossesCount, (diff) => `${Math.round(diff)}`)}
+                href="/pertes-transport"
+              />
+              <StatTile
+                label="Valeur des pertes (réception)"
+                value={formatFcfa(summary?.lossesValue)}
+                loading={summaryLoading}
+                delta={computeDelta(summary?.lossesValue, priorSummary?.lossesValue, formatFcfa)}
+                href="/pertes-transport"
+              />
+            </>
+          )}
+          {canSeePertesStock && (
+            <>
+              <StatTile
+                label="Pertes de stock déclarées"
+                value={formatRatio(summary?.declaredCount, "")}
+                loading={summaryLoading}
+                delta={computeDelta(
+                  summary?.declaredCount,
+                  priorSummary?.declaredCount,
+                  (diff) => `${Math.round(diff)}`,
+                )}
+                href="/pertes-stock"
+              />
+              <StatTile
+                label="Taux d'approbation"
+                value={formatRatio(summary?.approvalRate == null ? null : summary.approvalRate * 100, " %")}
+                loading={summaryLoading}
+                status={approvalStatus}
+                delta={computeDelta(
+                  summary?.approvalRate == null ? null : summary.approvalRate * 100,
+                  priorSummary?.approvalRate == null ? null : priorSummary.approvalRate * 100,
+                  (diff) => `${diff.toFixed(1)} pts`,
+                )}
+                secondaryLine={{
+                  label: "Délai moyen d'approbation",
+                  value: formatRatio(summary?.avgApprovalDelayDays, " j"),
+                }}
+                href="/pertes-stock"
+              />
+            </>
+          )}
         </div>
       </div>
 
@@ -209,99 +220,105 @@ export function LogisticsDashboard() {
             loading={snapshotLoading}
             href={canSeeTransporteurs ? "/transporteurs" : undefined}
           />
-          <StatTile
-            label="Pertes de stock en attente d'approbation"
-            value={formatRatio(snapshot?.pendingStockLossCount, "")}
-            loading={snapshotLoading}
-            href={canSeePertesStock ? "/pertes-stock" : undefined}
-          />
+          {canSeePertesStock && (
+              <StatTile
+                label="Pertes de stock en attente d'approbation"
+                value={formatRatio(snapshot?.pendingStockLossCount, "")}
+                loading={snapshotLoading}
+                href="/pertes-stock"
+              />
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-            Dernières pertes (réception)
-          </p>
-          {snapshotLoading ? (
-            <p className="text-sm text-gray-500">Chargement…</p>
-          ) : snapshot && snapshot.recentLosses.length > 0 ? (
-            <ul className="space-y-2 text-sm text-gray-700">
-              {snapshot.recentLosses.map((l) => {
-                const product = l.products as { name: string; unit: string } | { name: string; unit: string }[] | null;
-                const productInfo = Array.isArray(product) ? product[0] : product;
-                const transporterName = relationName(l.transporters);
-                return (
-                  <li key={l.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
-                    <div>
-                      <span>
-                        {productInfo?.name ?? "—"} — {transporterName ?? "—"}
-                      </span>
-                      <span className="ml-2 text-xs text-gray-500">
-                        {new Date(l.created_at).toLocaleDateString("fr-FR")}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-medium text-red-600">
-                        {l.quantity_lost} {productInfo?.unit ?? ""}
-                      </span>
-                      {canSeeAchats ? (
-                        <Link to={`/purchases/${l.purchase_id}`} className="text-brand-600 hover:underline">
-                          Voir
-                        </Link>
-                      ) : (
-                        <span className="text-xs text-gray-400">Voir</span>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-500">Aucune perte constatée pour le moment.</p>
-          )}
-        </Card>
+        {canSeeTransporteurs && (
+          <Card>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
+              Dernières pertes (réception)
+            </p>
+            {snapshotLoading ? (
+              <p className="text-sm text-gray-500">Chargement…</p>
+            ) : snapshot && snapshot.recentLosses.length > 0 ? (
+              <ul className="space-y-2 text-sm text-gray-700">
+                {snapshot.recentLosses.map((l) => {
+                  const product = l.products as { name: string; unit: string } | { name: string; unit: string }[] | null;
+                  const productInfo = Array.isArray(product) ? product[0] : product;
+                  const transporterName = relationName(l.transporters);
+                  return (
+                    <li key={l.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
+                      <div>
+                        <span>
+                          {productInfo?.name ?? "—"} — {transporterName ?? "—"}
+                        </span>
+                        <span className="ml-2 text-xs text-gray-500">
+                          {new Date(l.created_at).toLocaleDateString("fr-FR")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-medium text-red-600">
+                          {l.quantity_lost} {productInfo?.unit ?? ""}
+                        </span>
+                        {canSeeAchats ? (
+                          <Link to={`/purchases/${l.purchase_id}`} className="text-brand-600 hover:underline">
+                            Voir
+                          </Link>
+                        ) : (
+                          <span className="text-xs text-gray-400">Voir</span>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">Aucune perte constatée pour le moment.</p>
+            )}
+          </Card>
+        )}
 
-        <Card>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
-            Dernières pertes de stock déclarées
-          </p>
-          {snapshotLoading ? (
-            <p className="text-sm text-gray-500">Chargement…</p>
-          ) : snapshot && snapshot.recentStockLossRequests.length > 0 ? (
-            <ul className="space-y-2 text-sm text-gray-700">
-              {snapshot.recentStockLossRequests.map((r) => {
-                const product = r.products as { name: string; unit: string } | { name: string; unit: string }[] | null;
-                const productInfo = Array.isArray(product) ? product[0] : product;
-                const warehouseNameValue = relationName(r.warehouses);
-                return (
-                  <li key={r.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
-                    <div>
-                      <span>
-                        {productInfo?.name ?? "—"} — {warehouseNameValue ?? "—"}
-                      </span>
-                      <span className="ml-2 text-xs text-gray-500">
-                        {new Date(r.created_at).toLocaleDateString("fr-FR")}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-gray-600">
-                        {r.quantity} {productInfo?.unit ?? ""}
-                      </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STOCK_LOSS_STATUS_CLASSES[r.status] ?? ""}`}
-                      >
-                        {STOCK_LOSS_STATUS_LABELS[r.status] ?? r.status}
-                      </span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <p className="text-sm text-gray-500">Aucune déclaration de perte pour le moment.</p>
-          )}
-        </Card>
+        {canSeePertesStock && (
+          <Card>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-brand-600">
+              Dernières pertes de stock déclarées
+            </p>
+            {snapshotLoading ? (
+              <p className="text-sm text-gray-500">Chargement…</p>
+            ) : snapshot && snapshot.recentStockLossRequests.length > 0 ? (
+              <ul className="space-y-2 text-sm text-gray-700">
+                {snapshot.recentStockLossRequests.map((r) => {
+                  const product = r.products as { name: string; unit: string } | { name: string; unit: string }[] | null;
+                  const productInfo = Array.isArray(product) ? product[0] : product;
+                  const warehouseNameValue = relationName(r.warehouses);
+                  return (
+                    <li key={r.id} className="flex items-center justify-between border-b border-gray-100 pb-1">
+                      <div>
+                        <span>
+                          {productInfo?.name ?? "—"} — {warehouseNameValue ?? "—"}
+                        </span>
+                        <span className="ml-2 text-xs text-gray-500">
+                          {new Date(r.created_at).toLocaleDateString("fr-FR")}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-600">
+                          {r.quantity} {productInfo?.unit ?? ""}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-medium ${STOCK_LOSS_STATUS_CLASSES[r.status] ?? ""}`}
+                        >
+                          {STOCK_LOSS_STATUS_LABELS[r.status] ?? r.status}
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="text-sm text-gray-500">Aucune déclaration de perte pour le moment.</p>
+            )}
+          </Card>
+        )}
       </div>
     </div>
   );
