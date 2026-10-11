@@ -42,12 +42,13 @@ exposition : perte de données = perte définitive.
 - [ ] Si RPO < 24h nécessaire : ajouter l'add-on **PITR** (7 jours).
 - [x] Stopgap : workflow GitHub Actions planifié `.github/workflows/backup.yml`
       (`pg_dump` custom-format quotidien à 02:00 UTC, artefact 30 j).
-- [ ] **Activer le stopgap** : ajouter le secret `SUPABASE_DB_URL` (chaîne de
+- [x] **Activer le stopgap** : ajouter le secret `SUPABASE_DB_URL` (chaîne de
       connexion Postgres, rôle lecture seule de préférence) dans
       _Settings → Secrets and variables → Actions_.
 - [ ] Faire évoluer le stopgap vers un bucket R2/S3 chiffré (l'artefact GitHub, 30 j,
       n'est qu'un dépannage court terme).
-- [ ] **Tester une restauration** sur un projet jetable — sinon ça ne compte pas.
+- [x] **Tester une restauration** sur un projet jetable — automatisé chaque nuit (job
+      `restore-test`, README point 109).
 
 **Fini quand** : une restauration a été testée avec succès et la procédure est écrite ici.
 
@@ -220,3 +221,5 @@ représentatif, et le temps ne croît plus linéairement avec l'historique.
 | 2026-09-10 | 1 | Stopgap sauvegarde nocturne (`backup.yml`) — reste à ajouter le secret `SUPABASE_DB_URL`. | `310b888` |
 | 2026-09-10 | 3 | CI verte après correctif : suite unitaire rendue hermétique (variables Supabase factices dans `vitest.config.ts`) — elle échouait en CI faute de `.env.local`. | `9db09e8` |
 | 2026-09-10 | 2 | Phase A séparation Formation : seed + script de provisioning des 5 comptes + runbook. Référentiel Formation extrait du projet partagé. Phases B/C/D en attente d'actions infra. | — |
+| 2026-09-19 | 1 | Secrets ajoutés, restauration vérifiée automatiquement chaque nuit sur un projet jetable dédié (README point 109). Reste : plan Pro / PITR, stockage chiffré hors GitHub. | `f2cc910` |
+| 2026-10-11 | — | Sécurité hors chantiers : `resolve_login_email` supprimée, limite de débit sur `request-password-reset`, CSP, `npm audit fix` (README point 115). | `0105` |

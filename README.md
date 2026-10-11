@@ -2743,6 +2743,40 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        (2 des 4 vulnérabilités, sans casse) ; taux fiscaux toujours en attente de relecture
        et politique de conservation/effacement des données personnelles à faire valider.
 
+115. **Durcissement des points d'entrée publics et des en-têtes (suite de l'audit du point
+     114).** Quatre des points restés ouverts, ceux qui relèvent du code :
+     - **`resolve_login_email` supprimée** (`0105_durcissement_endpoints_publics.sql`) :
+       publique, elle permettait de tester en masse, sans connexion et hors des limites de
+       Supabase Auth, si un identifiant existait et était actif. L'email Auth d'un compte
+       non-admin étant déterministe (`<login>@login.saheldor.internal`, point 64),
+       `LoginPage.tsx` le calcule désormais localement (`src/lib/loginEmail.ts`) : un
+       identifiant inconnu échoue à `signInWithPassword` avec la même erreur qu'un mauvais
+       mot de passe. Changement de comportement assumé : un compte **archivé** dont le mot de
+       passe est correct s'authentifie, n'obtient aucune donnée (`current_company_id()`
+       renvoie null, `0048`) et voit le message « compte désactivé » d'`AuthProvider` —
+       c'était déjà le cas de tout appel direct à l'API Auth avec l'email synthétique.
+       **Ordre de déploiement : frontend Vercel d'abord, `supabase db push` ensuite**, sinon
+       la connexion par identifiant casse entre les deux.
+     - **Limite de débit sur `request-password-reset`** : 10 demandes / 15 min par IP, 3 /
+       heure par email (haché SHA-256, la table ne garde aucune adresse), au-delà réponse
+       429 sans lecture ni envoi. Compteur générique `edge_rate_limits` +
+       `consume_rate_limit()` (service_role uniquement, RLS sans policy, verrou consultatif
+       par compteur, purge > 1 jour). Redéployer la fonction :
+       `npx supabase functions deploy request-password-reset --no-verify-jwt`.
+     - **`Content-Security-Policy`** ajoutée dans `vercel.json` : scripts limités à l'origine
+       + CDN Sentry (aucun script inline — l'ancien `onload` de la police dans `index.html`
+       est déplacé dans `src/main.tsx`), connexions vers `*.supabase.co` (HTTPS + WSS
+       Realtime) et `*.sentry.io`, `frame-ancestors 'none'`, `object-src 'none'`.
+       `style-src` garde `'unsafe-inline'` (styles injectés par les bibliothèques), risque
+       faible sans script inline. Vérifié sur le build servi avec ces en-têtes dans Chromium :
+       écran de connexion, police, génération PDF (jsPDF) et Excel (exceljs), zéro violation.
+     - **`npm audit fix`** : 17 → 12 vulnérabilités, toutes restantes en dépendances de
+       développement sauf `uuid` (via `exceljs`, modérée, ne concerne que v3/v5/v6 avec
+       tampon fourni — non utilisé). Le reste exige des montées de version majeures
+       (`tailwindcss` 4, `vitest`), hors de ce correctif.
+     - Restent côté propriétaire : dépôt GitHub à passer en privé, plan Pro Supabase
+       (sauvegardes gérées, protection des mots de passe compromis, séparation Formation).
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec
