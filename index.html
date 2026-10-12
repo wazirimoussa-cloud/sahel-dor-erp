@@ -17,11 +17,13 @@
       as="style"
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
     />
+    <!-- media="print" basculé sur "all" par src/main.tsx : un attribut onload inline serait
+    bloqué par le Content-Security-Policy (vercel.json, script-src sans 'unsafe-inline'). -->
     <link
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&display=swap"
       rel="stylesheet"
       media="print"
-      onload="this.media='all'"
+      data-async-font
     />
     <noscript>
       <link

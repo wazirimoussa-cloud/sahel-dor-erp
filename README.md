@@ -2737,11 +2737,36 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        de passe de test (à passer en privé) ; **aucune sauvegarde** (`backups: []`, PITR
        désactivé) — à traiter avec le passage au plan Pro ; base unique Formation/
        Production (à séparer une fois le plan Pro actif) ; protection contre les mots de
-       passe compromis désactivée (plan Pro) ; pas de `Content-Security-Policy` ;
-       `resolve_login_email` appelable sans connexion (énumération d'identifiants actifs) ;
-       pas de limite de débit sur `request-password-reset` ; `npm audit fix` à lancer
-       (2 des 4 vulnérabilités, sans casse) ; taux fiscaux toujours en attente de relecture
-       et politique de conservation/effacement des données personnelles à faire valider.
+       passe compromis désactivée (plan Pro) ; `resolve_login_email` appelable sans
+       connexion (énumération d'identifiants actifs, inhérent à la connexion par
+       identifiant) ; taux fiscaux toujours en attente de relecture et politique de
+       conservation/effacement des données personnelles à faire valider. CSP, limite de
+       débit et `npm audit fix` : traités, voir point 115.
+115. **Audit pré-lancement — durcissement applicatif** (suite du point 114).
+     - **Content-Security-Policy** ([vercel.json](vercel.json)) : `script-src` limité à
+       `'self'` + le loader et le SDK Sentry (`js-de.sentry-cdn.com`,
+       `browser.sentry-cdn.com`), sans `'unsafe-inline'` ni `'unsafe-eval'` ;
+       `connect-src` limité à `*.supabase.co` (joker volontaire : l'URL changera quand
+       Production aura son propre projet Supabase) et à l'ingestion Sentry ;
+       `style-src` garde `'unsafe-inline'` (styles inline de React/graphiques, risque
+       bien moindre que pour les scripts) ; `object-src 'none'`, `frame-ancestors 'none'`.
+       Le seul gestionnaire inline de l'application (`onload` du chargement non bloquant de
+       la police Google, `index.html`) a été déplacé dans `src/main.tsx` — un CSP strict
+       l'aurait bloqué. Verrouillé par
+       [securityHeaders.test.ts](tests/unit/securityHeaders.test.ts).
+     - **Limite de débit sur `request-password-reset`** (fonction publique) :
+       `0105_limite_debit_reinitialisation_mot_de_passe.sql` ajoute
+       `password_reset_attempts` (RLS activée **sans policy**, volontairement : seule la
+       fonction, en `service_role`, y accède). 3 demandes par email et 10 par IP par heure
+       glissante, comptées même pour un email inexistant (la réponse reste donc
+       indiscernable), purge au-delà de 24 h. Au-delà : 429 avec le même message
+       générique — la page de connexion ignorait déjà le statut, aucun changement
+       frontend. Un corps JSON invalide renvoie désormais 400 au lieu de 500. Vérifié en
+       direct : 200, 200, 200, puis 429.
+     - **Dépendances** : `npm audit fix` ramène 4 vulnérabilités à 2 (modérées, `uuid` via
+       `exceljs`). Les corriger exige de rétrograder `exceljs` en 3.4.0 (changement
+       majeur) — non fait : la faille (bornes de buffer de `uuid` v3/v5/v6 quand un
+       buffer est fourni) n'est pas atteignable par l'usage qu'en fait `exceljs` ici.
 
 ## Limites connues / pistes pour la suite
 
