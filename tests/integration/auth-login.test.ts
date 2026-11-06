@@ -5,7 +5,8 @@ import { hasCredentials, signInAs } from "./helpers/auth";
 
 // Vérifie l'identifiant (login) à la place de l'email pour les profils non-admin
 // (0072_identifiants_login.sql) contre Formation (RLS + attributions réelles, zéro mock) :
-// résolution publique login -> email synthétique, et validation serveur de create-user.
+// email synthétique calculé localement (RPC publique fermée en 0106), et validation
+// serveur de create-user.
 //
 // Ne couvre PAS request-password-reset (portée resserrée au rôle admin réel) : aucune
 // façon d'observer, depuis l'API publique, si un email a réellement été envoyé sans le
@@ -20,20 +21,17 @@ const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 
 describe.skipIf(!hasCredentials)("identifiant (login) à la place de l'email (Formation, réel)", () => {
-  it("resolve_login_email résout un identifiant actif connu vers son email synthétique", async () => {
+  it("resolve_login_email n'est plus appelable sans connexion (0106)", async () => {
     const anon = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string);
     const { data, error } = await anon.rpc("resolve_login_email", { p_login: "gerant.formation" });
-    expect(error).toBeNull();
-    expect(data).toBe("gerant.formation@login.saheldor.internal");
+    expect(error).not.toBeNull();
+    expect(data).toBeNull();
   });
 
-  it("resolve_login_email renvoie null pour un identifiant inconnu", async () => {
-    const anon = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string);
-    const { data, error } = await anon.rpc("resolve_login_email", {
-      p_login: `inconnu-${Date.now()}`,
-    });
-    expect(error).toBeNull();
-    expect(data).toBeNull();
+  it("connexion par identifiant avec l'email synthétique calculé localement", async () => {
+    const client = await signInAs("gerant");
+    const { data } = await client.auth.getUser();
+    expect(data.user?.email).toMatch(/@login\.saheldor\.internal$/);
   });
 
   it("create-user rejette un identifiant mal formé (majuscules, trop court)", async () => {

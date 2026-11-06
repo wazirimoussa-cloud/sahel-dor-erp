@@ -66,33 +66,34 @@ describe("LoginPage", () => {
     expect(rpc).not.toHaveBeenCalled();
   });
 
-  it("chemin identifiant (login) : résout l'email synthétique puis tente la connexion", async () => {
-    rpc.mockResolvedValueOnce({ data: "gerant@login.saheldor.internal", error: null });
+  it("chemin identifiant (login) : calcule l'email synthétique localement, sans appel préalable à la base", async () => {
     renderLoginPage();
     const user = userEvent.setup();
 
-    await user.type(screen.getByLabelText("Identifiant ou email"), "gerant");
+    await user.type(screen.getByLabelText("Identifiant ou email"), "  Gerant ");
     await user.type(screen.getByLabelText("Mot de passe"), "mauvais-mot-de-passe");
     await user.click(screen.getByRole("button", { name: /se connecter/i }));
 
     await waitFor(() => expect(screen.getByText(/identifiants incorrects/i)).toBeInTheDocument());
-    expect(rpc).toHaveBeenCalledWith("resolve_login_email", { p_login: "gerant" });
+    // Plus de RPC publique resolve_login_email (fermée en 0106) : un identifiant inconnu
+    // ne se distingue plus d'un mauvais mot de passe.
+    expect(rpc).not.toHaveBeenCalled();
     expect(signInWithPassword).toHaveBeenCalledWith({
       email: "gerant@login.saheldor.internal",
       password: "mauvais-mot-de-passe",
     });
   });
 
-  it("chemin identifiant (login) : identifiant inconnu -- erreur générique sans jamais tenter la connexion", async () => {
-    rpc.mockResolvedValueOnce({ data: null, error: null });
+  it("chemin identifiant (login) : format impossible -- erreur générique sans tenter la connexion", async () => {
     renderLoginPage();
     const user = userEvent.setup();
 
-    await user.type(screen.getByLabelText("Identifiant ou email"), "inconnu");
+    await user.type(screen.getByLabelText("Identifiant ou email"), "a b");
     await user.type(screen.getByLabelText("Mot de passe"), "peu-importe");
     await user.click(screen.getByRole("button", { name: /se connecter/i }));
 
     await waitFor(() => expect(screen.getByText(/identifiants incorrects/i)).toBeInTheDocument());
     expect(signInWithPassword).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
   });
 });
