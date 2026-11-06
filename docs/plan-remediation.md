@@ -45,6 +45,12 @@ exposition : perte de données = perte définitive.
 - [ ] **Activer le stopgap** : ajouter le secret `SUPABASE_DB_URL` (chaîne de
       connexion Postgres, rôle lecture seule de préférence) dans
       _Settings → Secrets and variables → Actions_.
+- [x] Chiffrer le dump avant l'upload (GPG AES-256, secret
+      `BACKUP_ENCRYPTION_PASSPHRASE`, échec si absent) — le dépôt étant public, les
+      artefacts non chiffrés étaient téléchargeables par tout compte GitHub. Voir README
+      point 116.
+- [ ] **Supprimer les anciens artefacts non chiffrés** (onglet Actions) et **passer le
+      dépôt en privé**.
 - [ ] Faire évoluer le stopgap vers un bucket R2/S3 chiffré (l'artefact GitHub, 30 j,
       n'est qu'un dépannage court terme).
 - [ ] **Tester une restauration** sur un projet jetable — sinon ça ne compte pas.
@@ -220,3 +226,4 @@ représentatif, et le temps ne croît plus linéairement avec l'historique.
 | 2026-09-10 | 1 | Stopgap sauvegarde nocturne (`backup.yml`) — reste à ajouter le secret `SUPABASE_DB_URL`. | `310b888` |
 | 2026-09-10 | 3 | CI verte après correctif : suite unitaire rendue hermétique (variables Supabase factices dans `vitest.config.ts`) — elle échouait en CI faute de `.env.local`. | `9db09e8` |
 | 2026-09-10 | 2 | Phase A séparation Formation : seed + script de provisioning des 5 comptes + runbook. Référentiel Formation extrait du projet partagé. Phases B/C/D en attente d'actions infra. | — |
+| 2026-11-06 | 1, 6 | Sauvegarde chiffrée avant upload ; `resolve_login_email` fermée (0106), email synthétique calculé côté navigateur ; `dompurify` 3.4.17. | — |

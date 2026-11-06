@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
+import { loginToEmail } from "@/lib/loginIdentity";
 import { CREDENTIALS, hasCredentials, signInAs } from "./helpers/auth";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
@@ -291,21 +292,9 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
     const userId = created!.id;
 
     // Compte encore actif : l'authentification et la lecture doivent fonctionner. Email
-    // synthétique résolu UNE SEULE FOIS ici (pendant que le compte est encore actif) et
-    // réutilisé pour les trois tentatives de connexion directe ci-dessous -- une fois
-    // archivé, resolve_login_email ne résout plus (active = false, par construction,
-    // 0072_identifiants_login.sql), ce qui teste une chose différente (le vrai parcours
-    // LoginPage refuserait la connexion dès la résolution) et non le comportement RLS
-    // après authentification que ce test vérifie spécifiquement.
-    const resolveClient = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-    const { data: resolvedEmail, error: resolveErr } = await resolveClient.rpc("resolve_login_email", {
-      p_login: login,
-    });
-    expect(resolveErr).toBeNull();
-    expect(resolvedEmail).toBeTruthy();
-    const email = resolvedEmail as string;
+    // synthétique calculé localement, comme LoginPage (src/lib/loginIdentity.ts).
+    const email = loginToEmail(login) as string;
+    expect(email).toBeTruthy();
 
     const before = createClient<Database>(SUPABASE_URL as string, SUPABASE_ANON_KEY as string, {
       auth: { persistSession: false, autoRefreshToken: false },
@@ -329,12 +318,6 @@ describe.skipIf(!hasCredentials)("archivage (Formation, réel)", () => {
     expect(archiveErr).toBeNull();
     expect(archived).toHaveLength(1);
     expect(archived![0].active).toBe(false);
-
-    // Un compte archivé ne peut plus résoudre son identifiant (resolve_login_email exclut
-    // active = false, 0072_identifiants_login.sql) -- le vrai parcours LoginPage refuse
-    // donc la connexion dès cette étape, avant même signInWithPassword.
-    const { data: resolvedAfterArchive } = await resolveClient.rpc("resolve_login_email", { p_login: login });
-    expect(resolvedAfterArchive).toBeNull();
 
     // L'authentification Supabase réussit toujours (mot de passe inchangé), mais plus
     // aucun accès : current_company_id()/current_role_name() renvoient null, ce qui

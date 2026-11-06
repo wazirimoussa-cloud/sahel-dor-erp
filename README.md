@@ -2768,6 +2768,37 @@ illustrée par un `UPDATE` manuel côté client). Ce qui a été ajouté ou chan
        majeur) — non fait : la faille (bornes de buffer de `uuid` v3/v5/v6 quand un
        buffer est fourni) n'est pas atteignable par l'usage qu'en fait `exceljs` ici.
 
+116. **Sauvegarde chiffrée, connexion sans énumération, dépendances** (2026-11-06, suite de
+     l'audit pré-lancement).
+     - **Sauvegarde nocturne chiffrée** (`.github/workflows/backup.yml`) : le dépôt a été
+       public, et un artefact GitHub Actions d'un dépôt public est téléchargeable par tout
+       compte GitHub — le dump en clair (employés, paie, clients, comptabilité) l'était
+       donc. Le dump est désormais chiffré (GPG, AES-256, phrase secrète
+       `BACKUP_ENCRYPTION_PASSPHRASE`) avant l'upload, le fichier en clair est effacé, et
+       le workflow **échoue** si la phrase secrète manque plutôt que d'envoyer un fichier
+       lisible. Le test de restauration déchiffre avant `pg_restore`. Restauration
+       manuelle : `gpg --decrypt --output backup.dump backup-<stamp>.dump.gpg`, puis
+       `pg_restore` comme avant. **Actions propriétaire** : passer le dépôt en privé,
+       supprimer les anciens artefacts non chiffrés (onglet Actions), créer le secret et
+       conserver la phrase hors de GitHub.
+     - **`resolve_login_email` fermée** (`0106_ferme_resolve_login_email.sql`) : elle
+       permettait, sans connexion, de lister les identifiants actifs. L'email interne étant
+       déterministe (`<login>@login.saheldor.internal`), `LoginPage` le calcule maintenant
+       localement ([loginIdentity.ts](src/lib/loginIdentity.ts)) — identifiant inconnu et
+       mauvais mot de passe reçoivent la même réponse de Supabase Auth. Les comptes
+       archivés restent sans accès après authentification (`current_company_id()` nul,
+       déconnexion par `AuthProvider`, couvert par `archivage.test.ts`). Un test unitaire
+       échoue si les constantes frontend divergent de `supabase/functions/_shared`.
+       **Ordre de déploiement** : frontend d'abord, migration ensuite.
+     - **Dépendances** : `dompurify` 3.4.16 → 3.4.17 (faille critique, via `jspdf`, sans
+       changement d'API). Restent : `uuid` via `exceljs` (non atteignable, voir point 115 ;
+       le navigateur charge de toute façon le bundle précompilé d'exceljs) et `zod` 3
+       (épuisement mémoire sur des collections démesurées : validation uniquement côté
+       navigateur sur la saisie de l'utilisateur lui-même, risque pratique négligeable).
+       La migration vers `zod` 4 est faisable mais touche ~17 formulaires (types d'entrée
+       de `z.coerce.number()`, `@hookform/resolvers` 5) — à faire dans une branche dédiée,
+       testée formulaire par formulaire.
+
 ## Limites connues / pistes pour la suite
 
 - **Types Supabase écrits à la main** (`src/lib/database.types.ts`) : à régénérer avec

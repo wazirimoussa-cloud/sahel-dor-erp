@@ -3,7 +3,18 @@ name: Sauvegarde BdD (nuit)
 # Stopgap gratuit en attendant l'activation des sauvegardes Supabase (plan Pro) et du
 # PITR -- voir docs/plan-remediation.md, point 1.
 #
-# Prérequis (2 secrets, Settings → Secrets and variables → Actions) :
+# CHIFFREMENT OBLIGATOIRE : le dépôt a été public. Un artefact GitHub Actions d'un dépôt
+# public est téléchargeable par tout compte GitHub -- un dump en clair (employés, paie,
+# clients, comptabilité) y serait exposé pendant toute la durée de rétention. Le dump est
+# donc chiffré (GPG, AES-256, symétrique) AVANT l'upload, et le workflow ÉCHOUE plutôt que
+# d'envoyer un fichier en clair si la phrase secrète manque. Même dépôt privé, garder le
+# chiffrement : un artefact reste lisible par toute personne ayant accès au dépôt.
+#
+# Prérequis (3 secrets, Settings → Secrets and variables → Actions) :
+#   BACKUP_ENCRYPTION_PASSPHRASE phrase secrète longue et aléatoire (ex. sortie de
+#                                 `openssl rand -base64 48`), conservée AUSSI hors de
+#                                 GitHub (gestionnaire de mots de passe, coffre papier) :
+#                                 sans elle, aucune sauvegarde n'est restaurable.
 #   SUPABASE_DB_URL              chaîne de connexion Postgres du projet source
 #                                 (partagé Formation+Production) -- Supabase → Project
 #                                 Settings → Database → Connection string → URI, en
@@ -23,7 +34,9 @@ name: Sauvegarde BdD (nuit)
 # ce second secret est ajouté, sans autre action nécessaire.
 #
 # Restauration manuelle (à partir d'un artefact téléchargé) :
+#   gpg --decrypt --output backup-<stamp>.dump backup-<stamp>.dump.gpg   (demande la phrase)
 #   pg_restore --clean --if-exists --no-owner --no-privileges --schema=public -d "<url>" backup-<stamp>.dump
+#   puis effacer le .dump en clair.
 #
 # Portée délibérément limitée au schéma "public" (nos données métier) -- trouvé en
 # exécutant le workflow pour la première fois : un dump complet embarque aussi les
@@ -58,7 +71,12 @@ jobs:
         env:
           DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           RESTORE_DB_URL: ${{ secrets.SUPABASE_RESTORE_TEST_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
         run: |
+          if [ -n "$DB_URL" ] && [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::SUPABASE_DB_URL est configuré mais BACKUP_ENCRYPTION_PASSPHRASE manque — refus d'envoyer une sauvegarde en clair."
+            exit 1
+          fi
           if [ -n "$DB_URL" ]; then
             echo "dump_ready=true" >> "$GITHUB_OUTPUT"
           else
@@ -103,10 +121,28 @@ jobs:
           pg_dump "$DB_URL" --no-owner --no-privileges --format=custom --schema=public --file="backup-$stamp.dump"
           ls -lh "backup-$stamp.dump"
 
+      - name: Chiffrer (AES-256) puis effacer le dump en clair
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          f="backup-${{ steps.do_dump.outputs.stamp }}.dump"
+          # Phrase secrète passée par l'entrée standard, jamais en argument (visible dans
+          # la liste des processus).
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 --output "$f.gpg" "$f"
+          shred -u "$f" 2>/dev/null || rm -f "$f"
+          ls -lh "$f.gpg"
+          # Garde-fou : jamais d'upload si un .dump en clair traîne encore.
+          if ls backup-*.dump >/dev/null 2>&1; then
+            echo "::error::Un dump en clair est encore présent — upload annulé."
+            exit 1
+          fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: db-backup-${{ steps.do_dump.outputs.stamp }}
-          path: backup-*.dump
+          path: backup-*.dump.gpg
           retention-days: 30
           if-no-files-found: error
 
@@ -126,6 +162,15 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: db-backup-${{ needs.dump.outputs.stamp }}
+
+      - name: Déchiffrer la sauvegarde
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          f=$(ls backup-*.dump.gpg)
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --decrypt --output "${f%.gpg}" "$f"
 
       - name: Restaurer dans le projet jetable et vérifier
         env:

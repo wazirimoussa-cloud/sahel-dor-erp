@@ -1,0 +1,25 @@
+-- Ferme la RPC publique resolve_login_email (0072_identifiants_login.sql).
+--
+-- Elle était appelable sans connexion (grant ... to anon) : n'importe qui disposant de la
+-- clé anon (publique par nature, embarquée dans le frontend) pouvait tester des
+-- identifiants un par un et dresser la liste des comptes ACTIFS -- première étape d'une
+-- attaque ciblée par mot de passe. Point laissé ouvert à l'audit pré-lancement (README,
+-- point 114 : « inhérent à la connexion par identifiant »).
+--
+-- Il ne l'est pas : l'email interne est déterministe (<login>@login.saheldor.internal pour
+-- tous les comptes non-admin, voir 0072 et la migration des comptes existants, README
+-- point 64). LoginPage le calcule désormais localement (src/lib/loginIdentity.ts) et
+-- appelle directement signInWithPassword : un identifiant inconnu et un mauvais mot de
+-- passe reçoivent la même réponse de Supabase Auth, soumise à sa propre limite de débit.
+--
+-- Comptes archivés : ils ne sont plus filtrés AVANT la tentative de connexion, mais
+-- l'étaient déjà APRÈS (current_company_id()/current_role_name() renvoient null pour
+-- active = false, ce qui bloque RLS et RPC ; AuthProvider déconnecte immédiatement --
+-- couvert par tests/integration/archivage.test.ts).
+--
+-- Fonction conservée (révocation seulement) pour pouvoir revenir en arrière par un simple
+-- grant si nécessaire. DÉPLOIEMENT : publier d'abord le frontend (qui n'appelle plus la
+-- RPC), puis appliquer cette migration -- dans l'autre ordre, l'ancien frontend encore en
+-- cache ne pourrait plus connecter les comptes par identifiant.
+
+revoke all on function public.resolve_login_email(text) from public, anon, authenticated;
